@@ -1,6 +1,6 @@
 # SIGI-E 💈
 
-Sistema inteligente de gestión para centros de estética (barberías, peluquerías, tatuajes, etc).
+Sistema inteligente de gestión para centros de estética (barberías, peluquerías, tatuajes, centros de belleza,  etc).
 
 ---
 
