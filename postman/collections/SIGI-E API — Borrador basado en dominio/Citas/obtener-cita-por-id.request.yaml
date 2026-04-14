@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Obtener cita por ID'
+description: |-
+  Placeholder de borrador para consultar el detalle de una cita específica.
+
+  Basado en la entidad citas del esquema relacional.
+  No corresponde a un endpoint implementado validado.
+method: GET
+url: '{{base_url}}{{api_prefix}}{{api_version}}/citas/{{cita_id}}'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

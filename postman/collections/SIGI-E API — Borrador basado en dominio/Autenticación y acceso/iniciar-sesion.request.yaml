@@ -1,0 +1,20 @@
+$kind: http-request
+name: 'Iniciar sesión'
+description: |-
+  Placeholder de borrador para autenticación de usuarios mediante credenciales.
+
+  Este request fue propuesto a partir del dominio del proyecto y de la referencia a JWT en el README.
+  No corresponde a un endpoint implementado ni verificado.
+method: POST
+url: '{{base_url}}{{api_prefix}}{{api_version}}/auth/login'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{email_prueba}}",
+      "password": "{{password_prueba}}"
+    }

@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Obtener perfil actual'
+description: |-
+  Placeholder de borrador para consultar el perfil autenticado usando un token JWT.
+
+  Su propósito es documentar una posible ruta protegida dentro del módulo de acceso.
+  No es un endpoint implementado verificado.
+method: GET
+url: '{{base_url}}{{api_prefix}}{{api_version}}/auth/me'
+order: 3000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

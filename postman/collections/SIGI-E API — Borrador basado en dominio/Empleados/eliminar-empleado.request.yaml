@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'Eliminar empleado'
+description: |-
+  Placeholder de borrador para eliminar un empleado por identificador.
+
+  Se incluye como referencia documental del dominio y no como endpoint verificado.
+method: DELETE
+url: '{{base_url}}{{api_prefix}}{{api_version}}/empleados/{{empleado_id}}'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

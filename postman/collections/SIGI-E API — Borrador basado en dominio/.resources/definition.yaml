@@ -1,0 +1,45 @@
+$kind: collection
+name: 'SIGI-E API — Borrador basado en dominio'
+description: |-
+  Colección Postman v3 en español basada en el dominio identificado en el repositorio local.
+
+  Este contenido es un borrador estructural derivado del README y del esquema de base de datos.
+  Los requests definidos aquí son placeholders de diseño y documentación inicial.
+  No representan endpoints implementados ni verificados contra un backend real.
+variables:
+  - key: base_url
+    value: 'http://localhost:8000'
+    description: 'URL base sugerida para desarrollo local del backend de SIGI-E.'
+  - key: api_prefix
+    value: '/api'
+    description: 'Prefijo sugerido para agrupar rutas de la API. Borrador no confirmado.'
+  - key: api_version
+    value: '/v1'
+    description: 'Versión sugerida de la API. Borrador no confirmado.'
+  - key: auth_token
+    value: ''
+    description: 'Token de autenticación de prueba para requests protegidos.'
+  - key: usuario_id
+    value: '1'
+    description: 'Identificador de usuario usado como placeholder de dominio.'
+  - key: negocio_id
+    value: '1'
+    description: 'Identificador de negocio usado como placeholder de dominio.'
+  - key: empleado_id
+    value: '1'
+    description: 'Identificador de empleado usado como placeholder de dominio.'
+  - key: servicio_id
+    value: '1'
+    description: 'Identificador de servicio usado como placeholder de dominio.'
+  - key: cita_id
+    value: '1'
+    description: 'Identificador de cita usado como placeholder de dominio.'
+  - key: email_prueba
+    value: 'usuario@example.com'
+    description: 'Correo de prueba para autenticación y registros de borrador.'
+  - key: password_prueba
+    value: 'Cambiar123*'
+    description: 'Contraseña de prueba para escenarios de borrador.'
+  - key: rol_usuario
+    value: 'cliente'
+    description: 'Rol de usuario sugerido como placeholder de negocio.'

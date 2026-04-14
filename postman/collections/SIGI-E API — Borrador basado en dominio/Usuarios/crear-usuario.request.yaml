@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'Crear usuario'
+description: |-
+  Placeholder de borrador para crear un usuario dentro del sistema.
+
+  Este request documenta una operación potencial del dominio, pero no corresponde a un endpoint implementado confirmado.
+method: POST
+url: '{{base_url}}{{api_prefix}}{{api_version}}/usuarios'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Nuevo usuario",
+      "email": "{{email_prueba}}",
+      "password": "{{password_prueba}}",
+      "rol": "{{rol_usuario}}"
+    }

@@ -1,0 +1,8 @@
+$kind: collection
+name: Usuarios
+description: |-
+  Carpeta de borrador para operaciones relacionadas con usuarios.
+
+  Los requests son placeholders derivados del modelo de dominio y del esquema de base de datos.
+  No representan contratos definitivos ni endpoints verificados.
+order: 2000

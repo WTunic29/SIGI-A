@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Listar citas'
+description: |-
+  Placeholder de borrador para consultar citas registradas en el sistema.
+
+  Se apoya en la entidad citas y en el caso de uso de administración en tiempo real descrito en el README.
+  No representa un endpoint implementado verificado.
+method: GET
+url: '{{base_url}}{{api_prefix}}{{api_version}}/citas'
+order: 1000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

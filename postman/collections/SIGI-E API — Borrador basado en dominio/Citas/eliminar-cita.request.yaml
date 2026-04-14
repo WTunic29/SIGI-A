@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'Eliminar cita'
+description: |-
+  Placeholder de borrador para eliminar una cita por identificador.
+
+  Se incluye como referencia de diseño de dominio. No representa un endpoint implementado verificado.
+method: DELETE
+url: '{{base_url}}{{api_prefix}}{{api_version}}/citas/{{cita_id}}'
+order: 6000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

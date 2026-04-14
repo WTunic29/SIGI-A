@@ -1,0 +1,8 @@
+$kind: collection
+name: 'Autenticación y acceso'
+description: |-
+  Carpeta de borrador para flujos de autenticación y control de acceso.
+
+  Los requests contenidos aquí fueron inferidos a partir del dominio del proyecto, el README y el uso esperado de JWT.
+  No corresponden a endpoints implementados ni verificados.
+order: 1000

@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Eliminar usuario'
+description: |-
+  Placeholder de borrador para eliminar un usuario por identificador.
+
+  Este request existe como documentación inicial del dominio.
+  No implica que el endpoint esté implementado o validado.
+method: DELETE
+url: '{{base_url}}{{api_prefix}}{{api_version}}/usuarios/{{usuario_id}}'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

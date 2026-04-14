@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Listar usuarios'
+description: |-
+  Placeholder de borrador para recuperar usuarios del sistema.
+
+  Este request se deriva de la entidad usuarios del esquema y de las necesidades administrativas del dominio.
+  No representa un endpoint implementado ni verificado.
+method: GET
+url: '{{base_url}}{{api_prefix}}{{api_version}}/usuarios'
+order: 1000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

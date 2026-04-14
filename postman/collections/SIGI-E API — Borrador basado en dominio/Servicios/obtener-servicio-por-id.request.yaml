@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Obtener servicio por ID'
+description: |-
+  Placeholder de borrador para consultar el detalle de un servicio específico.
+
+  Basado en la entidad servicios del esquema relacional.
+  No representa un endpoint implementado ni validado.
+method: GET
+url: '{{base_url}}{{api_prefix}}{{api_version}}/servicios/{{servicio_id}}'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

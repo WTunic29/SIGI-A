@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'Eliminar servicio'
+description: |-
+  Placeholder de borrador para eliminar un servicio por identificador.
+
+  Se conserva como referencia documental del dominio. No es un endpoint implementado confirmado.
+method: DELETE
+url: '{{base_url}}{{api_prefix}}{{api_version}}/servicios/{{servicio_id}}'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'

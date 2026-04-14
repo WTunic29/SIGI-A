@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'Crear empleado'
+description: |-
+  Placeholder de borrador para registrar un empleado dentro de un negocio.
+
+  El payload propuesto refleja los campos principales encontrados en el esquema.
+  No representa un endpoint implementado confirmado.
+method: POST
+url: '{{base_url}}{{api_prefix}}{{api_version}}/negocios/{{negocio_id}}/empleados'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{auth_token}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Empleado de prueba",
+      "especialidad": "Corte clásico",
+      "negocio_id": "{{negocio_id}}"
+    }
