@@ -1,0 +1,17 @@
+$kind: http-request
+name: Eliminar Producto
+description: Elimina un producto existente por su ID. Requiere autenticación JWT.
+method: DELETE
+url: '{{base_url}}/productos/{{id_producto}}'
+order: 4000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 o 204 - Producto eliminado", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));
+      if (pm.response.code === 200) {
+        pm.test("Respuesta tiene mensaje de confirmación", () => pm.expect(pm.response.json()).to.have.property("mensaje"));
+      }

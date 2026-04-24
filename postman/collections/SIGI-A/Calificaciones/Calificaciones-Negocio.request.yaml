@@ -1,0 +1,26 @@
+$kind: http-request
+name: Calificaciones del Negocio
+description: Obtiene todas las calificaciones de un negocio específico. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/negocios/{{id_negocio}}/calificaciones'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Calificaciones obtenidas", () => pm.response.to.have.status(200));
+      pm.test("Respuesta es un array", () => pm.expect(pm.response.json()).to.be.an("array"));
+      const calificaciones = pm.response.json();
+      if (calificaciones.length > 0) {
+        const c = calificaciones[0];
+        pm.test("Calificacion tiene id", () => pm.expect(c).to.have.property("id"));
+        pm.test("Calificacion tiene id_cliente", () => pm.expect(c).to.have.property("id_cliente"));
+        pm.test("Calificacion tiene id_negocio", () => pm.expect(c).to.have.property("id_negocio"));
+        pm.test("puntuacion está entre 1 y 5", () => {
+          pm.expect(c.puntuacion).to.be.at.least(1);
+          pm.expect(c.puntuacion).to.be.at.most(5);
+        });
+      }

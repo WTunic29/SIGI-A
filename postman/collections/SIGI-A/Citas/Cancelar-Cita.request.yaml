@@ -1,0 +1,17 @@
+$kind: http-request
+name: Cancelar Cita
+description: Cancela o elimina una cita existente por su ID. Requiere autenticación JWT.
+method: DELETE
+url: '{{base_url}}/citas/{{id_cita}}'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 o 204 - Cita cancelada", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));
+      if (pm.response.code === 200) {
+        pm.test("Respuesta tiene mensaje de confirmación", () => pm.expect(pm.response.json()).to.have.property("mensaje"));
+      }

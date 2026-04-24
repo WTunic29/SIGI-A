@@ -1,0 +1,13 @@
+$kind: http-request
+name: Root
+description: Verifica que el servidor backend esté en línea y respondiendo correctamente.
+method: GET
+url: '{{base_url}}/'
+order: 1000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Servidor en línea", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));
+      pm.test("Backend funcionando", () => pm.expect(pm.response.json().message).to.be.a("string").and.not.empty);

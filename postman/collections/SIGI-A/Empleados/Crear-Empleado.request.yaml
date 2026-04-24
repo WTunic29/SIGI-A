@@ -1,0 +1,38 @@
+$kind: http-request
+name: Crear Empleado
+description: Crea un nuevo empleado asociado a un negocio. Estado permitido activo o inactivo. Requiere autenticación JWT.
+method: POST
+url: '{{base_url}}/empleados'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_negocio": {{id_negocio}},
+      "nombre": "María",
+      "apellido": "González",
+      "telefono": "3112345678",
+      "email": "maria@salon.com",
+      "especialidad": "Colorimetría",
+      "estado": "activo"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Empleado creado", () => pm.response.to.have.status(201));
+      pm.test("Respuesta tiene campo empleado", () => pm.expect(pm.response.json()).to.have.property("empleado"));
+      const empleado = pm.response.json().empleado;
+      if (empleado) {
+        pm.test("Empleado tiene id", () => pm.expect(empleado).to.have.property("id"));
+        pm.test("Empleado tiene nombre", () => pm.expect(empleado).to.have.property("nombre"));
+        pm.test("Empleado tiene apellido", () => pm.expect(empleado).to.have.property("apellido"));
+        pm.test("Empleado tiene id_negocio", () => pm.expect(empleado).to.have.property("id_negocio"));
+        pm.test("Estado es válido", () => pm.expect(empleado.estado).to.be.oneOf(["activo", "inactivo"]));
+        pm.environment.set("id_empleado", empleado.id);
+      }

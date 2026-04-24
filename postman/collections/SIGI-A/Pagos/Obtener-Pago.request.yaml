@@ -1,0 +1,23 @@
+$kind: http-request
+name: Obtener Pago
+description: Obtiene los detalles de un pago específico por su ID. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/pagos/{{id_pago}}'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Pago obtenido", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo pago", () => pm.expect(pm.response.json()).to.have.property("pago"));
+      const pago = pm.response.json().pago;
+      if (pago) {
+        pm.test("Pago tiene id", () => pm.expect(pago).to.have.property("id"));
+        pm.test("Pago tiene id_pedido", () => pm.expect(pago).to.have.property("id_pedido"));
+        pm.test("metodo_pago es válido", () => pm.expect(pago.metodo_pago).to.be.oneOf(["payu", "efectivo", "tarjeta", "transferencia"]));
+        pm.test("estado_pago es válido", () => pm.expect(pago.estado_pago).to.be.oneOf(["pendiente", "aprobado", "rechazado", "reembolsado"]));
+        pm.test("valor es mayor o igual a 0", () => pm.expect(pago.valor).to.be.at.least(0));
+      }

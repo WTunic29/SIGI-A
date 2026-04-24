@@ -1,0 +1,23 @@
+$kind: http-request
+name: Listar Empleados del Negocio
+description: Obtiene todos los empleados asociados a un negocio específico. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/negocios/{{id_negocio}}/empleados'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Lista obtenida", () => pm.response.to.have.status(200));
+      pm.test("Respuesta es un array", () => pm.expect(pm.response.json()).to.be.an("array"));
+      const empleados = pm.response.json();
+      if (empleados.length > 0) {
+        const e = empleados[0];
+        pm.test("Empleado tiene id", () => pm.expect(e).to.have.property("id"));
+        pm.test("Empleado tiene nombre", () => pm.expect(e).to.have.property("nombre"));
+        pm.test("Empleado tiene id_negocio", () => pm.expect(e).to.have.property("id_negocio"));
+        pm.test("Estado es válido", () => pm.expect(e.estado).to.be.oneOf(["activo", "inactivo"]));
+      }

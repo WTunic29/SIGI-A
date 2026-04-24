@@ -1,0 +1,25 @@
+$kind: http-request
+name: Obtener Cita
+description: Obtiene los detalles de una cita específica por su ID. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/citas/{{id_cita}}'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Cita obtenida", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo cita", () => pm.expect(pm.response.json()).to.have.property("cita"));
+      const cita = pm.response.json().cita;
+      if (cita) {
+        pm.test("Cita tiene id", () => pm.expect(cita).to.have.property("id"));
+        pm.test("Cita tiene id_cliente", () => pm.expect(cita).to.have.property("id_cliente"));
+        pm.test("Cita tiene id_negocio", () => pm.expect(cita).to.have.property("id_negocio"));
+        pm.test("Cita tiene fecha", () => pm.expect(cita).to.have.property("fecha"));
+        pm.test("Cita tiene hora_inicio", () => pm.expect(cita).to.have.property("hora_inicio"));
+        pm.test("Cita tiene hora_fin", () => pm.expect(cita).to.have.property("hora_fin"));
+        pm.test("Estado es válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
+      }

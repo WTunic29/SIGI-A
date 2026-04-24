@@ -1,0 +1,39 @@
+$kind: http-request
+name: Crear Negocio
+description: Crea un nuevo negocio asociado al usuario propietario. El estado inicial debe ser 'activo'. Requiere autenticación JWT.
+method: POST
+url: '{{base_url}}/negocios'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_usuario_propietario": {{id_usuario}},
+      "nombre_negocio": "Salón Bella",
+      "descripcion": "Centro de estética y belleza",
+      "direccion": "Calle 123 # 45-67",
+      "ciudad": "Bogotá",
+      "telefono": "3009876543",
+      "email_negocio": "salon@bella.com",
+      "categoria_principal": "Estética",
+      "estado": "activo"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Negocio creado", () => pm.response.to.have.status(201));
+      pm.test("Respuesta tiene campo negocio", () => pm.expect(pm.response.json()).to.have.property("negocio"));
+      const negocio = pm.response.json().negocio;
+      if (negocio) {
+        pm.test("Negocio tiene id", () => pm.expect(negocio).to.have.property("id"));
+        pm.test("Negocio tiene nombre_negocio", () => pm.expect(negocio).to.have.property("nombre_negocio"));
+        pm.test("Negocio tiene id_usuario_propietario", () => pm.expect(negocio).to.have.property("id_usuario_propietario"));
+        pm.test("Estado es válido", () => pm.expect(negocio.estado).to.be.oneOf(["activo", "inactivo", "suspendido"]));
+        pm.environment.set("id_negocio", negocio.id);
+      }
