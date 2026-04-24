@@ -1,20 +1,20 @@
-# SIGI-E 💈
+# SIGI-E
 
 Sistema inteligente de gestión para centros de estética (barberías, peluquerías, tatuajes, centros de belleza,  etc).
 
 ---
 
-## 📌 Descripción
+## Descripción
 
 SIGI-E es una plataforma que permite conectar múltiples negocios de estética en un solo sistema, donde:
 
-### 👤 Usuarios pueden:
+### Usuarios pueden:
 - Ver negocios cercanos
 - Agendar citas
 - Calificar servicios
 - Comprar servicios/productos
 
-### 🏪 Negocios pueden:
+### Negocios pueden:
 - Gestionar empleados
 - Administrar citas en tiempo real
 - Controlar inventario
@@ -22,7 +22,7 @@ SIGI-E es una plataforma que permite conectar múltiples negocios de estética e
 
 ---
 
-## ⚙️ Backend (en desarrollo)
+## Backend (en desarrollo)
 
 Tecnologías:
 - Python (FastAPI o Flask)
@@ -32,7 +32,7 @@ Tecnologías:
 
 ---
 
-## 🗄️ Base de datos
+## Base de datos
 
 La base de datos está diseñada en PostgreSQL con las siguientes entidades principales:
 
@@ -49,4 +49,4 @@ Relaciones:
 
 ---
 
-## 📂 Estructura del proyecto
+## Estructura del proyecto
