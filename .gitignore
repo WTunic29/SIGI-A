@@ -1,0 +1,11 @@
+# entorno virtual
+venv/
+backend/venv/
+
+# variables sensibles
+.env
+backend/.env
+
+# python
+__pycache__/
+*.pyc

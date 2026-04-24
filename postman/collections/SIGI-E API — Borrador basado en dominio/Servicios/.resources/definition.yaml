@@ -1,8 +1,0 @@
-$kind: collection
-name: Servicios
-description: |-
-  Carpeta de borrador para catálogo y administración de servicios.
-
-  Los requests son placeholders documentales basados en las tablas del dominio.
-  No han sido validados contra una implementación real.
-order: 5000

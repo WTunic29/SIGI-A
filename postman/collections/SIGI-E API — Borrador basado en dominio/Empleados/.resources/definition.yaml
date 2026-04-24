@@ -1,8 +1,0 @@
-$kind: collection
-name: Empleados
-description: |-
-  Carpeta de borrador para gestión de empleados asociados a negocios.
-
-  Este contenido está basado en entidades del esquema y relaciones del dominio.
-  No corresponde a una API implementada confirmada.
-order: 4000

@@ -1,8 +1,0 @@
-$kind: collection
-name: Citas
-description: |-
-  Carpeta de borrador para programación y seguimiento de citas.
-
-  Los requests aquí descritos fueron derivados del dominio de agenda del proyecto.
-  No representan endpoints implementados verificados.
-order: 6000

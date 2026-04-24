@@ -1,8 +1,0 @@
-$kind: collection
-name: Negocios
-description: |-
-  Carpeta de borrador para administración y consulta de negocios.
-
-  Los requests definidos son una propuesta inicial basada en el dominio identificado en el repositorio.
-  No son endpoints implementados verificados.
-order: 3000
