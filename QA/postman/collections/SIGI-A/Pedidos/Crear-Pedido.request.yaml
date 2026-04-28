@@ -1,0 +1,35 @@
+$kind: http-request
+name: Crear Pedido
+description: Crea un nuevo pedido para un usuario en un negocio. total debe ser mayor o igual a 0. Estado inicial debe ser pendiente. Requiere autenticación JWT.
+method: POST
+url: '{{base_url}}/pedidos'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_usuario": {{id_usuario}},
+      "id_negocio": {{id_negocio}},
+      "total": 56000.00,
+      "estado": "pendiente"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Pedido creado", () => pm.response.to.have.status(201));
+      pm.test("Respuesta tiene campo pedido", () => pm.expect(pm.response.json()).to.have.property("pedido"));
+      const pedido = pm.response.json().pedido;
+      if (pedido) {
+        pm.test("Pedido tiene id", () => pm.expect(pedido).to.have.property("id"));
+        pm.test("Pedido tiene id_usuario", () => pm.expect(pedido).to.have.property("id_usuario"));
+        pm.test("Pedido tiene id_negocio", () => pm.expect(pedido).to.have.property("id_negocio"));
+        pm.test("total es mayor o igual a 0", () => pm.expect(pedido.total).to.be.at.least(0));
+        pm.test("Estado es válido", () => pm.expect(pedido.estado).to.be.oneOf(["pendiente", "pagado", "cancelado", "entregado"]));
+        pm.environment.set("id_pedido", pedido.id);
+      }

@@ -1,0 +1,15 @@
+$kind: http-request
+name: Eliminar Negocio
+description: Elimina un negocio por su ID. Solo el propietario puede eliminarlo. Requiere autenticación JWT.
+method: DELETE
+url: '{{base_url}}/negocios/{{id_negocio}}'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Negocio eliminado", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));

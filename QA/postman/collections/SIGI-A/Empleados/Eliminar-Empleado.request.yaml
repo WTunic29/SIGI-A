@@ -1,0 +1,15 @@
+$kind: http-request
+name: Eliminar Empleado
+description: Elimina un empleado por su ID. Requiere autenticación JWT.
+method: DELETE
+url: '{{base_url}}/empleados/{{id_empleado}}'
+order: 4000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Empleado eliminado", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));

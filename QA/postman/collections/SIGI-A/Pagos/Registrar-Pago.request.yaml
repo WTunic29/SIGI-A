@@ -1,0 +1,36 @@
+$kind: http-request
+name: Registrar Pago
+description: 'Registra un pago para un pedido. metodo_pago: payu, efectivo, tarjeta, transferencia. estado_pago: pendiente, aprobado, rechazado, reembolsado. valor >= 0. Requiere autenticación JWT.'
+method: POST
+url: '{{base_url}}/pagos'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_pedido": {{id_pedido}},
+      "metodo_pago": "tarjeta",
+      "referencia_externa": "REF-2025-001",
+      "estado_pago": "pendiente",
+      "valor": 56000.00
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Pago registrado", () => pm.response.to.have.status(201));
+      pm.test("Respuesta tiene campo pago", () => pm.expect(pm.response.json()).to.have.property("pago"));
+      const pago = pm.response.json().pago;
+      if (pago) {
+        pm.test("Pago tiene id", () => pm.expect(pago).to.have.property("id"));
+        pm.test("Pago tiene id_pedido", () => pm.expect(pago).to.have.property("id_pedido"));
+        pm.test("metodo_pago es válido", () => pm.expect(pago.metodo_pago).to.be.oneOf(["payu", "efectivo", "tarjeta", "transferencia"]));
+        pm.test("estado_pago es válido", () => pm.expect(pago.estado_pago).to.be.oneOf(["pendiente", "aprobado", "rechazado", "reembolsado"]));
+        pm.test("valor es mayor o igual a 0", () => pm.expect(pago.valor).to.be.at.least(0));
+        pm.environment.set("id_pago", pago.id);
+      }

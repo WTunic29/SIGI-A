@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIGI-E | Sistema de Gestión para Barberías</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<nav id="navbar">
+  <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
+  <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+</nav>
+
+<!-- ── INICIO ─────────────────────────────── -->
+<section class="hero" id="inicio">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-line"></div>
+      <span class="hero-eyebrow-text">Sistema de Gestión Inteligente</span>
+    </div>
+    <h1 class="hero-title">
+      SIGI<span class="gold">-E</span>
+      <span class="italic">para tu barbería</span>
+    </h1>
+    <p class="hero-desc">Plataforma web integral para barberías y centros de estética.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#">Explorar Sistema</a>
+      <a class="btn-secondary" href="#">Ver Demo</a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────── -->
+<section class="cta-section" id="cta">
+  <div class="section-header">
+    <p class="section-eyebrow">¿Listo para empezar?</p>
+    <h2 class="section-title">Digitaliza tu barbería hoy</h2>
+    <p class="section-desc">SIGI-E centraliza toda la información.</p>
+  </div>
+  <div class="cta-actions">
+    <a class="btn-primary" href="#" onclick="mostrarRegistro()">Registrar Negocio</a>
+    <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  </div>
+</section>
+
+<!-- ── LOGIN ──────────────────────────────── -->
+<section class="hero" id="login" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content" style="max-width:400px;">
+    <h1 class="hero-title">Iniciar <span class="gold">Sesión</span></h1>
+    <form id="loginForm">
+      <input type="email"    id="loginCorreo"   placeholder="Correo"     required><br><br>
+      <input type="password" id="loginPassword" placeholder="Contraseña" required><br><br>
+      <button class="btn-primary" type="submit">Entrar</button>
+    </form>
+    <span id="loginMsg"></span>
+    <p style="margin-top:16px; font-size:14px;">
+      ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a>
+    </p>
+  </div>
+</section>
+
+<!-- ── VERIFICACIÓN 2FA ───────────────────── -->
+<section class="hero" id="verify2fa" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content" style="max-width:400px;">
+    <h1 class="hero-title">Verificar <span class="gold">Código</span></h1>
+    <p style="margin-bottom:16px; font-size:14px;">
+      Ingresa el código de 6 dígitos que enviamos a tu correo.
+    </p>
+    <form id="verify2faForm">
+      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6"
+             pattern="\d{6}" inputmode="numeric" required><br><br>
+      <button class="btn-primary" type="submit">Verificar</button>
+    </form>
+    <span id="verify2faMsg"></span>
+    <p style="margin-top:16px; font-size:14px;">
+      <a href="#" onclick="mostrarLogin()">← Volver al login</a>
+    </p>
+  </div>
+</section>
+
+<!-- ── REGISTRO ───────────────────────────── -->
+<section class="hero" id="registro" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content" style="max-width:400px;">
+    <h1 class="hero-title">Crear <span class="gold">Cuenta</span></h1>
+    <form id="registroForm">
+      <input type="text"     id="nombre"   placeholder="Nombre"     required><br><br>
+      <input type="text"     id="apellido" placeholder="Apellido"   required><br><br>
+      <input type="email"    id="correo"   placeholder="Correo"     required><br><br>
+      <input type="text"     id="telefono" placeholder="Teléfono"   required><br><br>
+      <input type="password" id="password" placeholder="Contraseña" required><br><br>
+      <button class="btn-primary" type="submit">Registrarse</button>
+    </form>
+    <span id="registroMsg"></span>
+    <p style="margin-top:16px; font-size:14px;">
+      ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a>
+    </p>
+  </div>
+</section>
+
+<!-- ── DASHBOARD NEGOCIO ──────────────────── -->
+<section class="hero" id="dashboard-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content" style="max-width:500px;">
+    <h1 class="hero-title">Panel <span class="gold">Negocio</span></h1>
+    <p style="margin-bottom:8px;">
+      Bienvenido, <strong id="dashNombreUsuario"></strong>
+    </p>
+    <p style="margin-bottom:24px; font-size:14px;">
+      Negocio: <strong id="dashNombreNegocio">—</strong>
+    </p>
+
+    <h2 style="margin-bottom:16px; font-size:18px;">Registrar mi negocio</h2>
+    <form id="negocioForm">
+      <input type="text"  id="negNombre"      placeholder="Nombre del negocio" required><br><br>
+      <input type="text"  id="negDescripcion" placeholder="Descripción (opcional)"><br><br>
+      <input type="text"  id="negDireccion"   placeholder="Dirección (opcional)"><br><br>
+      <input type="text"  id="negTelefono"    placeholder="Teléfono (opcional)"><br><br>
+      <input type="email" id="negCorreo"      placeholder="Email del negocio (opcional)"><br><br>
+      <button class="btn-primary" type="submit">Guardar Negocio</button>
+    </form>
+    <span id="negocioMsg"></span>
+
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
+    </div>
+  </div>
+</section>
+
+<footer></footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

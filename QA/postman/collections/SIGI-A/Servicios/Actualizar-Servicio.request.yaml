@@ -1,0 +1,35 @@
+$kind: http-request
+name: Actualizar Servicio
+description: Actualiza los datos de un servicio existente. duracion_minutos debe ser mayor a 0 y precio mayor o igual a 0. Estado activo o inactivo. Requiere autenticación JWT.
+method: PUT
+url: '{{base_url}}/servicios/{{id_servicio}}'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Corte de cabello premium",
+      "descripcion": "Corte profesional con lavado y secado incluido",
+      "duracion_minutos": 60,
+      "precio": 45000.00,
+      "estado": "activo"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Servicio actualizado", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo servicio", () => pm.expect(pm.response.json()).to.have.property("servicio"));
+      const servicio = pm.response.json().servicio;
+      if (servicio) {
+        pm.test("Servicio tiene id", () => pm.expect(servicio).to.have.property("id"));
+        pm.test("Servicio tiene nombre", () => pm.expect(servicio).to.have.property("nombre"));
+        pm.test("duracion_minutos es mayor a 0", () => pm.expect(servicio.duracion_minutos).to.be.above(0));
+        pm.test("precio es mayor o igual a 0", () => pm.expect(servicio.precio).to.be.at.least(0));
+        pm.test("Estado es válido", () => pm.expect(servicio.estado).to.be.oneOf(["activo", "inactivo"]));
+      }

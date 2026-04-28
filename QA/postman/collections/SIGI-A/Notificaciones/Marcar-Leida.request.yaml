@@ -1,0 +1,21 @@
+$kind: http-request
+name: Marcar Notificacion como Leida
+description: Marca una notificacion como leida. El campo leida pasará a true. Requiere autenticación JWT.
+method: PUT
+url: '{{base_url}}/notificaciones/{{id_notificacion}}/leer'
+order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Notificacion marcada como leida", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo notificacion", () => pm.expect(pm.response.json()).to.have.property("notificacion"));
+      const notificacion = pm.response.json().notificacion;
+      if (notificacion) {
+        pm.test("Notificacion tiene id", () => pm.expect(notificacion).to.have.property("id"));
+        pm.test("leida es true", () => pm.expect(notificacion.leida).to.be.true);
+        pm.test("tipo es válido", () => pm.expect(notificacion.tipo).to.be.oneOf(["cita", "pago", "pedido", "sistema", "promocion"]));
+      }

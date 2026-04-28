@@ -1,0 +1,24 @@
+$kind: http-request
+name: Citas del Usuario
+description: Obtiene todas las citas asociadas a un usuario específico. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/usuarios/{{id_usuario}}/citas'
+order: 3000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Citas obtenidas", () => pm.response.to.have.status(200));
+      pm.test("Respuesta es un array", () => pm.expect(pm.response.json()).to.be.an("array"));
+      const citas = pm.response.json();
+      if (citas.length > 0) {
+        const c = citas[0];
+        pm.test("Cita tiene id", () => pm.expect(c).to.have.property("id"));
+        pm.test("Cita tiene id_cliente", () => pm.expect(c).to.have.property("id_cliente"));
+        pm.test("Cita tiene id_negocio", () => pm.expect(c).to.have.property("id_negocio"));
+        pm.test("Cita tiene fecha", () => pm.expect(c).to.have.property("fecha"));
+        pm.test("Estado es válido", () => pm.expect(c.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
+      }

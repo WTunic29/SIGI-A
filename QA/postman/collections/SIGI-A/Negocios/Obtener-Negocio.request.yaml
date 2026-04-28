@@ -1,0 +1,23 @@
+$kind: http-request
+name: Obtener Negocio
+description: Obtiene los detalles completos de un negocio por su ID. Requiere autenticación JWT.
+method: GET
+url: '{{base_url}}/negocios/{{id_negocio}}'
+order: 3000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Negocio encontrado", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo negocio", () => pm.expect(pm.response.json()).to.have.property("negocio"));
+      const negocio = pm.response.json().negocio;
+      if (negocio) {
+        pm.test("Negocio tiene id", () => pm.expect(negocio).to.have.property("id"));
+        pm.test("Negocio tiene nombre_negocio", () => pm.expect(negocio).to.have.property("nombre_negocio"));
+        pm.test("Negocio tiene id_usuario_propietario", () => pm.expect(negocio).to.have.property("id_usuario_propietario"));
+        pm.test("Negocio tiene ciudad", () => pm.expect(negocio).to.have.property("ciudad"));
+        pm.test("Estado es válido", () => pm.expect(negocio.estado).to.be.oneOf(["activo", "inactivo", "suspendido"]));
+      }

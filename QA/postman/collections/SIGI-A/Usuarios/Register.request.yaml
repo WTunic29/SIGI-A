@@ -1,0 +1,36 @@
+$kind: http-request
+name: Register Usuario
+description: Registra un nuevo usuario en el sistema. Devuelve el usuario creado con su ID asignado. El estado inicial es 'activo'.
+method: POST
+url: '{{base_url}}/users/register'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Juan",
+      "apellido": "Pérez",
+      "correo": "juan@example.com",
+      "telefono": "3001234567",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Usuario creado", () => pm.response.to.have.status(201));
+      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));
+      pm.test("Respuesta tiene campo usuario", () => pm.expect(pm.response.json()).to.have.property("usuario"));
+      const usuario = pm.response.json().usuario;
+      if (usuario) {
+        pm.test("Usuario tiene id", () => pm.expect(usuario).to.have.property("id"));
+        pm.test("Usuario tiene nombre", () => pm.expect(usuario).to.have.property("nombre"));
+        pm.test("Usuario tiene apellido", () => pm.expect(usuario).to.have.property("apellido"));
+        pm.test("Usuario tiene correo", () => pm.expect(usuario).to.have.property("correo"));
+        pm.test("Usuario tiene telefono", () => pm.expect(usuario).to.have.property("telefono"));
+        pm.test("Estado es activo", () => pm.expect(usuario.estado).to.eql("activo"));
+        pm.environment.set("id_usuario", usuario.id);
+      }
