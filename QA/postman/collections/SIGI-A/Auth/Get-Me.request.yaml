@@ -1,0 +1,23 @@
+$kind: http-request
+name: Get-Me
+method: GET
+url: '{{base_url}}/auth/me'
+order: 4000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Perfil obtenido", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Respuesta tiene datos del usuario", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("id");
+          pm.expect(json).to.have.property("nombre");
+          pm.expect(json).to.have.property("apellido");
+          pm.expect(json).to.have.property("correo");
+          pm.expect(json).to.have.property("rol");
+      });

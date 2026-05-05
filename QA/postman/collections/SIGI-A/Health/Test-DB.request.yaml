@@ -1,0 +1,14 @@
+$kind: http-request
+name: Test DB
+description: Verifica la conectividad con la base de datos. Útil para diagnosticar problemas de infraestructura.
+method: GET
+url: '{{base_url}}/test-db'
+order: 2000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Endpoint accesible", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo database", () => pm.expect(pm.response.json()).to.have.property("database"));
+      pm.test("DB conectada", () => pm.expect(pm.response.json().database).to.eql("conectada"));
+      pm.test("Tiempo de respuesta < 2000ms", () => pm.expect(pm.response.responseTime).to.be.below(2000));

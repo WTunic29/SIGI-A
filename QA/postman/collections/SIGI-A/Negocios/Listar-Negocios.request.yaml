@@ -1,0 +1,18 @@
+﻿$kind: http-request
+name: Listar Negocios
+description: 'Obtiene la lista de todos los negocios registrados. No requiere autenticacion.'
+method: GET
+url: '{{base_url}}/negocios/'
+order: 2000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Lista obtenida", () => pm.response.to.have.status(200));
+      pm.test("Respuesta es un array", () => pm.expect(pm.response.json()).to.be.an("array"));
+      const negocios = pm.response.json();
+      if (negocios.length > 0) {
+        const n = negocios[0];
+        pm.test("Negocio tiene id_negocio", () => pm.expect(n).to.have.property("id_negocio"));
+        pm.test("Negocio tiene nombre_negocio", () => pm.expect(n).to.have.property("nombre_negocio"));
+      }

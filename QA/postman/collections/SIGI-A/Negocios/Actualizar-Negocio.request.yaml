@@ -1,0 +1,36 @@
+$kind: http-request
+name: Actualizar Negocio
+description: 'Actualiza los datos de un negocio existente. Estado permitido: activo, inactivo, suspendido. Requiere autenticación JWT.'
+method: PUT
+url: '{{base_url}}/negocios/{{id_negocio}}'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombre_negocio": "Salón Bella Actualizado",
+      "descripcion": "Centro de estética y belleza - actualizado",
+      "direccion": "Calle 123 # 45-67",
+      "ciudad": "Bogotá",
+      "telefono": "3009876543",
+      "email_negocio": "salon@bella.com",
+      "categoria_principal": "Estética",
+      "estado": "activo"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Negocio actualizado", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene campo negocio", () => pm.expect(pm.response.json()).to.have.property("negocio"));
+      const negocio = pm.response.json().negocio;
+      if (negocio) {
+        pm.test("Negocio tiene id", () => pm.expect(negocio).to.have.property("id"));
+        pm.test("Negocio tiene nombre_negocio", () => pm.expect(negocio).to.have.property("nombre_negocio"));
+        pm.test("Estado es válido", () => pm.expect(negocio.estado).to.be.oneOf(["activo", "inactivo", "suspendido"]));
+      }

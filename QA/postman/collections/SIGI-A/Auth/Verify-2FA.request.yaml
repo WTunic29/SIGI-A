@@ -1,0 +1,40 @@
+$kind: http-request
+name: Verify-2FA
+method: POST
+url: '{{base_url}}/auth/verify-2fa'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "correo": "{{correo_2fa}}",
+      "codigo": "{{codigo_2fa}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - 2FA validado", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Respuesta tiene access_token", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("access_token");
+          pm.expect(json).to.have.property("token_type", "bearer");
+          pm.expect(json).to.have.property("usuario");
+      });
+      pm.test("Usuario tiene campos requeridos", function () {
+          const usuario = pm.response.json().usuario;
+          pm.expect(usuario).to.have.property("id");
+          pm.expect(usuario).to.have.property("nombre");
+          pm.expect(usuario).to.have.property("apellido");
+          pm.expect(usuario).to.have.property("correo");
+          pm.expect(usuario).to.have.property("rol");
+      });
+      if (pm.response.code === 200) {
+          pm.environment.set("token", pm.response.json().access_token);
+          pm.environment.set("id_usuario", pm.response.json().usuario.id);
+      }
