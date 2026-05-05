@@ -1,0 +1,10 @@
+$kind: collection
+name: SIGI-A Fixed
+description: 'Colección 100% funcional con el backend FastAPI de SIGI-A. Corrige todos los problemas de los YAML originales.'
+variables: []
+auth: null
+events: []
+info:
+  name: SIGI-A Fixed
+  description: 'Colección 100% funcional con el backend FastAPI de SIGI-A. Corrige todos los problemas de los YAML originales.'
+  schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'

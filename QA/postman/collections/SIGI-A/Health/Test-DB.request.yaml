@@ -1,0 +1,15 @@
+$kind: http-request
+name: Test-DB
+description: 'Verifica conexión a la base de datos'
+method: GET
+url: '{{base_url}}/test-db'
+order: 2000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - DB conectada", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene database", () => pm.expect(pm.response.json()).to.have.property("database"));
+      pm.test("Respuesta tiene resultado", () => pm.expect(pm.response.json()).to.have.property("resultado"));
+      pm.test("Database está conectada", () => pm.expect(pm.response.json().database).to.eql("conectada"));
+      pm.test("Resultado es 1", () => pm.expect(pm.response.json().resultado).to.eql(1));
