@@ -406,3 +406,31 @@ input {
   align-items: center;
   justify-content: center;
 }
+
+/* ───────────────────────────── */
+/* BOTONES NAVBAR */
+/* ───────────────────────────── */
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-register {
+  color: var(--white2);
+  text-decoration: none;
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 9px 18px;
+  border: 1px solid rgba(201,168,76,0.25);
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.nav-register:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,168,76,0.05);
+}
