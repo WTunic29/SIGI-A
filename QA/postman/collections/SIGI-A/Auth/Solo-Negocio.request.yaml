@@ -1,0 +1,20 @@
+$kind: http-request
+name: Solo-Negocio
+method: GET
+url: '{{base_url}}/auth/solo-negocio'
+order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Acceso permitido a negocio", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Respuesta tiene message y usuario", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("message", "Bienvenido negocio");
+          pm.expect(json).to.have.property("usuario");
+      });

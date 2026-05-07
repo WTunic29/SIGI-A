@@ -1,12 +1,9 @@
-$kind: http-request
+﻿$kind: http-request
 name: Listar Negocios
-description: Obtiene la lista de todos los negocios registrados. Requiere autenticación JWT.
+description: 'Obtiene la lista de todos los negocios registrados. No requiere autenticacion.'
 method: GET
-url: '{{base_url}}/negocios'
+url: '{{base_url}}/negocios/'
 order: 2000
-headers:
-  - key: Authorization
-    value: 'Bearer {{token}}'
 scripts:
   - type: afterResponse
     language: text/javascript
@@ -16,7 +13,6 @@ scripts:
       const negocios = pm.response.json();
       if (negocios.length > 0) {
         const n = negocios[0];
-        pm.test("Negocio tiene id", () => pm.expect(n).to.have.property("id"));
+        pm.test("Negocio tiene id_negocio", () => pm.expect(n).to.have.property("id_negocio"));
         pm.test("Negocio tiene nombre_negocio", () => pm.expect(n).to.have.property("nombre_negocio"));
-        pm.test("Estado es válido", () => pm.expect(n.estado).to.be.oneOf(["activo", "inactivo", "suspendido"]));
       }

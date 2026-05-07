@@ -1,0 +1,34 @@
+$kind: http-request
+name: Login
+method: POST
+url: '{{base_url}}/auth/login'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "correo": "juan@example.com",
+      "password": "123456"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Login iniciado", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Respuesta indica 2FA requerido", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("requieres_2fa", true);
+          pm.expect(json).to.have.property("correo");
+          pm.expect(json).to.have.property("message");
+      });
+      if (pm.response.code === 200) {
+          pm.environment.set("correo_2fa", pm.response.json().correo);
+          console.log("Código 2FA enviado al correo: " + pm.response.json().correo);
+          console.log("Para testing: consulta la tabla 'codigo_2fa' en la DB o el email para obtener el código de 6 dígitos.");
+          console.log("Luego, establece la variable 'codigo_2fa' en el environment con ese valor.");
+      }

@@ -1,0 +1,41 @@
+$kind: http-request
+name: Register
+method: POST
+url: '{{base_url}}/auth/register'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Juan",
+      "apellido": "Pérez",
+      "correo": "juan@example.com",
+      "telefono": "3001234567",
+      "password": "123456",
+      "rol": "{{rol_default}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Usuario creado", function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test("Respuesta tiene message y usuario", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("message");
+          pm.expect(json).to.have.property("usuario");
+          pm.expect(json.usuario).to.have.property("id");
+          pm.expect(json.usuario).to.have.property("correo");
+      });
+      pm.test("Rol retornado es válido", function () {
+          const json = pm.response.json();
+          pm.expect(["cliente", "negocio", "admin"]).to.include(json.usuario.rol);
+      });
+      if (pm.response.code === 201) {
+          pm.environment.set("id_usuario", pm.response.json().usuario.id);
+          pm.environment.set("correo_2fa", pm.response.json().usuario.correo);
+      }

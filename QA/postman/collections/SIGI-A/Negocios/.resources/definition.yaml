@@ -1,2 +1,3 @@
 $kind: collection
-description: '⚠️ Módulo pendiente de implementación en el backend. Gestión de negocios de estética registrados en la plataforma SIGI-A.'
+name: Negocios
+description: 'Endpoints de negocios — prefix /negocios (negocio.py)'

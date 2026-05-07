@@ -1,0 +1,12 @@
+name: SIGI-A
+values:
+  - key: base_url
+    value: 'http://localhost:8000'
+  - key: token
+    value: ''
+  - key: correo_2fa
+    value: ''
+  - key: id_usuario
+    value: ''
+  - key: id_negocio
+    value: ''

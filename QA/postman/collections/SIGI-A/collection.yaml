@@ -1,0 +1,4 @@
+$kind: collection
+name: SIGI-A
+description: 'Colección generada desde el backend FastAPI de SIGI-A. Cubre todos los endpoints disponibles en app/routes/user.py y app/routes/negocio.py'
+variables: []
