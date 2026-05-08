@@ -9,12 +9,16 @@
 </head>
 <body>
 
+<!-- ── NAVBAR ── -->
 <nav id="navbar">
   <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
-  <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  <div class="nav-buttons">
+    <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
+    <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  </div>
 </nav>
 
-<!-- ── INICIO ─────────────────────────────── -->
+<!-- ── INICIO ── -->
 <section class="hero" id="inicio">
   <div class="hero-bg"></div>
   <div class="hero-content">
@@ -38,7 +42,7 @@
   </div>
 </section>
 
-<!-- ── CTA ────────────────────────────────── -->
+<!-- ── CTA ── -->
 <section class="cta-section" id="cta">
   <div class="section-header">
     <p class="section-eyebrow">¿Listo para empezar?</p>
@@ -46,99 +50,141 @@
     <p class="section-desc">SIGI-E centraliza toda la información.</p>
   </div>
   <div class="cta-actions">
-    <a class="btn-primary" href="#" onclick="mostrarRegistro()">Registrar Negocio</a>
+    <a class="btn-primary" href="#">Registrar Negocio</a>
     <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
   </div>
 </section>
 
-<!-- ── LOGIN ──────────────────────────────── -->
+<!-- ── LOGIN ── -->
 <section class="hero" id="login" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content" style="max-width:400px;">
+  <div class="hero-content centrado">
     <h1 class="hero-title">Iniciar <span class="gold">Sesión</span></h1>
     <form id="loginForm">
-      <input type="email"    id="loginCorreo"   placeholder="Correo"     required><br><br>
+      <input type="email" id="loginCorreo" placeholder="Correo" required><br><br>
       <input type="password" id="loginPassword" placeholder="Contraseña" required><br><br>
       <button class="btn-primary" type="submit">Entrar</button>
     </form>
     <span id="loginMsg"></span>
-    <p style="margin-top:16px; font-size:14px;">
-      ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a>
-    </p>
+    <p style="margin-top:16px;font-size:14px;">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
   </div>
 </section>
 
-<!-- ── VERIFICACIÓN 2FA ───────────────────── -->
+<!-- ── VERIFICAR 2FA ── -->
 <section class="hero" id="verify2fa" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content" style="max-width:400px;">
+  <div class="hero-content centrado">
     <h1 class="hero-title">Verificar <span class="gold">Código</span></h1>
-    <p style="margin-bottom:16px; font-size:14px;">
-      Ingresa el código de 6 dígitos que enviamos a tu correo.
-    </p>
+    <p style="margin-bottom:16px;font-size:14px;">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
     <form id="verify2faForm">
-      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6"
-             pattern="\d{6}" inputmode="numeric" required><br><br>
+      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6" pattern="\d{6}" inputmode="numeric" required><br><br>
       <button class="btn-primary" type="submit">Verificar</button>
     </form>
     <span id="verify2faMsg"></span>
-    <p style="margin-top:16px; font-size:14px;">
-      <a href="#" onclick="mostrarLogin()">← Volver al login</a>
-    </p>
+    <p style="margin-top:16px;font-size:14px;"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
   </div>
 </section>
 
-<!-- ── REGISTRO ───────────────────────────── -->
+<!-- ── REGISTRO ── -->
 <section class="hero" id="registro" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content" style="max-width:400px;">
+  <div class="hero-content centrado">
     <h1 class="hero-title">Crear <span class="gold">Cuenta</span></h1>
     <form id="registroForm">
-      <input type="text"     id="nombre"   placeholder="Nombre"     required><br><br>
-      <input type="text"     id="apellido" placeholder="Apellido"   required><br><br>
-      <input type="email"    id="correo"   placeholder="Correo"     required><br><br>
-      <input type="text"     id="telefono" placeholder="Teléfono"   required><br><br>
+      <input type="text" id="nombre" placeholder="Nombre" required><br><br>
+      <input type="text" id="apellido" placeholder="Apellido" required><br><br>
+      <input type="email" id="correo" placeholder="Correo" required><br><br>
+      <input type="text" id="telefono" placeholder="Teléfono" required><br><br>
       <input type="password" id="password" placeholder="Contraseña" required><br><br>
       <button class="btn-primary" type="submit">Registrarse</button>
     </form>
     <span id="registroMsg"></span>
-    <p style="margin-top:16px; font-size:14px;">
-      ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a>
-    </p>
+    <p style="margin-top:16px;font-size:14px;">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
   </div>
 </section>
 
-<!-- ── DASHBOARD NEGOCIO ──────────────────── -->
+<!-- ── DASHBOARD ── -->
 <section class="hero" id="dashboard-negocio" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content" style="max-width:500px;">
+  <div class="hero-content centrado">
     <h1 class="hero-title">Panel <span class="gold">Negocio</span></h1>
-    <p style="margin-bottom:8px;">
-      Bienvenido, <strong id="dashNombreUsuario"></strong>
-    </p>
-    <p style="margin-bottom:24px; font-size:14px;">
-      Negocio: <strong id="dashNombreNegocio">—</strong>
-    </p>
+    <p style="margin-bottom:8px;">Bienvenido, <strong id="dashNombreUsuario"></strong></p>
+    <p style="margin-bottom:24px;font-size:14px;">Negocio: <strong id="dashNombreNegocio">—</strong></p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;align-items:center;">
+      <a class="btn-primary" href="#" onclick="irMiPerfil()">Mi Perfil</a>
+      <a class="btn-primary" href="#" onclick="irRegistrarNegocio()">Registrar Negocio</a>
+      <a class="btn-primary" href="#" onclick="irVerNegocios()">Ver Negocios</a>
+      <a class="btn-primary" href="#" onclick="irValidarAcceso()">Validar Acceso Negocio</a>
+    </div>
+    <a class="btn-secondary" href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
+  </div>
+</section>
 
-    <h2 style="margin-bottom:16px; font-size:18px;">Registrar mi negocio</h2>
+<!-- ── REGISTRAR NEGOCIO ── -->
+<section class="hero" id="registrar-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Registrar <span class="gold">Negocio</span></h1>
     <form id="negocioForm">
-      <input type="text"  id="negNombre"      placeholder="Nombre del negocio" required><br><br>
-      <input type="text"  id="negDescripcion" placeholder="Descripción (opcional)"><br><br>
-      <input type="text"  id="negDireccion"   placeholder="Dirección (opcional)"><br><br>
-      <input type="text"  id="negTelefono"    placeholder="Teléfono (opcional)"><br><br>
-      <input type="email" id="negCorreo"      placeholder="Email del negocio (opcional)"><br><br>
+      <input type="text" id="negNombre" placeholder="Nombre del negocio" required><br><br>
+      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)"><br><br>
+      <input type="text" id="negDireccion" placeholder="Dirección (opcional)"><br><br>
+      <input type="text" id="negTelefono" placeholder="Teléfono (opcional)"><br><br>
+      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)"><br><br>
       <button class="btn-primary" type="submit">Guardar Negocio</button>
     </form>
     <span id="negocioMsg"></span>
-
     <div style="margin-top:32px;">
-      <a class="btn-secondary" href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── MI PERFIL ── -->
+<section class="hero" id="mi-perfil" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Mi <span class="gold">Perfil</span></h1>
+    <div id="perfilInfo" style="margin-top:24px;font-size:15px;line-height:2.2;">
+      <p>Nombre: <strong id="perfilNombre"></strong></p>
+      <p>Apellido: <strong id="perfilApellido"></strong></p>
+      <p>Correo: <strong id="perfilCorreo"></strong></p>
+      <p>Rol: <strong id="perfilRol"></strong></p>
+    </div>
+    <span id="perfilMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── VER NEGOCIOS ── -->
+<section class="hero" id="ver-negocios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content centrado" style="max-width:600px;">
+    <h1 class="hero-title">Ver <span class="gold">Negocios</span></h1>
+    <div id="listaNegocios" style="margin-top:24px;text-align:left;width:100%;"></div>
+    <span id="verNegociosMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── VALIDAR ACCESO ── -->
+<section class="hero" id="validar-acceso" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Acceso <span class="gold">Negocio</span></h1>
+    <div id="validarInfo" style="margin-top:24px;font-size:15px;"></div>
+    <span id="validarMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
     </div>
   </div>
 </section>
 
 <footer></footer>
-
 <script src="js/main.js"></script>
 </body>
 </html>
