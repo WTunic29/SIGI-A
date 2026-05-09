@@ -10,6 +10,8 @@ from app.routes import empleado_servicio
 from app.routes import horario_empleado
 from app.routes import cita
 from app.routes import calificacion
+from app.routes import producto
+from app.routes import inventario_movimiento
 
 app = FastAPI(title="SIGI-A Backend")
 
@@ -40,6 +42,18 @@ app.include_router(
     calificacion.router,
     prefix="/calificaciones",
     tags=["Calificaciones"]
+)
+
+app.include_router(
+    producto.router,
+    prefix="/productos",
+    tags=["Productos"]
+)
+
+app.include_router(
+    inventario_movimiento.router,
+    prefix="/inventario-movimientos",
+    tags=["Inventario"]
 )
 
 @app.get("/")
