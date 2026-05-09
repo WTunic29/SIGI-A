@@ -12,6 +12,16 @@ from app.routes import cita
 from app.routes import calificacion
 from app.routes import producto
 from app.routes import inventario_movimiento
+from app.routes import notificacion
+from app.routes.pago import router as pago_router
+from app.routes.pedido import router as pedido_router
+from app.routes import pedido_detalle
+from app.routes import carrito
+from app.routes import carrito_detalle
+from app.routes import favorito
+from app.routes import token_recuperacion
+from app.routes import sesion
+from app.routes import auditoria
 
 app = FastAPI(title="SIGI-A Backend")
 
@@ -55,6 +65,21 @@ app.include_router(
     prefix="/inventario-movimientos",
     tags=["Inventario"]
 )
+
+app.include_router(
+    notificacion.router,
+    prefix="/notificaciones",
+    tags=["Notificaciones"]
+)
+app.include_router(pago_router)
+app.include_router(pedido_router)
+app.include_router(pedido_detalle.router)
+app.include_router(carrito.router)
+app.include_router(carrito_detalle.router)
+app.include_router(favorito.router)
+app.include_router(token_recuperacion.router)
+app.include_router(sesion.router)
+app.include_router(auditoria.router)
 
 @app.get("/")
 def root():
