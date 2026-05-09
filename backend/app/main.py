@@ -4,6 +4,7 @@ from sqlalchemy import text
 from app.database import engine
 from app.routes import user
 from app.routes import negocio
+from app.routes import servicio
 
 app = FastAPI(title="SIGI-A Backend")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 
 app.include_router(negocio.router, prefix="/negocios", tags=["Negocios"])
 app.include_router(user.router, prefix="/auth", tags=["Auth"])
+app.include_router(servicio.router, prefix="/servicios", tags=["Servicios"])
 
 
 @app.get("/")
