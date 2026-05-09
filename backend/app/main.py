@@ -5,6 +5,11 @@ from app.database import engine
 from app.routes import user
 from app.routes import negocio
 from app.routes import servicio
+from app.routes import empleado
+from app.routes import empleado_servicio
+from app.routes import horario_empleado
+from app.routes import cita
+from app.routes import calificacion
 
 app = FastAPI(title="SIGI-A Backend")
 
@@ -19,7 +24,23 @@ app.add_middleware(
 app.include_router(negocio.router, prefix="/negocios", tags=["Negocios"])
 app.include_router(user.router, prefix="/auth", tags=["Auth"])
 app.include_router(servicio.router, prefix="/servicios", tags=["Servicios"])
-
+app.include_router(empleado.router, prefix="/empleados", tags=["Empleados"])
+app.include_router(
+    empleado_servicio.router,
+    prefix="/empleado-servicio",
+    tags=["Empleado Servicio"]
+)
+app.include_router(
+    horario_empleado.router,
+    prefix="/horarios-empleado",
+    tags=["Horarios Empleado"]
+)
+app.include_router(cita.router, prefix="/citas", tags=["Citas"])
+app.include_router(
+    calificacion.router,
+    prefix="/calificaciones",
+    tags=["Calificaciones"]
+)
 
 @app.get("/")
 def root():
