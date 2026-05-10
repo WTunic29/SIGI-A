@@ -1,263 +1,294 @@
-# 🚀 SIGI-A Backend
+🚀 SIGI-A Backend
 
-Backend del sistema **SIGI-A (Sistema de Gestión Inteligente de Estética)**, desarrollado con **FastAPI** y **PostgreSQL**.
+Backend oficial de SIGI-A (Sistema de Gestión Inteligente de Estética).
 
-Este backend permite la gestión de usuarios (clientes y negocios), autenticación segura con **JWT**, y verificación en dos pasos (**2FA por correo**).
+SIGI-A es una plataforma tipo marketplace enfocada en:
 
----
+barberías
+estéticas
+tatuajes
+spa
+negocios de belleza y bienestar
 
-## 🧱 Tecnologías utilizadas
+El sistema permite:
 
-* Python 3.x
-* FastAPI
-* PostgreSQL
-* SQLAlchemy
-* JWT (Autenticación)
-* Passlib (Encriptación de contraseñas)
-* SMTP (Envío de correos - 2FA)
-
----
-
-## 📂 Estructura del proyecto
-
-```
+autenticación segura
+gestión de negocios
+gestión de empleados
+servicios
+citas
+inventario
+pedidos
+pagos
+carrito
+favoritos
+notificaciones
+auditoría
+control de sesiones
+seguridad enterprise
+🧱 Stack Tecnológico
+Backend
+Python 3
+FastAPI
+SQLAlchemy
+PostgreSQL
+Seguridad
+JWT
+Refresh Tokens
+2FA por correo
+bcrypt
+Rate Limiting
+Ownership Validation
+Control de Sesiones
+Roles y permisos
+Utilidades
+SMTP
+dotenv
+Swagger/OpenAPI
+📂 Arquitectura del Proyecto
 backend/
-├── app/               # Código del backend (FastAPI)
+│
+├── app/
 │   ├── core/
+│   │   ├── deps.py
+│   │   └── rate_limit.py
+│   │
 │   ├── models/
+│   │
 │   ├── routes/
+│   │
 │   ├── schemas/
+│   │
 │   ├── utils/
+│   │   ├── security.py
+│   │   └── email.py
+│   │
 │   ├── database.py
 │   └── main.py
+│
+├── venv/
+├── .env
 ├── .env.example
+├── requirements.txt
 └── README.md
-```
-
----
-
-## ⚙️ Configuración del entorno
-
-### 1. Crear entorno virtual
-
-```bash
+⚙️ Instalación del Proyecto
+1. Clonar repositorio
+git clone https://github.com/WTunic29/SIGI-A.git
+2. Entrar al backend
+cd SIGI-A/backend
+3. Crear entorno virtual
+Windows
 python -m venv venv
-```
-
-### 2. Activar entorno virtual
-
-**Windows:**
-
-```bash
+4. Activar entorno virtual
+Windows
 venv\Scripts\activate
-```
-
-**Mac/Linux:**
-
-```bash
+Linux / Mac
 source venv/bin/activate
-```
-
-### 3. Instalar dependencias
-
-Desde la raíz del proyecto:
-
-```bash
+5. Instalar dependencias
 pip install -r requirements.txt
-```
+6. Configurar variables de entorno
 
-O desde la carpeta `backend`:
+Crear archivo:
 
-```bash
-pip install -r ../requirements.txt
-```
+.env
 
----
+Ejemplo:
 
-### 4. Configurar variables de entorno
+DATABASE_URL=postgresql://postgres:password@localhost:5432/sigi_a
 
-Copiar `.env.example` y crear un archivo `.env` con los valores reales:
+SECRET_KEY=TU_SECRET_KEY
 
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/sigi_a
-SECRET_KEY=tu_clave_secreta
 ALGORITHM=HS256
+
 ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
 
----
+REFRESH_TOKEN_EXPIRE_DAYS=7
 
-## ▶️ Ejecutar el servidor
+EMAIL_USER=correo@gmail.com
 
-```bash
+EMAIL_PASSWORD=password_app_gmail
+▶️ Ejecutar Backend
 uvicorn app.main:app --reload
-```
+🌐 URLs importantes
+Backend
+http://127.0.0.1:8000
+Swagger
+http://127.0.0.1:8000/docs
+🗄️ Base de Datos
+Motor
+PostgreSQL
+Schema principal
+core
+📋 Módulos Implementados
+Autenticación
+Login
+Register
+JWT
+Refresh Token
+Logout
+2FA
+Sesiones activas
+Negocios
+CRUD negocios
+Ownership validation
+Protección por roles
+Servicios
+CRUD servicios
+Seguridad por negocio
+Empleados
+CRUD empleados
+Horarios
+Servicios asignados
+Citas
+Gestión completa de citas
+Detalle de cita
+Seguridad cliente/negocio
+Productos
+CRUD productos
+Inventario
+Movimientos stock
+Pedidos
+Pedidos
+Detalle pedido
+Carrito
+Favoritos
+Otros módulos
+Pagos
+Auditoría
+Notificaciones
+Recuperación contraseña
+Sesiones
+🔐 Seguridad Implementada
+JWT Authentication
 
-El backend estará disponible en `http://127.0.0.1:8000`.
+El backend usa:
 
----
+access token
+refresh token
+2FA
 
-## 🌐 URLs importantes
+Durante login:
 
-* Backend: `http://127.0.0.1:8000`
-* Documentación Swagger: `http://127.0.0.1:8000/docs`
+usuario ingresa credenciales
+sistema genera código
+código enviado por correo
+usuario valida código
+backend entrega JWT
+Roles
 
----
+Roles soportados:
 
-## 🔐 Autenticación y Seguridad
+cliente
+negocio
+admin
+Ownership Validation
 
-El sistema implementa:
+El sistema valida:
 
-* Contraseñas encriptadas
-* Autenticación con JWT
-* Protección de rutas
-* Roles (cliente / negocio)
-* Verificación en dos pasos (2FA por correo)
+clientes solo ven sus recursos
+negocios solo administran SU información
+admin puede acceder globalmente
 
----
+Ejemplos:
 
-## 🔄 Flujo de autenticación
+negocio no puede editar productos de otro negocio
+cliente no puede ver citas de otro cliente
+Rate Limiting
 
-### 1. Login
+Protección anti bruteforce:
 
-**POST** `/auth/login`
+login limitado
+verify-2fa limitado
+refresh limitado
+Password Hashing
 
-Body:
+Contraseñas protegidas con:
 
-```json
+bcrypt
+passlib
+Sesiones
+
+Se registran:
+
+token
+IP
+user-agent
+expiración
+estado sesión
+🔄 Flujo de Autenticación
+1. Login
+Endpoint
+POST /auth/login
+Body
 {
   "correo": "usuario@email.com",
   "password": "123456"
 }
-```
-
-Respuesta:
-
-```json
-{
-  "message": "Código 2FA enviado al correo",
-  "requiere_2fa": true,
-  "correo": "usuario@email.com"
-}
-```
-
----
-
-### 2. Verificación 2FA
-
-**POST** `/auth/verify-2fa`
-
-Body:
-
-```json
+2. Verificación 2FA
+Endpoint
+POST /auth/verify-2fa
+Body
 {
   "correo": "usuario@email.com",
   "codigo": "123456"
 }
-```
-
-Respuesta:
-
-```json
+3. Respuesta JWT
 {
-  "message": "2FA validado correctamente",
   "access_token": "TOKEN",
-  "token_type": "bearer",
-  "usuario": {
-    "id": 1,
-    "nombre": "...",
-    "correo": "...",
-    "rol": "cliente"
-  }
+  "refresh_token": "TOKEN",
+  "token_type": "bearer"
 }
-```
-
----
-
-### 3. Uso del token
-
-Guardar el token en el frontend:
-
-```js
-localStorage.setItem("token", access_token)
-```
-
-Enviar en cada petición protegida:
-
-```http
+4. Uso JWT
 Authorization: Bearer TOKEN
-```
+5. Refresh Token
+POST /auth/refresh
+6. Logout
+POST /auth/logout
 
----
+Invalida sesiones activas.
 
-### 4. Obtener usuario autenticado
+📡 Swagger
 
-**GET** `/auth/me`
+Swagger/OpenAPI disponible en:
 
+/docs
 
-Header:
+Permite:
 
-```
-Authorization: Bearer TOKEN
-```
+probar endpoints
+autenticación Bearer
+pruebas backend
+🚀 Estado Actual
+Backend
 
-Respuesta:
+✅ Arquitectura enterprise
+✅ Seguridad avanzada
+✅ JWT + Refresh Token
+✅ 2FA
+✅ Ownership Validation
+✅ Roles y permisos
+✅ Rate Limiting
+✅ CRUD completos
+✅ Swagger
+✅ PostgreSQL
+✅ Control sesiones
+✅ Auditoría
 
-```
-{
-  "id": 1,
-  "nombre": "...",
-  "correo": "...",
-  "rol": "cliente"
-}
-```
-
----
-
-## 👥 Roles
-
-El sistema maneja dos tipos de usuarios:
-
-* `cliente`
-* `negocio`
-
-El frontend debe redirigir según el rol después del login.
-
----
-
-## ⚠️ Notas importantes
-
-* El código 2FA expira en 5 minutos
-* Cada código solo puede usarse una vez
-* El backend permite conexiones desde frontend (CORS habilitado)
-* No subir el archivo `.env` ni la carpeta `venv/` al repositorio
-
----
-
-## 👨‍💻 Equipo de desarrollo
-
-* Brandon Esteban Melo Bolaños
-* Paula Andrea Villada Álvarez
-* Diego Alejandro Betancur Herrera
-* Christian Camilo Lopez
-
----
-
-## 📌 Estado del proyecto
-
-✔ Backend funcional
-✔ Autenticación completa (JWT + 2FA)
-✔ Listo para integración con frontend
-
----
-
-## 🚀 Próximos pasos
-
-* Integración con frontend
-* Panel de cliente
-* Panel de negocio
-* Gestión de citas
-* Inventario y servicios
-
-```
-```
+📌 Próximos Pasos
+Frontend
+Login UI
+Dashboard negocio
+Dashboard cliente
+Marketplace
+Producción
+Docker
+HTTPS
+Deploy cloud
+Nginx
+Swagger OFF producción
+CI/CD
+👨‍💻 Equipo de Desarrollo
+Brandon Esteban Melo Bolaños
+Paula Andrea Villada Álvarez
+Diego Alejandro Betancur Herrera
+Christian Camilo Lopez
