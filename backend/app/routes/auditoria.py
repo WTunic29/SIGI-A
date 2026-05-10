@@ -3,7 +3,15 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import SessionLocal
+
+from app.core.deps import (
+    get_current_user,
+    require_roles
+)
+
 from app.models.auditoria import Auditoria
+from app.models.user import Usuario
+
 from app.schemas.auditoria import (
     AuditoriaCreate,
     AuditoriaResponse
@@ -23,10 +31,17 @@ def get_db():
         db.close()
 
 
+# =========================
+# CREAR LOG
+# =========================
+
 @router.post("/", response_model=AuditoriaResponse)
 def crear_log(
     auditoria: AuditoriaCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin"])
+    )
 ):
 
     nuevo = Auditoria(
@@ -45,18 +60,32 @@ def crear_log(
     return nuevo
 
 
+# =========================
+# LISTAR LOGS
+# =========================
+
 @router.get("/", response_model=list[AuditoriaResponse])
 def listar_logs(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin"])
+    )
 ):
 
     return db.query(Auditoria).all()
 
 
+# =========================
+# OBTENER LOG
+# =========================
+
 @router.get("/{id_auditoria}", response_model=AuditoriaResponse)
 def obtener_log(
     id_auditoria: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin"])
+    )
 ):
 
     log = db.query(Auditoria).filter(
@@ -72,10 +101,17 @@ def obtener_log(
     return log
 
 
+# =========================
+# ELIMINAR LOG
+# =========================
+
 @router.delete("/{id_auditoria}")
 def eliminar_log(
     id_auditoria: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin"])
+    )
 ):
 
     log = db.query(Auditoria).filter(

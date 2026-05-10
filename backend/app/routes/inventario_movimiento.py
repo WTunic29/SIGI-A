@@ -3,8 +3,17 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
+
+from app.core.deps import (
+    get_current_user,
+    require_roles
+)
+
 from app.models.inventario_movimiento import InventarioMovimiento
 from app.models.producto import Producto
+from app.models.negocio import Negocio
+from app.models.user import Usuario
+
 from app.schemas.inventario_movimiento import (
     InventarioMovimientoCreate,
     InventarioMovimientoResponse
@@ -13,11 +22,50 @@ from app.schemas.inventario_movimiento import (
 router = APIRouter()
 
 
+# =========================
+# VALIDAR ACCESO PRODUCTO
+# =========================
+
+def validar_acceso_producto(
+    producto: Producto,
+    current_user: Usuario,
+    db: Session
+):
+
+    # ADMIN
+    if current_user.rol == "admin":
+        return
+
+    negocio = db.query(Negocio).filter(
+        Negocio.id_usuario_propietario == current_user.id_usuario
+    ).first()
+
+    if not negocio:
+        raise HTTPException(
+            status_code=404,
+            detail="Negocio no encontrado"
+        )
+
+    if producto.id_negocio != negocio.id_negocio:
+        raise HTTPException(
+            status_code=403,
+            detail="No autorizado"
+        )
+
+
+# =========================
+# CREAR MOVIMIENTO
+# =========================
+
 @router.post("/", response_model=InventarioMovimientoResponse)
 def crear_movimiento(
     movimiento: InventarioMovimientoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["negocio", "admin"])
+    )
 ):
+
     producto = db.query(Producto).filter(
         Producto.id_producto == movimiento.id_producto
     ).first()
@@ -27,6 +75,12 @@ def crear_movimiento(
             status_code=404,
             detail="Producto no encontrado"
         )
+
+    validar_acceso_producto(
+        producto,
+        current_user,
+        db
+    )
 
     if movimiento.tipo_movimiento not in ["entrada", "salida"]:
         raise HTTPException(
@@ -38,6 +92,7 @@ def crear_movimiento(
         producto.stock += movimiento.cantidad
 
     if movimiento.tipo_movimiento == "salida":
+
         if producto.stock < movimiento.cantidad:
             raise HTTPException(
                 status_code=400,
@@ -54,18 +109,41 @@ def crear_movimiento(
     )
 
     db.add(nuevo_movimiento)
-
     db.commit()
     db.refresh(nuevo_movimiento)
 
     return nuevo_movimiento
 
 
+# =========================
+# LISTAR MOVIMIENTOS
+# =========================
+
 @router.get("/{id_producto}", response_model=List[InventarioMovimientoResponse])
 def listar_movimientos_producto(
     id_producto: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["negocio", "admin"])
+    )
 ):
+
+    producto = db.query(Producto).filter(
+        Producto.id_producto == id_producto
+    ).first()
+
+    if not producto:
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado"
+        )
+
+    validar_acceso_producto(
+        producto,
+        current_user,
+        db
+    )
+
     return db.query(InventarioMovimiento).filter(
         InventarioMovimiento.id_producto == id_producto
     ).all()

@@ -4,7 +4,7 @@ from typing import Optional
 
 
 class CalificacionCreate(BaseModel):
-    id_cliente: int
+    id_cliente: Optional[int] = None
     id_negocio: int
     id_cita: int
     puntuacion: int
@@ -17,7 +17,7 @@ class CalificacionUpdate(BaseModel):
 
 
 class CalificacionResponse(BaseModel):
-    id_calificacion: int
+    id_cliente: Optional[int] = None
     id_cliente: int
     id_negocio: int
     id_cita: int

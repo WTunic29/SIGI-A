@@ -5,7 +5,7 @@ from typing import Optional
 
 
 class CitaCreate(BaseModel):
-    id_cliente: int
+    id_cliente: Optional[int] = None
     id_negocio: int
     id_empleado: int
     fecha: date

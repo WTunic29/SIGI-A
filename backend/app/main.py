@@ -22,8 +22,23 @@ from app.routes import favorito
 from app.routes import token_recuperacion
 from app.routes import sesion
 from app.routes import auditoria
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.extension import _rate_limit_exceeded_handler
+
+from app.core.rate_limit import limiter
 
 app = FastAPI(title="SIGI-A Backend")
+
+
+app.state.limiter = limiter
+
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler
+)
+
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

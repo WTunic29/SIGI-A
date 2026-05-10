@@ -1,18 +1,32 @@
 import random
 from datetime import datetime, timedelta
+from fastapi import Request
+from datetime import datetime, timedelta
+from jose import jwt, JWTError
+from app.utils.security import SECRET_KEY, ALGORITHM
+from app.core.rate_limit import limiter
+from fastapi import Request
 
 from app.models.codigo_2fa import Codigo2FA
 from app.schemas.user import Verificar2FA
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from app.models.sesion import Sesion
 
 from app.database import get_db
 from app.models.user import Usuario
 from app.schemas.user import UsuarioCreate, UsuarioLogin
-from app.utils.security import hash_password, verify_password, create_access_token
 from app.core.deps import get_current_user
 from app.core.deps import require_role
 from app.utils.email import enviar_codigo_email
+from app.utils.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_DAYS
+)
 
 router = APIRouter()
 
@@ -75,8 +89,13 @@ def solo_negocio(user: Usuario = Depends(require_role("negocio"))):
         "usuario": user.nombre
     }
 
+@limiter.limit("5/minute")
 @router.post("/login")
-def login_user(user: UsuarioLogin, db: Session = Depends(get_db)):
+def login_user(
+    request: Request,
+    user: UsuarioLogin,
+    db: Session = Depends(get_db)
+):
     try:
         usuario = db.query(Usuario).filter(Usuario.correo == user.correo).first()
 
@@ -113,13 +132,24 @@ def login_user(user: UsuarioLogin, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+@limiter.limit("5/minute")
 @router.post("/verify-2fa")
-def verify_2fa(data: Verificar2FA, db: Session = Depends(get_db)):
+def verify_2fa(
+    data: Verificar2FA,
+    request: Request,
+    db: Session = Depends(get_db)
+):
     try:
-        usuario = db.query(Usuario).filter(Usuario.correo == data.correo).first()
+
+        usuario = db.query(Usuario).filter(
+            Usuario.correo == data.correo
+        ).first()
 
         if not usuario:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado"
+            )
 
         codigo_db = (
             db.query(Codigo2FA)
@@ -133,25 +163,58 @@ def verify_2fa(data: Verificar2FA, db: Session = Depends(get_db)):
         )
 
         if not codigo_db:
-            raise HTTPException(status_code=400, detail="Código 2FA inválido")
+            raise HTTPException(
+                status_code=400,
+                detail="Código 2FA inválido"
+            )
 
         if codigo_db.fecha_expiracion < datetime.utcnow():
-            raise HTTPException(status_code=400, detail="Código 2FA expirado")
+            raise HTTPException(
+                status_code=400,
+                detail="Código 2FA expirado"
+            )
 
         codigo_db.usado = True
-        db.commit()
 
         access_token = create_access_token(
+            data={
+                "sub": usuario.correo,
+                "id_usuario": usuario.id_usuario,
+                "rol": usuario.rol
+            }
+        )
+
+        refresh_token = create_refresh_token(
             data={
                 "sub": usuario.correo,
                 "id_usuario": usuario.id_usuario
             }
         )
 
+        nueva_sesion = Sesion(
+            id_usuario=usuario.id_usuario,
+            token=access_token,
+            fecha_inicio=datetime.utcnow(),
+            fecha_expiracion=datetime.utcnow() + timedelta(
+                days=REFRESH_TOKEN_EXPIRE_DAYS
+            ),
+            ip=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            activa=True
+        )
+
+        db.add(nueva_sesion)
+
+        db.commit()
+
         return {
             "message": "2FA validado correctamente",
+
             "access_token": access_token,
+            "refresh_token": refresh_token,
+
             "token_type": "bearer",
+
             "usuario": {
                 "id": usuario.id_usuario,
                 "nombre": usuario.nombre,
@@ -165,4 +228,89 @@ def verify_2fa(data: Verificar2FA, db: Session = Depends(get_db)):
         raise
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+# =========================
+# REFRESH TOKEN
+# =========================
+
+@router.post("/refresh")
+def refresh_token(
+    refresh_token: str,
+    db: Session = Depends(get_db)
+):
+
+    try:
+
+        payload = jwt.decode(
+            refresh_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        token_type = payload.get("type")
+
+        if token_type != "refresh":
+            raise HTTPException(
+                status_code=401,
+                detail="Token inválido"
+            )
+
+        correo = payload.get("sub")
+
+        usuario = db.query(Usuario).filter(
+            Usuario.correo == correo
+        ).first()
+
+        if not usuario:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado"
+            )
+
+        nuevo_access_token = create_access_token(
+            data={
+                "sub": usuario.correo,
+                "id_usuario": usuario.id_usuario,
+                "rol": usuario.rol
+            }
+        )
+
+        return {
+            "access_token": nuevo_access_token,
+            "token_type": "bearer"
+        }
+
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token inválido"
+        )
+
+
+# =========================
+# LOGOUT
+# =========================
+
+@router.post("/logout")
+def logout(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    sesiones = db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario,
+        Sesion.activa == True
+    ).all()
+
+    for sesion in sesiones:
+        sesion.activa = False
+
+    db.commit()
+
+    return {
+        "message": "Sesión cerrada correctamente"
+    }

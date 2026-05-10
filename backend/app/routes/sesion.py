@@ -3,7 +3,15 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import SessionLocal
+
+from app.core.deps import (
+    get_current_user,
+    require_roles
+)
+
 from app.models.sesion import Sesion
+from app.models.user import Usuario
+
 from app.schemas.sesion import (
     SesionCreate,
     SesionUpdate,
@@ -24,10 +32,37 @@ def get_db():
         db.close()
 
 
+# =========================
+# VALIDAR ACCESO SESION
+# =========================
+
+def validar_acceso_sesion(
+    sesion: Sesion,
+    current_user: Usuario
+):
+
+    # ADMIN
+    if current_user.rol == "admin":
+        return
+
+    if sesion.id_usuario != current_user.id_usuario:
+        raise HTTPException(
+            status_code=403,
+            detail="No autorizado"
+        )
+
+
+# =========================
+# CREAR SESION
+# =========================
+
 @router.post("/", response_model=SesionResponse)
 def crear_sesion(
     sesion: SesionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin"])
+    )
 ):
 
     nueva = Sesion(
@@ -47,18 +82,38 @@ def crear_sesion(
     return nueva
 
 
+# =========================
+# LISTAR SESIONES
+# =========================
+
 @router.get("/", response_model=list[SesionResponse])
 def listar_sesiones(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "negocio", "admin"])
+    )
 ):
 
-    return db.query(Sesion).all()
+    # ADMIN
+    if current_user.rol == "admin":
+        return db.query(Sesion).all()
 
+    return db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario
+    ).all()
+
+
+# =========================
+# OBTENER SESION
+# =========================
 
 @router.get("/{id_sesion}", response_model=SesionResponse)
 def obtener_sesion(
     id_sesion: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "negocio", "admin"])
+    )
 ):
 
     sesion = db.query(Sesion).filter(
@@ -71,14 +126,26 @@ def obtener_sesion(
             detail="Sesión no encontrada"
         )
 
+    validar_acceso_sesion(
+        sesion,
+        current_user
+    )
+
     return sesion
 
+
+# =========================
+# ACTUALIZAR SESION
+# =========================
 
 @router.put("/{id_sesion}", response_model=SesionResponse)
 def actualizar_sesion(
     id_sesion: int,
     datos: SesionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "negocio", "admin"])
+    )
 ):
 
     sesion = db.query(Sesion).filter(
@@ -90,6 +157,11 @@ def actualizar_sesion(
             status_code=404,
             detail="Sesión no encontrada"
         )
+
+    validar_acceso_sesion(
+        sesion,
+        current_user
+    )
 
     update_data = datos.model_dump(exclude_unset=True)
 
@@ -102,10 +174,17 @@ def actualizar_sesion(
     return sesion
 
 
+# =========================
+# ELIMINAR SESION
+# =========================
+
 @router.delete("/{id_sesion}")
 def eliminar_sesion(
     id_sesion: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "negocio", "admin"])
+    )
 ):
 
     sesion = db.query(Sesion).filter(
@@ -117,6 +196,11 @@ def eliminar_sesion(
             status_code=404,
             detail="Sesión no encontrada"
         )
+
+    validar_acceso_sesion(
+        sesion,
+        current_user
+    )
 
     db.delete(sesion)
     db.commit()

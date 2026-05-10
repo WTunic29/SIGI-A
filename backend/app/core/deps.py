@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import Usuario
+from app.models.sesion import Sesion
 from app.utils.security import SECRET_KEY, ALGORITHM
 
 bearer_scheme = HTTPBearer()
@@ -32,12 +33,23 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    usuario = db.query(Usuario).filter(Usuario.correo == correo).first()
+    usuario = db.query(Usuario).filter(
+        Usuario.correo == correo
+    ).first()
 
     if usuario is None:
         raise credentials_exception
 
+    sesion = db.query(Sesion).filter(
+        Sesion.token == token,
+        Sesion.activa == True
+    ).first()
+
+    if not sesion:
+        raise credentials_exception
+
     return usuario
+
 
 def require_role(role: str):
     def role_dependency(current_user: Usuario = Depends(get_current_user)):
@@ -48,3 +60,14 @@ def require_role(role: str):
             )
         return current_user
     return role_dependency
+
+
+def require_roles(roles: list[str]):
+    def roles_dependency(current_user: Usuario = Depends(get_current_user)):
+        if current_user.rol not in roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Acceso denegado. Roles permitidos: {roles}"
+            )
+        return current_user
+    return roles_dependency
