@@ -44,3 +44,20 @@ Thumbs.db
 *.log
 npm-debug.log
 yarn-error.log
+
+# Docker
+logs/
+docker-data/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/

@@ -25,11 +25,24 @@ from app.routes import auditoria
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.extension import _rate_limit_exceeded_handler
+from app.middleware.security_logs import SecurityLogsMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.core.logging_config import *
+import os
 
 from app.core.rate_limit import limiter
 
-app = FastAPI(title="SIGI-A Backend")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+app = FastAPI(
+    title="SIGI-A Backend",
+
+    docs_url=None if ENVIRONMENT == "production" else "/docs",
+
+    redoc_url=None if ENVIRONMENT == "production" else "/redoc",
+
+    openapi_url=None if ENVIRONMENT == "production" else "/openapi.json"
+)
 
 app.state.limiter = limiter
 
@@ -39,6 +52,9 @@ app.add_exception_handler(
 )
 
 app.add_middleware(SlowAPIMiddleware)
+
+app.add_middleware(SecurityLogsMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
