@@ -297,18 +297,33 @@ def refresh_token(
 
 @router.post("/logout")
 def logout(
+    request: Request,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    auth_header = request.headers.get("Authorization")
 
-    sesiones = db.query(Sesion).filter(
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Token no enviado"
+        )
+
+    token_actual = auth_header.replace("Bearer ", "")
+
+    sesion = db.query(Sesion).filter(
         Sesion.id_usuario == current_user.id_usuario,
+        Sesion.token == token_actual,
         Sesion.activa == True
-    ).all()
+    ).first()
 
-    for sesion in sesiones:
-        sesion.activa = False
+    if not sesion:
+        raise HTTPException(
+            status_code=401,
+            detail="Sesión no encontrada o ya cerrada"
+        )
 
+    sesion.activa = False
     db.commit()
 
     return {
