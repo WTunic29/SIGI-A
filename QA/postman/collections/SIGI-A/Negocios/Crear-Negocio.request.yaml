@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿$kind: http-request
+=======
+$kind: http-request
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 name: Crear Negocio
 description: 'Crea un nuevo negocio para el usuario autenticado con rol negocio. El propietario se toma del token JWT. Requiere autenticacion JWT con rol negocio.'
 method: POST
@@ -35,4 +39,8 @@ scripts:
         pm.test("Negocio tiene telefono", () => pm.expect(negocio).to.have.property("telefono"));
         pm.test("Negocio tiene correo", () => pm.expect(negocio).to.have.property("correo"));
         pm.environment.set("id_negocio", negocio.id);
+<<<<<<< HEAD
       }
+=======
+      }
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

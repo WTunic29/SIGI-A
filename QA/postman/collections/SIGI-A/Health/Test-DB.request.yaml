@@ -1,6 +1,11 @@
 $kind: http-request
+<<<<<<< HEAD
 name: Test DB
 description: Verifica la conectividad con la base de datos. Útil para diagnosticar problemas de infraestructura.
+=======
+name: Test-DB
+description: 'Verifica conexión a la base de datos'
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 method: GET
 url: '{{base_url}}/test-db'
 order: 2000
@@ -8,7 +13,15 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
+<<<<<<< HEAD
       pm.test("Status 200 - Endpoint accesible", () => pm.response.to.have.status(200));
       pm.test("Respuesta tiene campo database", () => pm.expect(pm.response.json()).to.have.property("database"));
       pm.test("DB conectada", () => pm.expect(pm.response.json().database).to.eql("conectada"));
       pm.test("Tiempo de respuesta < 2000ms", () => pm.expect(pm.response.responseTime).to.be.below(2000));
+=======
+      pm.test("Status 200 - DB conectada", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene database", () => pm.expect(pm.response.json()).to.have.property("database"));
+      pm.test("Respuesta tiene resultado", () => pm.expect(pm.response.json()).to.have.property("resultado"));
+      pm.test("Database está conectada", () => pm.expect(pm.response.json().database).to.eql("conectada"));
+      pm.test("Resultado es 1", () => pm.expect(pm.response.json().resultado).to.eql(1));
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

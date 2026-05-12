@@ -1,6 +1,10 @@
 $kind: http-request
 name: Root
+<<<<<<< HEAD
 description: Verifica que el servidor backend esté en línea y respondiendo correctamente.
+=======
+description: 'Verifica que el servidor esté corriendo'
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 method: GET
 url: '{{base_url}}/'
 order: 1000
@@ -8,6 +12,12 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
+<<<<<<< HEAD
       pm.test("Status 200 - Servidor en línea", () => pm.response.to.have.status(200));
       pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));
       pm.test("Backend funcionando", () => pm.expect(pm.response.json().message).to.be.a("string").and.not.empty);
+=======
+      pm.test("Status 200 - Backend funcionando", () => pm.response.to.have.status(200));
+      pm.test("Respuesta tiene message", () => pm.expect(pm.response.json()).to.have.property("message"));
+      pm.test("Mensaje contiene SIGI-A", () => pm.expect(pm.response.json().message).to.include("SIGI-A"));
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

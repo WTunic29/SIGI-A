@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿$kind: http-request
+=======
+$kind: http-request
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 name: Listar Negocios
 description: 'Obtiene la lista de todos los negocios registrados. No requiere autenticacion.'
 method: GET
@@ -15,4 +19,12 @@ scripts:
         const n = negocios[0];
         pm.test("Negocio tiene id_negocio", () => pm.expect(n).to.have.property("id_negocio"));
         pm.test("Negocio tiene nombre_negocio", () => pm.expect(n).to.have.property("nombre_negocio"));
+<<<<<<< HEAD
       }
+=======
+        pm.test("Negocio tiene descripcion", () => pm.expect(n).to.have.property("descripcion"));
+        pm.test("Negocio tiene direccion", () => pm.expect(n).to.have.property("direccion"));
+        pm.test("Negocio tiene telefono", () => pm.expect(n).to.have.property("telefono"));
+        pm.test("Negocio tiene email_negocio", () => pm.expect(n).to.have.property("email_negocio"));
+      }
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

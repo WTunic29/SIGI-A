@@ -33,7 +33,11 @@ scripts:
       });
       pm.test("Rol retornado es válido", function () {
           const json = pm.response.json();
+<<<<<<< HEAD
           pm.expect(["cliente", "negocio", "admin"]).to.include(json.usuario.rol);
+=======
+          pm.expect(["cliente", "negocio"]).to.include(json.usuario.rol);
+>>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
       });
       if (pm.response.code === 201) {
           pm.environment.set("id_usuario", pm.response.json().usuario.id);

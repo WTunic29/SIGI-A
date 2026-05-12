@@ -13,16 +13,11 @@ SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimiza
 ### **Backend (FastAPI + PostgreSQL)**
 - **API RESTful** con autenticación JWT + 2FA
 - **Base de datos relacional** con schema optimizado
-<<<<<<< HEAD
-- **Roles de usuario**: cliente y negocio
-- **Endpoints seguros** para gestión completa
-=======
 - **Roles de usuario**: cliente, negocio, admin
 - **22 modelos SQLAlchemy** con relaciones enterprise
 - **20 schemas Pydantic** para validación automática
 - **21 endpoints FastAPI** con seguridad completa
 - **Testing profesional** con pytest y coverage
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
 ### **Frontend (Web)**
 - **Interfaz responsiva** HTML/CSS/JavaScript
@@ -35,10 +30,7 @@ SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimiza
 - **9 endpoints automatizados**
 - **Validaciones completas** de API
 - **Flujo de testing** documentado
-<<<<<<< HEAD
-=======
 - **Suite pytest profesional** para backend
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
 ---
 
@@ -60,32 +52,6 @@ Los negocios pueden:
 
 ---
 
-<<<<<<< HEAD
-## Estructura del proyecto
-
-```
-SIGI-A/
-├── backend/
-│   ├── app/               # Código del backend (FastAPI)
-│   ├── .env.example       # Ejemplo de variables de entorno del backend
-│   └── README.md          # Documentación del backend
-├── frontend/              # Archivos estáticos e interfaz
-│   ├── CSS/
-│   ├── JS/
-│   ├── SIGI-E/
-│   └── index.html
-├── QA/                    # Postman y pruebas de API
-│   ├── .postman/
-│   ├── postman/
-│   └── README.md
-├── database/              # Scripts SQL
-│   ├── schema_actual.sql
-│   └── seeds_actual.sql
-├── .env.example           # Variables de entorno generales
-├── .gitignore
-├── README.md
-└── requirements.txt       # Dependencias Python
-=======
 ## 📁 **Estructura del Proyecto**
 
 ```
@@ -131,12 +97,10 @@ SIGI-A/
 │
 ├── scripts/               # Scripts mantenimiento
 ├── docker-compose.yml     # Orquestación contenedores
-├── docker-compose.dev.yml # Configuración desarrollo
 ├── .env.example          # Variables entorno generales
 ├── .gitignore
 ├── requirements.txt       # Dependencias Python
 └── README.md             # Documentación general
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 ```
 
 ---
@@ -210,16 +174,6 @@ Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/po
 - **Control de Inventario**: Gestiona stock y productos
 - **Reportes y Métricas**: Analiza rendimiento del negocio
 
-<<<<<<< HEAD
-## **Stack Tecnológico**
-
-- **Backend**: Python 3.x, FastAPI, SQLAlchemy, PostgreSQL
-- **Frontend**: HTML5, CSS3, JavaScript Vanilla
-- **Autenticación**: JWT + 2FA por email
-- **Base de Datos**: PostgreSQL con Docker
-- **Testing**: Postman collections automatizadas
-- **Despliegue**: Docker Compose
-=======
 ## 🛠️ **Stack Tecnológico**
 
 ### **Backend**
@@ -247,20 +201,11 @@ Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/po
 - **Testing QA**: Postman collections automatizadas
 - **Documentación**: Swagger/OpenAPI
 - **Logging**: Middleware personalizado
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
 ## 📊 **Estado Actual del Proyecto**
 
 | Componente | Estado | Completado |
 |------------|--------|------------|
-<<<<<<< HEAD
-| Backend API | Funcional | 85% |
-| Autenticación | Completa | 100% |
-| Frontend UI | Básico | 40% |
-| Base de Datos | Estructura | 90% |
-| QA Testing | Automatizado | 100% |
-| Documentación | Completa | 95% |
-=======
 | Backend API | ✅ Enterprise | 100% |
 | Models SQLAlchemy | ✅ Completo | 22/22 |
 | Schemas Pydantic | ✅ Completo | 20/20 |
@@ -272,7 +217,6 @@ Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/po
 | QA Postman | ✅ Funcional | 100% |
 | Docker Config | ✅ Listo | 100% |
 | Documentación | ✅ Completa | 100% |
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
 ## **Propuesta de Valor**
 
@@ -287,13 +231,6 @@ El proyecto está **listo para producción** con un backend robusto, QA completo
 
 ---
 
-<<<<<<< HEAD
-## Mejora recomendada
-
-- Mantener un solo archivo `requirements.txt` en la raíz para evitar duplicados.
-- Documentar claramente el uso de `QA/postman` en `QA/README.md`.
-- Añadir pruebas automáticas y validación de esquema en el backend para mejorar la calidad.
-=======
 ## 🧪 **Testing Profesional**
 
 ### **Backend Testing Suite**
@@ -394,5 +331,4 @@ SIGI-A transforma la gestión tradicional de centros de estética en una **exper
 - **Crecimiento**: Herramientas analíticas para tomar decisiones
 
 **El proyecto está listo para producción con un backend enterprise-ready, testing completo y arquitectura escalable.** 🚀
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
