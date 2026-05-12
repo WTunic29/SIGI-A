@@ -149,7 +149,10 @@ def listar_empleados(
 @router.get("/{id_empleado}", response_model=EmpleadoResponse)
 def obtener_empleado(
     id_empleado: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["negocio", "admin"])
+    )
 ):
 
     empleado = db.query(Empleado).filter(
@@ -162,8 +165,13 @@ def obtener_empleado(
             detail="Empleado no encontrado"
         )
 
-    return empleado
+    validar_acceso_empleado(
+        empleado,
+        current_user,
+        db
+    )
 
+    return empleado
 
 # =========================
 # ACTUALIZAR EMPLEADO

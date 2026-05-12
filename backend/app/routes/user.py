@@ -279,6 +279,19 @@ def refresh_token(
             }
         )
 
+        nueva_sesion = Sesion(
+            id_usuario=usuario.id_usuario,
+            token=nuevo_access_token,
+            fecha_inicio=datetime.utcnow(),
+            fecha_expiracion=datetime.utcnow() + timedelta(
+                days=REFRESH_TOKEN_EXPIRE_DAYS
+            ),
+            activa=True
+        )
+
+        db.add(nueva_sesion)
+        db.commit()
+
         return {
             "access_token": nuevo_access_token,
             "token_type": "bearer"
@@ -289,8 +302,6 @@ def refresh_token(
             status_code=401,
             detail="Refresh token inválido"
         )
-
-
 # =========================
 # LOGOUT
 # =========================

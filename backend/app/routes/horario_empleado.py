@@ -102,18 +102,45 @@ def crear_horario(
 # LISTAR HORARIOS
 # =========================
 
-@router.get("/{id_empleado}", response_model=List[HorarioEmpleadoResponse])
+@router.get("/{id_empleado}")
 def listar_horarios_empleado(
     id_empleado: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "negocio", "admin"])
+    )
 ):
+
+    empleado = db.query(Empleado).filter(
+        Empleado.id_empleado == id_empleado
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="Empleado no encontrado"
+        )
+
+    if current_user.rol == "negocio":
+        validar_acceso_horario(
+            empleado,
+            current_user,
+            db
+        )
 
     horarios = db.query(HorarioEmpleado).filter(
         HorarioEmpleado.id_empleado == id_empleado
     ).all()
 
-    return horarios
-
+    return {
+        "empleado": {
+            "id_empleado": empleado.id_empleado,
+            "nombre": empleado.nombre,
+            "apellido": empleado.apellido,
+            "especialidad": empleado.especialidad
+        },
+        "horarios": horarios
+    }
 
 # =========================
 # ACTUALIZAR HORARIO
