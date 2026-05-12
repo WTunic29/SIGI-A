@@ -97,7 +97,6 @@ SIGI-A/
 │
 ├── scripts/               # Scripts mantenimiento
 ├── docker-compose.yml     # Orquestación contenedores
-├── docker-compose.dev.yml # Configuración desarrollo
 ├── .env.example          # Variables entorno generales
 ├── .gitignore
 ├── requirements.txt       # Dependencias Python
