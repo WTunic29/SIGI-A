@@ -1,8 +1,10 @@
 $kind: http-request
 name: Listar Empleados del Negocio
-description: Obtiene todos los empleados asociados a un negocio específico. Requiere autenticación JWT.
+description: >-
+  GET /empleados/ — lista empleados del negocio del usuario (rol negocio) o todos (admin).
+  Requiere Bearer {{token}}.
 method: GET
-url: '{{base_url}}/negocios/{{id_negocio}}/empleados'
+url: '{{base_url}}/empleados/'
 order: 2000
 headers:
   - key: Authorization
@@ -16,7 +18,7 @@ scripts:
       const empleados = pm.response.json();
       if (empleados.length > 0) {
         const e = empleados[0];
-        pm.test("Empleado tiene id", () => pm.expect(e).to.have.property("id"));
+        pm.test("Empleado tiene id_empleado", () => pm.expect(e).to.have.property("id_empleado"));
         pm.test("Empleado tiene nombre", () => pm.expect(e).to.have.property("nombre"));
         pm.test("Empleado tiene id_negocio", () => pm.expect(e).to.have.property("id_negocio"));
         pm.test("Estado es válido", () => pm.expect(e.estado).to.be.oneOf(["activo", "inactivo"]));
