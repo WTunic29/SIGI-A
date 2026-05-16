@@ -2,6 +2,8 @@ from sqlalchemy import (
     Column,
     BigInteger,
     String,
+    Date,
+    Time,
     TIMESTAMP,
     Text
 )
@@ -16,19 +18,14 @@ class Cita(Base):
     id_cita = Column(BigInteger, primary_key=True, index=True)
 
     id_cliente = Column(BigInteger, nullable=False)
-
     id_negocio = Column(BigInteger, nullable=False)
-
     id_empleado = Column(BigInteger, nullable=False)
 
-    fecha_hora_inicio = Column(TIMESTAMP, nullable=False)
+    fecha = Column(Date, nullable=False)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fin = Column(Time, nullable=False)
 
-    fecha_hora_fin = Column(TIMESTAMP, nullable=False)
-
-    estado = Column(
-        String(30),
-        nullable=False,
-        default="pendiente"
-    )
-
+    estado = Column(String(30), nullable=False, default="pendiente")
     observaciones = Column(Text)
+
+    fecha_creacion = Column(TIMESTAMP)

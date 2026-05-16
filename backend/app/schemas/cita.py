@@ -27,10 +27,12 @@ class CitaResponse(BaseModel):
     id_cliente: int
     id_negocio: int
     id_empleado: int
-    fecha_hora_inicio: datetime
-    fecha_hora_fin: datetime
+    fecha: date
+    hora_inicio: time
+    hora_fin: time
     estado: str
     observaciones: Optional[str]
+    fecha_creacion: datetime
 
     class Config:
         from_attributes = True
