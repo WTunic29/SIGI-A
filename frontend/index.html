@@ -27,6 +27,10 @@
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
       <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
+      <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
+      <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
+      <a href="#" class="menu-cliente" onclick="irMisPedidos()">Mis pedidos</a>
+      <a href="#" class="menu-cliente" onclick="irMisCalificaciones()">Calificaciones</a>
       <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
       <a href="#" class="menu-negocio" onclick="irGestionEmpleados()">Empleados</a>
       <a href="#" class="menu-negocio" onclick="irGestionServicios()">Servicios</a>
@@ -306,6 +310,13 @@
       <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
 
+    <div class="module-grid client-actions">
+      <article class="module-card"><span>Agenda</span><h3>Mis citas</h3><p>Consulta tus citas pendientes, canceladas y las que ya pasaron.</p><button onclick="irMisCitas()">Ver mis citas</button></article>
+      <article class="module-card"><span>Tienda</span><h3>Productos</h3><p>Consulta productos disponibles y crea pedidos.</p><button onclick="irTiendaUsuario()">Ver productos</button></article>
+      <article class="module-card"><span>Compras</span><h3>Mis pedidos</h3><p>Revisa tus pedidos y registra pagos.</p><button onclick="irMisPedidos()">Ver pedidos</button></article>
+      <article class="module-card"><span>Opiniones</span><h3>Calificaciones</h3><p>Consulta y registra calificaciones de tus citas.</p><button onclick="irMisCalificaciones()">Ver calificaciones</button></article>
+    </div>
+
     <div class="toolbar">
       <input type="search" id="buscarNegocio" placeholder="Buscar negocio por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
       <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
@@ -537,6 +548,38 @@
     <div class="list-header"><h3>Citas del negocio</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
     <div id="listaCitas" class="admin-list"></div>
     <span id="citasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-citas-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Agenda personal</p><h1 class="dashboard-title">Mis <span>Citas</span></h1><p class="muted">Consulta tus citas y califica cuando ya hayan pasado.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCitas()">Actualizar</button><button class="btn-secondary clean" onclick="irVerNegocios()">Agendar nueva cita</button></div>
+    <div id="listaMisCitas" class="admin-list"></div><span id="misCitasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-calificaciones-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Opiniones</p><h1 class="dashboard-title">Mis <span>Calificaciones</span></h1><p class="muted">Historial de calificaciones realizadas.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCalificaciones()">Actualizar</button></div>
+    <div id="listaMisCalificaciones" class="admin-list"></div><span id="misCalificacionesMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="tienda-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Productos</p><h1 class="dashboard-title">Tienda <span>SIGI-E</span></h1><p class="muted">Productos activos publicados por los negocios.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><input type="search" id="buscarProductoUsuario" placeholder="Buscar producto..." oninput="filtrarProductosUsuario()" /><button class="btn-primary" onclick="cargarProductosUsuario()">Actualizar</button></div>
+    <div id="listaProductosUsuario" class="business-grid"></div><span id="tiendaUsuarioMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-pedidos-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Compras</p><h1 class="dashboard-title">Mis <span>Pedidos</span></h1><p class="muted">Consulta pedidos y registra pagos.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisPedidos()">Actualizar</button><button class="btn-secondary clean" onclick="irTiendaUsuario()">Crear pedido</button></div>
+    <div id="listaMisPedidos" class="admin-list"></div><span id="misPedidosMsg" class="form-msg"></span>
   </div>
 </section>
 

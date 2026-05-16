@@ -41,6 +41,7 @@ function actualizarNavbar() {
   const menuRegistrarNegocio = document.getElementById("menuRegistrarNegocio");
   const menuValidarAcceso = document.getElementById("menuValidarAcceso");
   const menuNegocioItems = document.querySelectorAll(".menu-negocio");
+  const menuClienteItems = document.querySelectorAll(".menu-cliente");
 
   if (!usuario) {
     if (navGuest) navGuest.style.display = "flex";
@@ -52,10 +53,13 @@ function actualizarNavbar() {
   if (navUser) navUser.style.display = "block";
   if (navUserName) navUserName.textContent = usuario.nombre || usuario.correo || "Usuario";
 
-  const esNegocio = normalizarRol(usuario.rol) === "negocio";
+  const rolActual = normalizarRol(usuario.rol);
+  const esNegocio = rolActual === "negocio";
+  const esCliente = rolActual === "cliente";
   if (menuRegistrarNegocio) menuRegistrarNegocio.style.display = esNegocio ? "block" : "none";
   if (menuValidarAcceso) menuValidarAcceso.style.display = esNegocio ? "block" : "none";
   menuNegocioItems.forEach(item => item.style.display = esNegocio ? "block" : "none");
+  menuClienteItems.forEach(item => item.style.display = esCliente ? "block" : "none");
 }
 
 // ─────────────────────────────────────────────
@@ -65,7 +69,8 @@ const TODAS = [
   "inicio", "cta", "login", "registro", "verify2fa",
   "dashboard-negocio", "dashboard-usuario", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
-  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio"
+  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
+  "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario"
 ];
 
 function setVisible(show, hide = TODAS) {
@@ -625,6 +630,10 @@ const API_PATHS = {
   citas: "/citas/",
   inventario: "/inventario-movimientos/",
   horarios: "/horarios-empleado/",
+  calificaciones: "/calificaciones/",
+  pedidos: "/pedidos/",
+  pagos: "/pagos/",
+  pedidoDetalle: "/pedido-detalle/",
 };
 
 
@@ -1062,6 +1071,314 @@ async function cargarHorariosEmpleadoCliente(idEmpleado) {
     info.textContent = "No se pudieron cargar los horarios. Revisa que exista /horarios-empleado/ en el backend desplegado.";
   }
 }
+
+
+// ─────────────────────────────────────────────
+// MÓDULOS USUARIO: MIS CITAS / CALIFICACIONES / PEDIDOS / PAGOS
+// ─────────────────────────────────────────────
+let misCitasCache = [];
+let misCalificacionesCache = [];
+let productosUsuarioCache = [];
+let misPedidosCache = [];
+let misPagosCache = [];
+
+function obtenerIdUsuarioActual() {
+  const usuario = getUsuario();
+  return Number(usuario?.id_usuario || usuario?.id || usuario?.usuario_id);
+}
+
+function asegurarRolCliente() {
+  const usuario = getUsuario();
+  if (!usuario || !getToken()) { mostrarLogin(); return false; }
+  if (normalizarRol(usuario.rol) !== "cliente" && normalizarRol(usuario.rol) !== "admin") {
+    alert("Esta opción es para cuentas tipo usuario/cliente.");
+    irDashboardPorRol();
+    return false;
+  }
+  return true;
+}
+
+function mostrarModuloCliente(id) {
+  if (!asegurarRolCliente()) return;
+  setVisible([id]);
+}
+
+function fechaHoraCita(cita, fin = false) {
+  const fecha = cita.fecha || String(cita.fecha_hora_inicio || "").slice(0, 10);
+  const hora = fin
+    ? (cita.hora_fin || String(cita.fecha_hora_fin || "").slice(11, 19))
+    : (cita.hora_inicio || String(cita.fecha_hora_inicio || "").slice(11, 19));
+  if (!fecha || !hora) return null;
+  return new Date(`${fecha}T${String(hora).slice(0, 8)}`);
+}
+
+function citaYaPaso(cita) {
+  const fin = fechaHoraCita(cita, true) || fechaHoraCita(cita, false);
+  return fin ? fin.getTime() < Date.now() : false;
+}
+
+function estadoVisualCita(cita) {
+  const estado = String(cita.estado || "pendiente").toLowerCase();
+  if (estado === "cancelada" || estado === "cancelado") return "Cancelada";
+  if (citaYaPaso(cita)) return "Ya pasó";
+  return estado.charAt(0).toUpperCase() + estado.slice(1);
+}
+
+function negocioNombrePorId(idNegocio) {
+  const n = negociosCache.find(x => Number(obtenerIdNegocio(x)) === Number(idNegocio));
+  return campoNegocio(n, "nombre_negocio", "nombre") || `Negocio #${idNegocio}`;
+}
+
+function empleadoNombrePorId(idEmpleado) {
+  const e = empleadosCache.find(x => Number(x.id_empleado) === Number(idEmpleado));
+  return e ? `${e.nombre || ""} ${e.apellido || ""}`.trim() : `Empleado #${idEmpleado}`;
+}
+
+async function irMisCitas() {
+  mostrarModuloCliente("mis-citas-usuario");
+  await cargarMisCitas();
+}
+
+async function cargarMisCitas() {
+  const cont = document.getElementById("listaMisCitas");
+  try {
+    const idUsuario = obtenerIdUsuarioActual();
+    if (!idUsuario) throw new Error("No se pudo identificar el usuario actual.");
+    if (!negociosCache.length) negociosCache = await obtenerNegocios();
+    try { empleadosCache = await apiFetch(API_PATHS.empleados); } catch { empleadosCache = []; }
+    const data = await apiFetch(`/citas/cliente/${idUsuario}`);
+    misCitasCache = Array.isArray(data) ? data : [];
+    renderMisCitas();
+    mostrarMensaje("misCitasMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderMisCitas() {
+  const cont = document.getElementById("listaMisCitas");
+  if (!cont) return;
+  if (!misCitasCache.length) {
+    cont.innerHTML = `<div class="empty-state">Todavía no tienes citas registradas.</div>`;
+    return;
+  }
+  cont.innerHTML = misCitasCache.map(cita => {
+    const id = cita.id_cita;
+    const fecha = cita.fecha || String(cita.fecha_hora_inicio || "").slice(0,10);
+    const inicio = cita.hora_inicio || String(cita.fecha_hora_inicio || "").slice(11,16);
+    const fin = cita.hora_fin || String(cita.fecha_hora_fin || "").slice(11,16);
+    const estado = estadoVisualCita(cita);
+    const cancelada = String(cita.estado || "").toLowerCase().includes("cancel");
+    const puedeCalificar = citaYaPaso(cita) && !cancelada;
+    const puedeCancelar = !citaYaPaso(cita) && !cancelada;
+    return `<article class="admin-item">
+      <div>
+        <h4>${escapeHtml(negocioNombrePorId(cita.id_negocio))}</h4>
+        <p>${escapeHtml(fecha)} · ${escapeHtml(inicio)} - ${escapeHtml(fin)} · ${escapeHtml(empleadoNombrePorId(cita.id_empleado))}</p>
+        <span class="status-pill ${citaYaPaso(cita) ? 'done' : 'pending'}">${escapeHtml(estado)}</span>
+      </div>
+      <div class="row-actions">
+        ${puedeCalificar ? `<button onclick="calificarCita(${id}, ${cita.id_negocio})">Calificar</button>` : ""}
+        ${puedeCancelar ? `<button onclick="cancelarMiCita(${id})">Cancelar</button>` : ""}
+        <button onclick="pagarCitaInfo(${id})">Pagar cita</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+async function cancelarMiCita(idCita) {
+  if (!confirm("¿Cancelar esta cita?")) return;
+  try {
+    await apiFetch(`${API_PATHS.citas}${idCita}`, { method: "DELETE" });
+    await cargarMisCitas();
+  } catch (e) { alert(e.message); }
+}
+
+async function calificarCita(idCita, idNegocio) {
+  const puntuacion = Number(prompt("Puntuación de 1 a 5:", "5"));
+  if (!puntuacion) return;
+  const comentario = prompt("Comentario:", "Buen servicio") || "";
+  try {
+    await apiFetch(API_PATHS.calificaciones, {
+      method: "POST",
+      body: JSON.stringify({ id_negocio: Number(idNegocio), id_cita: Number(idCita), puntuacion, comentario })
+    });
+    alert("Calificación registrada correctamente.");
+    await cargarMisCalificaciones();
+  } catch (e) { alert(e.message); }
+}
+
+function pagarCitaInfo(idCita) {
+  alert(`La cita #${idCita} ya se puede listar y calificar. Para pagar citas directamente falta que el backend de pagos acepte id_cita o que exista una ruta específica de pago de citas. Actualmente /pagos/ está ligado a id_pedido.`);
+}
+
+async function irMisCalificaciones() {
+  mostrarModuloCliente("mis-calificaciones-usuario");
+  await cargarMisCalificaciones();
+}
+
+async function cargarMisCalificaciones() {
+  const cont = document.getElementById("listaMisCalificaciones");
+  try {
+    const data = await apiFetch(API_PATHS.calificaciones);
+    misCalificacionesCache = Array.isArray(data) ? data : [];
+    if (!misCalificacionesCache.length) {
+      cont.innerHTML = `<div class="empty-state">Todavía no tienes calificaciones registradas.</div>`;
+      return;
+    }
+    cont.innerHTML = misCalificacionesCache.map(c => `<article class="admin-item">
+      <div><h4>${"★".repeat(Number(c.puntuacion || 0))}${"☆".repeat(Math.max(0, 5 - Number(c.puntuacion || 0)))}</h4><p>Cita #${escapeHtml(c.id_cita || "—")} · ${escapeHtml(c.comentario || "Sin comentario")}</p></div>
+      <div class="row-actions"><button onclick="eliminarCalificacion(${c.id_calificacion})">Eliminar</button></div>
+    </article>`).join("");
+    mostrarMensaje("misCalificacionesMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function eliminarCalificacion(id) {
+  if (!confirm("¿Eliminar esta calificación?")) return;
+  try { await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" }); cargarMisCalificaciones(); }
+  catch (e) { alert(e.message); }
+}
+
+async function irTiendaUsuario() {
+  mostrarModuloCliente("tienda-usuario");
+  await cargarProductosUsuario();
+}
+
+async function cargarProductosUsuario() {
+  const cont = document.getElementById("listaProductosUsuario");
+  try {
+    if (!negociosCache.length) negociosCache = await obtenerNegocios();
+    const data = await apiFetch(API_PATHS.productos);
+    productosUsuarioCache = Array.isArray(data) ? data.filter(p => String(p.estado || "activo").toLowerCase() === "activo") : [];
+    renderProductosUsuario(productosUsuarioCache);
+    mostrarMensaje("tiendaUsuarioMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function filtrarProductosUsuario() {
+  const q = document.getElementById("buscarProductoUsuario")?.value.toLowerCase().trim() || "";
+  if (!q) return renderProductosUsuario(productosUsuarioCache);
+  renderProductosUsuario(productosUsuarioCache.filter(p => [p.nombre, p.descripcion, negocioNombrePorId(p.id_negocio)].join(" ").toLowerCase().includes(q)));
+}
+
+function renderProductosUsuario(productos) {
+  const cont = document.getElementById("listaProductosUsuario");
+  if (!cont) return;
+  if (!productos.length) {
+    cont.innerHTML = `<div class="empty-state">No hay productos activos disponibles.</div>`;
+    return;
+  }
+  cont.innerHTML = productos.map(p => `<article class="business-card">
+    <div class="business-avatar">${escapeHtml(String(p.nombre || "P").charAt(0).toUpperCase())}</div>
+    <div class="business-content">
+      <h3>${escapeHtml(p.nombre || "Producto")}</h3>
+      <p>${escapeHtml(p.descripcion || "Sin descripción")}</p>
+      <div class="business-meta"><span>${escapeHtml(negocioNombrePorId(p.id_negocio))}</span><span>Stock: ${escapeHtml(p.stock ?? 0)}</span><span>$${Number(p.precio || 0).toLocaleString("es-CO")}</span></div>
+      <button class="btn-primary tiny" type="button" onclick="crearPedidoProducto(${p.id_producto})">Crear pedido</button>
+    </div>
+  </article>`).join("");
+}
+
+async function crearPedidoProducto(idProducto) {
+  const producto = productosUsuarioCache.find(p => Number(p.id_producto) === Number(idProducto));
+  if (!producto) return alert("Producto no encontrado.");
+  const cantidad = Number(prompt(`Cantidad para ${producto.nombre}:`, "1"));
+  if (!cantidad || cantidad < 1) return;
+  const total = Number(producto.precio || 0) * cantidad;
+  try {
+    const pedido = await apiFetch(API_PATHS.pedidos, {
+      method: "POST",
+      body: JSON.stringify({ id_negocio: Number(producto.id_negocio), total, estado: "pendiente" })
+    });
+    await apiFetch(API_PATHS.pedidoDetalle, {
+      method: "POST",
+      body: JSON.stringify({
+        id_pedido: pedido.id_pedido,
+        id_producto: Number(idProducto),
+        cantidad,
+        precio_unitario: Number(producto.precio || 0),
+        subtotal: total
+      })
+    }).catch(() => null);
+    alert(`Pedido #${pedido.id_pedido} creado por $${total.toLocaleString("es-CO")}.`);
+    await irMisPedidos();
+  } catch (e) { alert(e.message); }
+}
+
+async function irMisPedidos() {
+  mostrarModuloCliente("mis-pedidos-usuario");
+  await cargarMisPedidos();
+}
+
+async function cargarMisPedidos() {
+  const cont = document.getElementById("listaMisPedidos");
+  try {
+    const [pedidos, pagos] = await Promise.all([
+      apiFetch(API_PATHS.pedidos),
+      apiFetch(API_PATHS.pagos).catch(() => [])
+    ]);
+    misPedidosCache = Array.isArray(pedidos) ? pedidos : [];
+    misPagosCache = Array.isArray(pagos) ? pagos : [];
+    renderMisPedidos();
+    mostrarMensaje("misPedidosMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function pedidoPagado(idPedido) {
+  return misPagosCache.some(p => Number(p.id_pedido) === Number(idPedido) && !String(p.estado_pago || "").toLowerCase().includes("rechaz"));
+}
+
+function renderMisPedidos() {
+  const cont = document.getElementById("listaMisPedidos");
+  if (!cont) return;
+  if (!misPedidosCache.length) {
+    cont.innerHTML = `<div class="empty-state">Todavía no tienes pedidos.</div>`;
+    return;
+  }
+  cont.innerHTML = misPedidosCache.map(p => {
+    const pagado = pedidoPagado(p.id_pedido);
+    return `<article class="admin-item">
+      <div>
+        <h4>Pedido #${escapeHtml(p.id_pedido)}</h4>
+        <p>${escapeHtml(negocioNombrePorId(p.id_negocio))} · Total: $${Number(p.total || 0).toLocaleString("es-CO")} · Estado: ${escapeHtml(p.estado || "pendiente")}</p>
+        <span class="status-pill ${pagado ? 'done' : 'pending'}">${pagado ? 'Pago registrado' : 'Pago pendiente'}</span>
+      </div>
+      <div class="row-actions">
+        ${pagado ? "" : `<button onclick="pagarPedido(${p.id_pedido})">Pagar pedido</button>`}
+      </div>
+    </article>`;
+  }).join("");
+}
+
+async function pagarPedido(idPedido) {
+  const pedido = misPedidosCache.find(p => Number(p.id_pedido) === Number(idPedido));
+  if (!pedido) return alert("Pedido no encontrado.");
+  const metodo = prompt("Método de pago:", "efectivo") || "efectivo";
+  const referencia = prompt("Referencia externa opcional:", `PED-${idPedido}-${Date.now()}`) || `PED-${idPedido}-${Date.now()}`;
+  try {
+    await apiFetch(API_PATHS.pagos, {
+      method: "POST",
+      body: JSON.stringify({
+        id_pedido: Number(idPedido),
+        metodo_pago: metodo,
+        referencia_externa: referencia,
+        estado_pago: "aprobado",
+        valor: Number(pedido.total || 0),
+        respuesta_pasarela: "Pago registrado desde front"
+      })
+    });
+    alert("Pago registrado correctamente.");
+    await cargarMisPedidos();
+  } catch (e) { alert(e.message); }
+}
+
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("empleadoForm")?.addEventListener("submit", async (e) => {

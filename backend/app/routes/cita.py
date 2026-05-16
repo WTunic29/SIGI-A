@@ -209,10 +209,10 @@ def cancelar_cita(
                 detail="No puedes cancelar esta cita"
             )
 
-    cita_db.estado = "cancelada"
+    db.delete(cita_db)
     db.commit()
 
-    return {"message": "Cita cancelada correctamente"}
+    return {"message": "Cita eliminada correctamente"}
 
 
 @router.post("/{id_cita}/detalle", response_model=DetalleCitaResponse)

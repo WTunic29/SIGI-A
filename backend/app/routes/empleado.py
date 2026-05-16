@@ -12,6 +12,9 @@ from app.core.deps import (
 from app.models.empleado import Empleado
 from app.models.negocio import Negocio
 from app.models.user import Usuario
+from app.models.cita import Cita
+from app.models.horario_empleado import HorarioEmpleado
+from app.models.empleado_servicio import EmpleadoServicio
 
 from app.schemas.empleado import (
     EmpleadoCreate,
@@ -226,7 +229,6 @@ def eliminar_empleado(
         require_roles(["negocio", "admin"])
     )
 ):
-
     empleado_db = db.query(Empleado).filter(
         Empleado.id_empleado == id_empleado
     ).first()
@@ -243,10 +245,26 @@ def eliminar_empleado(
         db
     )
 
-    empleado_db.estado = "inactivo"
+    # 1. Eliminar horarios del empleado
+    db.query(HorarioEmpleado).filter(
+        HorarioEmpleado.id_empleado == id_empleado
+    ).delete(synchronize_session=False)
+
+    # 2. Eliminar relación empleado-servicio, si existe
+    db.query(EmpleadoServicio).filter(
+        EmpleadoServicio.id_empleado == id_empleado
+    ).delete(synchronize_session=False)
+
+    # 3. Eliminar citas asociadas al empleado
+    db.query(Cita).filter(
+        Cita.id_empleado == id_empleado
+    ).delete(synchronize_session=False)
+
+    # 4. Eliminar empleado definitivamente
+    db.delete(empleado_db)
 
     db.commit()
 
     return {
-        "message": "Empleado desactivado correctamente"
+        "message": "Empleado, horarios, servicios asociados y citas eliminados correctamente"
     }
