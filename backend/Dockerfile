@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "echo ARRANQUE_OK && pwd && ls -la && sleep 60"]
+CMD ["sh", "-c", "echo INICIANDO_SIGIA && echo Ejecutando_Alembic && python -m alembic upgrade head && echo Alembic_OK && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
