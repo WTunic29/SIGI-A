@@ -2,189 +2,372 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SIGI-E | Sistema de Gestión para Barberías</title>
   <link rel="stylesheet" href="css/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
 
-<!-- ── NAVBAR ── -->
 <nav id="navbar">
   <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
-  <div class="nav-buttons">
+
+  <div class="nav-buttons" id="navGuest">
     <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
     <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
   </div>
-</nav>
 
-<!-- ── INICIO ── -->
-<section class="hero" id="inicio">
-  <div class="hero-bg"></div>
-  <div class="hero-content">
-    <div class="hero-eyebrow">
-      <div class="hero-eyebrow-line"></div>
-      <span class="hero-eyebrow-text">Sistema de Gestión Inteligente</span>
-    </div>
-    <h1 class="hero-title">
-      SIGI<span class="gold">-E</span>
-      <span class="italic">para tu barbería</span>
-    </h1>
-    <p class="hero-desc">Plataforma web integral para barberías y centros de estética.</p>
-    <div class="hero-actions">
-      <a class="btn-primary" href="#">Explorar Sistema</a>
-      <a class="btn-secondary" href="#">Ver Demo</a>
+  <div class="nav-user" id="navUser" style="display:none;">
+    <button class="user-menu-btn" type="button" onclick="toggleUserMenu()">
+      <span id="navUserName">Usuario</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="user-dropdown" id="userDropdown">
+      <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
+      <a href="#" onclick="irMiPerfil()">Mi perfil</a>
+      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
+      <a href="#" onclick="irVerNegocios()">Ver negocios</a>
+      <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
+      <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
   </div>
+</nav>
+
+<section class="hero landing-hero" id="inicio">
+  <div class="hero-bg landing-bg"></div>
+  <div class="landing-orb orb-one"></div>
+  <div class="landing-orb orb-two"></div>
+
+  <div class="landing-wrap">
+    <div class="hero-content landing-copy">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Plataforma inteligente para barberías modernas
+      </div>
+
+      <h1 class="landing-title">
+        Agenda, descubre y gestiona barberías con <span>SIGI-E</span>
+      </h1>
+
+      <p class="landing-desc">
+        Una experiencia visual, rápida y profesional para conectar usuarios con negocios disponibles, administrar barberías y centralizar la operación desde un solo lugar.
+      </p>
+
+      <div class="landing-actions">
+        <a class="btn-primary big" href="#" onclick="mostrarRegistro('cliente')">Entrar como usuario</a>
+        <a class="btn-glass" href="#" onclick="mostrarRegistro('negocio')">Registrar mi negocio</a>
+      </div>
+
+      <div class="landing-metrics">
+        <div>
+          <strong>24/7</strong>
+          <span>Consulta disponible</span>
+        </div>
+        <div>
+          <strong>2FA</strong>
+          <span>Inicio seguro</span>
+        </div>
+        <div>
+          <strong>100%</strong>
+          <span>Web responsive</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-showcase" aria-hidden="true">
+      <div class="phone-card">
+        <div class="phone-top">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="phone-header">
+          <div>
+            <p>Directorio</p>
+            <h3>Negocios disponibles</h3>
+          </div>
+          <div class="mini-avatar">B</div>
+        </div>
+
+        <div class="search-pill">Buscar barbería, zona o servicio...</div>
+
+        <div class="business-preview active">
+          <div class="business-icon">✂</div>
+          <div>
+            <strong>Barbería Élite</strong>
+            <p>Agenda, cortes y perfil del negocio</p>
+          </div>
+          <span>4.9</span>
+        </div>
+        <div class="business-preview">
+          <div class="business-icon">★</div>
+          <div>
+            <strong>Urban Style</strong>
+            <p>Servicios disponibles en tiempo real</p>
+          </div>
+          <span>4.8</span>
+        </div>
+        <div class="business-preview">
+          <div class="business-icon">⌁</div>
+          <div>
+            <strong>Studio Premium</strong>
+            <p>Experiencia moderna para clientes</p>
+          </div>
+          <span>4.7</span>
+        </div>
+
+        <div class="phone-footer-card">
+          <p>Tu próxima cita</p>
+          <strong>Gestionada desde SIGI-E</strong>
+        </div>
+      </div>
+
+      <div class="floating-card card-a">
+        <span>Rol</span>
+        <strong>Usuario / Negocio</strong>
+      </div>
+      <div class="floating-card card-b">
+        <span>Seguridad</span>
+        <strong>Login + 2FA</strong>
+      </div>
+    </div>
+  </div>
+
   <div class="scroll-hint">
     <div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div>
     <span>Scroll</span>
   </div>
 </section>
 
-<!-- ── CTA ── -->
-<section class="cta-section" id="cta">
+<section class="landing-features" id="cta">
   <div class="section-header">
-    <p class="section-eyebrow">¿Listo para empezar?</p>
-    <h2 class="section-title">Digitaliza tu barbería hoy</h2>
-    <p class="section-desc">SIGI-E centraliza toda la información.</p>
+    <p class="section-eyebrow">Una plataforma, dos experiencias</p>
+    <h2 class="section-title">Diseñada para usuarios y negocios</h2>
+    <p class="section-desc">El usuario encuentra negocios disponibles. El negocio administra su presencia, acceso y operación desde un panel moderno.</p>
   </div>
-  <div class="cta-actions">
-    <a class="btn-primary" href="#">Registrar Negocio</a>
-    <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+
+  <div class="feature-grid">
+    <article class="feature-card">
+      <div class="feature-icon">01</div>
+      <h3>Explora negocios</h3>
+      <p>Los usuarios ven barberías disponibles en tarjetas limpias, con información clara y buscador.</p>
+    </article>
+    <article class="feature-card featured">
+      <div class="feature-icon">02</div>
+      <h3>Panel inteligente</h3>
+      <p>Al iniciar sesión, cada rol ve solo lo que necesita: usuario, negocio, empleado o administrador.</p>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon">03</div>
+      <h3>Acceso seguro</h3>
+      <p>Autenticación con token y verificación 2FA para proteger la información del sistema.</p>
+    </article>
+  </div>
+
+  <div class="cta-banner">
+    <div>
+      <p class="section-eyebrow">Comienza ahora</p>
+      <h3>Convierte la gestión de barberías en una experiencia premium.</h3>
+    </div>
+    <div class="cta-actions">
+      <a class="btn-primary" href="#" onclick="mostrarRegistro('negocio')">Registrar negocio</a>
+      <a class="btn-secondary" href="#" onclick="mostrarRegistro('cliente')">Crear usuario</a>
+    </div>
   </div>
 </section>
 
-<!-- ── LOGIN ── -->
 <section class="hero" id="login" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Iniciar <span class="gold">Sesión</span></h1>
+  <div class="auth-card">
+    <p class="section-eyebrow">Bienvenido de nuevo</p>
+    <h1 class="form-title">Iniciar <span>Sesión</span></h1>
     <form id="loginForm">
-      <input type="email" id="loginCorreo" placeholder="Correo" required><br><br>
-      <input type="password" id="loginPassword" placeholder="Contraseña" required><br><br>
-      <button class="btn-primary" type="submit">Entrar</button>
+      <input type="email" id="loginCorreo" placeholder="Correo" required />
+      <input type="password" id="loginPassword" placeholder="Contraseña" required />
+      <button class="btn-primary full" type="submit">Entrar</button>
     </form>
-    <span id="loginMsg"></span>
-    <p style="margin-top:16px;font-size:14px;">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
+    <span id="loginMsg" class="form-msg"></span>
+    <p class="form-link">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
   </div>
 </section>
 
-<!-- ── VERIFICAR 2FA ── -->
 <section class="hero" id="verify2fa" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Verificar <span class="gold">Código</span></h1>
-    <p style="margin-bottom:16px;font-size:14px;">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
+  <div class="auth-card">
+    <p class="section-eyebrow">Seguridad</p>
+    <h1 class="form-title">Verificar <span>Código</span></h1>
+    <p class="muted">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
     <form id="verify2faForm">
-      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6" pattern="\d{6}" inputmode="numeric" required><br><br>
-      <button class="btn-primary" type="submit">Verificar</button>
+      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
+      <button class="btn-primary full" type="submit">Verificar</button>
     </form>
-    <span id="verify2faMsg"></span>
-    <p style="margin-top:16px;font-size:14px;"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
+    <span id="verify2faMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
   </div>
 </section>
 
-<!-- ── REGISTRO ── -->
 <section class="hero" id="registro" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Crear <span class="gold">Cuenta</span></h1>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Nueva cuenta</p>
+    <h1 class="form-title">Crear <span>Cuenta</span></h1>
     <form id="registroForm">
-      <input type="text" id="nombre" placeholder="Nombre" required><br><br>
-      <input type="text" id="apellido" placeholder="Apellido" required><br><br>
-      <input type="email" id="correo" placeholder="Correo" required><br><br>
-      <input type="text" id="telefono" placeholder="Teléfono" required><br><br>
-      <input type="password" id="password" placeholder="Contraseña" required><br><br>
-      <button class="btn-primary" type="submit">Registrarse</button>
+      <div class="role-selector">
+        <label class="role-option">
+          <input type="radio" name="rolRegistro" value="cliente" checked />
+          <span>Usuario</span>
+          <small>Explorar negocios disponibles</small>
+        </label>
+        <label class="role-option">
+          <input type="radio" name="rolRegistro" value="negocio" />
+          <span>Negocio</span>
+          <small>Administrar mi barbería</small>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <input type="text" id="nombre" placeholder="Nombre" required />
+        <input type="text" id="apellido" placeholder="Apellido" required />
+        <input type="email" id="correo" placeholder="Correo" required />
+        <input type="text" id="telefono" placeholder="Teléfono" required />
+      </div>
+      <input type="password" id="password" placeholder="Contraseña" required />
+      <button class="btn-primary full" type="submit">Registrarse</button>
     </form>
-    <span id="registroMsg"></span>
-    <p style="margin-top:16px;font-size:14px;">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
+    <span id="registroMsg" class="form-msg"></span>
+    <p class="form-link">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
   </div>
 </section>
 
-<!-- ── DASHBOARD ── -->
-<section class="hero" id="dashboard-negocio" style="display:none;">
+<section class="hero dashboard-screen" id="dashboard-negocio" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Panel <span class="gold">Negocio</span></h1>
-    <p style="margin-bottom:8px;">Bienvenido, <strong id="dashNombreUsuario"></strong></p>
-    <p style="margin-bottom:24px;font-size:14px;">Negocio: <strong id="dashNombreNegocio">—</strong></p>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;align-items:center;">
-      <a class="btn-primary" href="#" onclick="irMiPerfil()">Mi Perfil</a>
-      <a class="btn-primary" href="#" onclick="irRegistrarNegocio()">Registrar Negocio</a>
-      <a class="btn-primary" href="#" onclick="irVerNegocios()">Ver Negocios</a>
-      <a class="btn-primary" href="#" onclick="irValidarAcceso()">Validar Acceso Negocio</a>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de negocio</p>
+        <h1 class="dashboard-title">Hola, <span id="dashNombreUsuario">—</span></h1>
+        <p class="muted">Negocio asociado: <strong id="dashNombreNegocio">—</strong></p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
-    <a class="btn-secondary" href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
+
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span>Rol actual</span>
+        <strong>Negocio</strong>
+        <p>Acceso administrativo.</p>
+      </article>
+      <article class="stat-card">
+        <span>Gestión</span>
+        <strong>Mi barbería</strong>
+        <p>Registra o consulta tu negocio.</p>
+      </article>
+      <article class="stat-card">
+        <span>Directorio</span>
+        <strong>Negocios</strong>
+        <p>Consulta negocios disponibles.</p>
+      </article>
+    </div>
+
+    <div class="action-grid">
+      <button onclick="irMiPerfil()">Mi perfil</button>
+      <button onclick="irRegistrarNegocio()">Registrar negocio</button>
+      <button onclick="irVerNegocios()">Ver negocios</button>
+      <button onclick="irValidarAcceso()">Validar acceso negocio</button>
+    </div>
   </div>
 </section>
 
-<!-- ── REGISTRAR NEGOCIO ── -->
+<section class="hero dashboard-screen" id="dashboard-usuario" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de usuario</p>
+        <h1 class="dashboard-title">Bienvenido, <span id="userDashNombre">—</span></h1>
+        <p class="muted">Estos son los negocios disponibles para agendar o consultar.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="buscarNegocio" placeholder="Buscar negocio por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
+      <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
+    </div>
+
+    <div id="listaNegociosUsuario" class="business-grid"></div>
+    <span id="usuarioNegociosMsg" class="form-msg"></span>
+  </div>
+</section>
+
 <section class="hero" id="registrar-negocio" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Registrar <span class="gold">Negocio</span></h1>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Administración</p>
+    <h1 class="form-title">Registrar <span>Negocio</span></h1>
     <form id="negocioForm">
-      <input type="text" id="negNombre" placeholder="Nombre del negocio" required><br><br>
-      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)"><br><br>
-      <input type="text" id="negDireccion" placeholder="Dirección (opcional)"><br><br>
-      <input type="text" id="negTelefono" placeholder="Teléfono (opcional)"><br><br>
-      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)"><br><br>
-      <button class="btn-primary" type="submit">Guardar Negocio</button>
+      <input type="text" id="negNombre" placeholder="Nombre del negocio" required />
+      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)" />
+      <div class="form-grid">
+        <input type="text" id="negDireccion" placeholder="Dirección (opcional)" />
+        <input type="text" id="negTelefono" placeholder="Teléfono (opcional)" />
+      </div>
+      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)" />
+      <button class="btn-primary full" type="submit">Guardar negocio</button>
     </form>
-    <span id="negocioMsg"></span>
-    <div style="margin-top:32px;">
-      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
-    </div>
+    <span id="negocioMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
   </div>
 </section>
 
-<!-- ── MI PERFIL ── -->
 <section class="hero" id="mi-perfil" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Mi <span class="gold">Perfil</span></h1>
-    <div id="perfilInfo" style="margin-top:24px;font-size:15px;line-height:2.2;">
-      <p>Nombre: <strong id="perfilNombre"></strong></p>
-      <p>Apellido: <strong id="perfilApellido"></strong></p>
-      <p>Correo: <strong id="perfilCorreo"></strong></p>
-      <p>Rol: <strong id="perfilRol"></strong></p>
+  <div class="auth-card">
+    <p class="section-eyebrow">Cuenta</p>
+    <h1 class="form-title">Mi <span>Perfil</span></h1>
+    <div id="perfilInfo" class="profile-card">
+      <p><span>Nombre</span><strong id="perfilNombre"></strong></p>
+      <p><span>Apellido</span><strong id="perfilApellido"></strong></p>
+      <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
+      <p><span>Rol</span><strong id="perfilRol"></strong></p>
     </div>
-    <span id="perfilMsg"></span>
-    <div style="margin-top:32px;">
-      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
-    </div>
+    <span id="perfilMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
   </div>
 </section>
 
-<!-- ── VER NEGOCIOS ── -->
-<section class="hero" id="ver-negocios" style="display:none;">
+<section class="hero dashboard-screen" id="ver-negocios" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado" style="max-width:600px;">
-    <h1 class="hero-title">Ver <span class="gold">Negocios</span></h1>
-    <div id="listaNegocios" style="margin-top:24px;text-align:left;width:100%;"></div>
-    <span id="verNegociosMsg"></span>
-    <div style="margin-top:32px;">
-      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Directorio</p>
+        <h1 class="dashboard-title">Negocios <span>Disponibles</span></h1>
+        <p class="muted">Listado general de barberías y centros registrados.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
     </div>
+    <div id="listaNegocios" class="business-grid"></div>
+    <span id="verNegociosMsg" class="form-msg"></span>
   </div>
 </section>
 
-<!-- ── VALIDAR ACCESO ── -->
 <section class="hero" id="validar-acceso" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="hero-content centrado">
-    <h1 class="hero-title">Acceso <span class="gold">Negocio</span></h1>
-    <div id="validarInfo" style="margin-top:24px;font-size:15px;"></div>
-    <span id="validarMsg"></span>
-    <div style="margin-top:32px;">
-      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
-    </div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Permisos</p>
+    <h1 class="form-title">Acceso <span>Negocio</span></h1>
+    <div id="validarInfo" class="profile-card"></div>
+    <span id="validarMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
   </div>
 </section>
 
-<footer></footer>
+<footer>
+  <div class="footer-bottom">
+    <span class="footer-copy">SIGI-E © 2026</span>
+    <span class="footer-course">Sistema de Gestión Inteligente</span>
+  </div>
+</footer>
+
 <script src="js/main.js"></script>
 </body>
 </html>
