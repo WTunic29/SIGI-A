@@ -1,13 +1,4 @@
-from sqlalchemy import (
-    Column,
-    BigInteger,
-    String,
-    Date,
-    Time,
-    TIMESTAMP,
-    Text
-)
-
+from sqlalchemy import Column, BigInteger, String, Date, Time, TIMESTAMP, Text, func
 from app.database import Base
 
 
@@ -28,4 +19,8 @@ class Cita(Base):
     estado = Column(String(30), nullable=False, default="pendiente")
     observaciones = Column(Text)
 
-    fecha_creacion = Column(TIMESTAMP)
+    fecha_creacion = Column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.now()
+    )
