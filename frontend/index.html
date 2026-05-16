@@ -6,472 +6,185 @@
   <title>SIGI-E | Sistema de Gestión para Barberías</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <style>
-    .rol-selector { display: flex; gap: 12px; margin-bottom: 20px; width: 100%; max-width: 380px; }
-    .rol-btn { flex: 1; padding: 14px; border: 1px solid rgba(201,168,76,0.25); background: transparent; color: var(--gray); cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s; text-align: center; }
-    .rol-btn input[type="radio"] { display: none; }
-    .rol-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.08); color: var(--gold); }
-    .rol-icon { font-size: 1.4rem; display: block; margin-bottom: 6px; }
-
-  </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
+<!-- ── NAVBAR ── -->
 <nav id="navbar">
   <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
-  <div id="nav-public-btns" style="display:flex;gap:8px;">
+  <div class="nav-buttons">
     <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
     <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
   </div>
-  <div id="nav-dashboard-btns">
-    <span class="nav-user-name" id="navUserName"></span>
-    <a class="nav-cta" href="#" onclick="cerrarSesion()">Salir</a>
-  </div>
 </nav>
 
-<!-- INICIO -->
+<!-- ── INICIO ── -->
 <section class="hero" id="inicio">
   <div class="hero-bg"></div>
-  <!-- Imagen de fondo de barbería real -->
-  <div style="position:absolute;inset:0;z-index:0;">
-    <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1600&q=80&fit=crop" 
-         alt="Barbería" 
-         style="width:100%;height:100%;object-fit:cover;opacity:0.12;filter:grayscale(30%);">
-    <div style="position:absolute;inset:0;background:linear-gradient(to right, rgba(10,10,10,0.97) 40%, rgba(10,10,10,0.5) 100%);"></div>
-  </div>
-
   <div class="hero-content">
-    <div class="hero-eyebrow"><div class="hero-eyebrow-line"></div><span class="hero-eyebrow-text">Sistema de Gestión Inteligente</span></div>
-    <h1 class="hero-title">SIGI<span class="gold">-E</span><span class="italic">para tu barbería</span></h1>
-    <p class="hero-desc">Plataforma web integral para barberías y centros de estética. Gestiona citas, empleados, servicios y más.</p>
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-line"></div>
+      <span class="hero-eyebrow-text">Sistema de Gestión Inteligente</span>
+    </div>
+    <h1 class="hero-title">
+      SIGI<span class="gold">-E</span>
+      <span class="italic">para tu barbería</span>
+    </h1>
+    <p class="hero-desc">Plataforma web integral para barberías y centros de estética.</p>
     <div class="hero-actions">
-      <a class="btn-primary" href="#" onclick="mostrarRegistro()">Comenzar Ahora</a>
-      <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+      <a class="btn-primary" href="#">Explorar Sistema</a>
+      <a class="btn-secondary" href="#">Ver Demo</a>
     </div>
   </div>
-  <div class="scroll-hint"><div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div><span>Scroll</span></div>
-</section>
-
-<!-- CTA -->
-<section class="cta-section" id="cta" style="position:relative;overflow:hidden;">
-  <!-- Imagen de fondo sutil -->
-  <div style="position:absolute;inset:0;z-index:0;">
-    <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1600&q=80&fit=crop"
-         alt="Barbería"
-         style="width:100%;height:100%;object-fit:cover;opacity:0.07;filter:grayscale(20%);">
-    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%, rgba(201,168,76,0.06) 0%, transparent 70%);"></div>
-  </div>
-  <div style="position:relative;z-index:1;">
-    <div class="section-header">
-      <p class="section-eyebrow">¿Listo para empezar?</p>
-      <h2 class="section-title">Digitaliza tu barbería hoy</h2>
-      <p class="section-desc">SIGI-E centraliza toda la información de tu negocio en un solo lugar.</p>
-    </div>
-    <div class="cta-actions">
-      <a class="btn-primary" href="#" onclick="mostrarRegistro()">Registrar Negocio</a>
-      <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
-    </div>
+  <div class="scroll-hint">
+    <div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div>
+    <span>Scroll</span>
   </div>
 </section>
 
-<!-- LOGIN -->
+<!-- ── CTA ── -->
+<section class="cta-section" id="cta">
+  <div class="section-header">
+    <p class="section-eyebrow">¿Listo para empezar?</p>
+    <h2 class="section-title">Digitaliza tu barbería hoy</h2>
+    <p class="section-desc">SIGI-E centraliza toda la información.</p>
+  </div>
+  <div class="cta-actions">
+    <a class="btn-primary" href="#">Registrar Negocio</a>
+    <a class="btn-secondary" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  </div>
+</section>
+
+<!-- ── LOGIN ── -->
 <section class="hero" id="login" style="display:none;">
   <div class="hero-bg"></div>
   <div class="hero-content centrado">
     <h1 class="hero-title">Iniciar <span class="gold">Sesión</span></h1>
-    <form id="loginForm" style="width:100%;">
-      <div class="form-group"><label>Correo</label><input type="email" id="loginCorreo" placeholder="tu@correo.com" required></div>
-      <div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" placeholder="••••••••" required></div>
-      <button class="btn-primary" type="submit" id="loginBtn" style="margin-top:8px;width:100%;max-width:380px;">Entrar</button>
+    <form id="loginForm">
+      <input type="email" id="loginCorreo" placeholder="Correo" required><br><br>
+      <input type="password" id="loginPassword" placeholder="Contraseña" required><br><br>
+      <button class="btn-primary" type="submit">Entrar</button>
     </form>
-    <div class="msg" id="loginMsg"></div>
-    <p style="margin-top:20px;font-size:0.78rem;color:var(--gray);">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()" style="color:var(--gold);">Regístrate</a></p>
+    <span id="loginMsg"></span>
+    <p style="margin-top:16px;font-size:14px;">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
   </div>
 </section>
 
-<!-- VERIFY 2FA -->
+<!-- ── VERIFICAR 2FA ── -->
 <section class="hero" id="verify2fa" style="display:none;">
   <div class="hero-bg"></div>
   <div class="hero-content centrado">
     <h1 class="hero-title">Verificar <span class="gold">Código</span></h1>
-    <p style="margin-bottom:24px;font-size:0.85rem;color:var(--white2);">Ingresa el código de 6 dígitos enviado a tu correo.</p>
-    <form id="verify2faForm" style="width:100%;">
-      <div class="form-group"><label>Código 2FA</label><input type="text" id="codigo2fa" placeholder="000000" maxlength="6" inputmode="numeric" required style="text-align:center;font-size:1.4rem;letter-spacing:8px;"></div>
-      <button class="btn-primary" type="submit" style="margin-top:8px;width:100%;max-width:380px;">Verificar</button>
+    <p style="margin-bottom:16px;font-size:14px;">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
+    <form id="verify2faForm">
+      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6" pattern="\d{6}" inputmode="numeric" required><br><br>
+      <button class="btn-primary" type="submit">Verificar</button>
     </form>
-    <div class="msg" id="verify2faMsg"></div>
-    <p style="margin-top:20px;"><a href="#" onclick="mostrarLogin()" class="btn-secondary" style="font-size:0.7rem;">← Volver</a></p>
+    <span id="verify2faMsg"></span>
+    <p style="margin-top:16px;font-size:14px;"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
   </div>
 </section>
 
-<!-- REGISTRO -->
+<!-- ── REGISTRO ── -->
 <section class="hero" id="registro" style="display:none;">
   <div class="hero-bg"></div>
   <div class="hero-content centrado">
     <h1 class="hero-title">Crear <span class="gold">Cuenta</span></h1>
-    <p style="font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">¿Cómo quieres registrarte?</p>
-    <div class="rol-selector">
-      <label class="rol-btn selected" id="btnRolNegocio" onclick="seleccionarRol('negocio')">
-        <input type="radio" name="rolRegistro" value="negocio" checked>
-        <span class="rol-icon"></span>Propietario
-      </label>
-      <label class="rol-btn" id="btnRolCliente" onclick="seleccionarRol('cliente')">
-        <input type="radio" name="rolRegistro" value="cliente">
-        <span class="rol-icon"></span>Cliente
-      </label>
-    </div>
-    <form id="registroForm" style="width:100%;">
-      <div class="form-group"><label>Nombre</label><input type="text" id="nombre" placeholder="Tu nombre" required></div>
-      <div class="form-group"><label>Apellido</label><input type="text" id="apellido" placeholder="Tu apellido" required></div>
-      <div class="form-group"><label>Correo</label><input type="email" id="correo" placeholder="tu@correo.com" required></div>
-      <div class="form-group"><label>Teléfono</label><input type="text" id="telefono" placeholder="3001234567" required></div>
-      <div class="form-group"><label>Contraseña</label><input type="password" id="password" placeholder="••••••••" required></div>
-      <button class="btn-primary" type="submit" style="margin-top:8px;width:100%;max-width:380px;">Registrarse</button>
+    <form id="registroForm">
+      <input type="text" id="nombre" placeholder="Nombre" required><br><br>
+      <input type="text" id="apellido" placeholder="Apellido" required><br><br>
+      <input type="email" id="correo" placeholder="Correo" required><br><br>
+      <input type="text" id="telefono" placeholder="Teléfono" required><br><br>
+      <input type="password" id="password" placeholder="Contraseña" required><br><br>
+      <button class="btn-primary" type="submit">Registrarse</button>
     </form>
-    <div class="msg" id="registroMsg"></div>
-    <p style="margin-top:20px;font-size:0.78rem;color:var(--gray);">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()" style="color:var(--gold);">Inicia sesión</a></p>
+    <span id="registroMsg"></span>
+    <p style="margin-top:16px;font-size:14px;">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
   </div>
 </section>
 
-<!-- DASHBOARD NEGOCIO -->
-<section class="hero" id="dashboard-negocio" style="display:none;align-items:flex-start;">
+<!-- ── DASHBOARD ── -->
+<section class="hero" id="dashboard-negocio" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="dashboard-wrap">
-    <div class="dash-header">
-      <p class="dash-welcome">Panel de Propietario</p>
-      <h1 class="dash-name" id="dashNombreUsuario">—</h1>
-      <p class="dash-negocio"><span id="dashNombreNegocio">Cargando...</span></p>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Panel <span class="gold">Negocio</span></h1>
+    <p style="margin-bottom:8px;">Bienvenido, <strong id="dashNombreUsuario"></strong></p>
+    <p style="margin-bottom:24px;font-size:14px;">Negocio: <strong id="dashNombreNegocio">—</strong></p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;align-items:center;">
+      <a class="btn-primary" href="#" onclick="irMiPerfil()">Mi Perfil</a>
+      <a class="btn-primary" href="#" onclick="irRegistrarNegocio()">Registrar Negocio</a>
+      <a class="btn-primary" href="#" onclick="irVerNegocios()">Ver Negocios</a>
+      <a class="btn-primary" href="#" onclick="irValidarAcceso()">Validar Acceso Negocio</a>
     </div>
-    <div class="stats-grid" id="dashStats" style="display:none;">
-      <div class="stat-card"><div class="stat-num" id="statServicios">0</div><div class="stat-label">Servicios</div></div>
-      <div class="stat-card"><div class="stat-num" id="statEmpleados">0</div><div class="stat-label">Empleados</div></div>
-      <div class="stat-card"><div class="stat-num" id="statProductos">0</div><div class="stat-label">Productos</div></div>
-      <div class="stat-card"><div class="stat-num" id="statCitas">0</div><div class="stat-label">Citas</div></div>
-    </div>
-    <div class="dash-grid">
-      <div class="dash-card" onclick="irMiPerfil()"><div class="dash-card-icon"></div><div class="dash-card-title">Mi Perfil</div><div class="dash-card-desc">Ver y editar datos</div></div>
-      <div class="dash-card" onclick="irRegistrarNegocio()"><div class="dash-card-icon"></div><div class="dash-card-title">Mi Negocio</div><div class="dash-card-desc">Gestionar negocio</div></div>
-      <div class="dash-card" onclick="irServicios()"><div class="dash-card-icon"></div><div class="dash-card-title">Servicios</div><div class="dash-card-desc">Crear y gestionar</div></div>
-      <div class="dash-card" onclick="irEmpleados()"><div class="dash-card-icon"></div><div class="dash-card-title">Empleados</div><div class="dash-card-desc">Equipo de trabajo</div></div>
-      <div class="dash-card" onclick="irProductos()"><div class="dash-card-icon"></div><div class="dash-card-title">Productos</div><div class="dash-card-desc">Inventario</div></div>
-      <div class="dash-card" onclick="irCitas()"><div class="dash-card-icon"></div><div class="dash-card-title">Citas</div><div class="dash-card-desc">Agenda del día</div></div>
-      <div class="dash-card" onclick="irVerNegocios()"><div class="dash-card-icon"></div><div class="dash-card-title">Ver Negocios</div><div class="dash-card-desc">Marketplace</div></div>
-      <div class="dash-card" onclick="cerrarSesion()" style="border-color:rgba(231,76,60,0.2);"><div class="dash-card-icon"></div><div class="dash-card-title" style="color:#e74c3c;">Salir</div><div class="dash-card-desc">Cerrar sesión</div></div>
-    </div>
+    <a class="btn-secondary" href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
   </div>
 </section>
 
-<!-- DASHBOARD CLIENTE -->
-<section class="hero" id="dashboard-cliente" style="display:none;align-items:flex-start;">
+<!-- ── REGISTRAR NEGOCIO ── -->
+<section class="hero" id="registrar-negocio" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="dashboard-wrap">
-    <div class="dash-header">
-      <p class="dash-welcome">Panel de Cliente</p>
-      <h1 class="dash-name" id="clienteNombreUsuario">—</h1>
-      <p class="dash-negocio"> Bienvenido a SIGI-E</p>
-    </div>
-    <div class="dash-grid">
-      <div class="dash-card" onclick="irMiPerfil()"><div class="dash-card-icon"></div><div class="dash-card-title">Mi Perfil</div><div class="dash-card-desc">Ver y editar datos</div></div>
-      <div class="dash-card" onclick="irVerNegociosCliente()"><div class="dash-card-icon"></div><div class="dash-card-title">Ver Negocios</div><div class="dash-card-desc">Explorar barberías</div></div>
-      <div class="dash-card" onclick="irMisCitas()"><div class="dash-card-icon"></div><div class="dash-card-title">Mis Citas</div><div class="dash-card-desc">Ver mis reservas</div></div>
-      <div class="dash-card" onclick="cerrarSesion()" style="border-color:rgba(231,76,60,0.2);"><div class="dash-card-icon"></div><div class="dash-card-title" style="color:#e74c3c;">Salir</div><div class="dash-card-desc">Cerrar sesión</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- MI PERFIL -->
-<section class="hero" id="mi-perfil" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap">
-    <div class="panel-back"><button class="btn-secondary" onclick="volverDashboard()">← Volver</button></div>
-    <h1 class="panel-title">Mi <span class="gold">Perfil</span></h1>
-
-    <!-- Vista de datos -->
-    <div class="perfil-card" id="perfilVista">
-      <div class="perfil-row"><span class="perfil-label">Nombre</span><span class="perfil-value" id="perfilNombre">—</span></div>
-      <div class="perfil-row"><span class="perfil-label">Apellido</span><span class="perfil-value" id="perfilApellido">—</span></div>
-      <div class="perfil-row"><span class="perfil-label">Correo</span><span class="perfil-value" id="perfilCorreo">—</span></div>
-      <div class="perfil-row"><span class="perfil-label">Teléfono</span><span class="perfil-value" id="perfilTelefono">—</span></div>
-      <div class="perfil-row"><span class="perfil-label">Rol</span><span class="perfil-value" id="perfilRol">—</span></div>
-      <div class="perfil-row"><span class="perfil-label">Estado</span><span class="perfil-value" id="perfilEstado">—</span></div>
-    </div>
-    <div style="margin-top:20px;">
-      <button class="btn-primary" onclick="mostrarEditarPerfil()"> Editar Perfil</button>
-    </div>
-
-    <!-- Formulario de edición (oculto por defecto) -->
-    <div id="perfilEditarForm" style="display:none;margin-top:32px;">
-      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold);margin-bottom:20px;">Editar Datos</h2>
-      <form id="editarPerfilForm" style="max-width:400px;">
-        <div class="form-group"><label>Nombre</label><input type="text" id="editNombre" placeholder="Tu nombre"></div>
-        <div class="form-group"><label>Apellido</label><input type="text" id="editApellido" placeholder="Tu apellido"></div>
-        <div class="form-group"><label>Teléfono</label><input type="text" id="editTelefono" placeholder="3001234567"></div>
-        <div class="form-group"><label>Nueva Contraseña (opcional)</label><input type="password" id="editPassword" placeholder="Dejar vacío para no cambiar"></div>
-        <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="btn-primary" type="submit">Guardar Cambios</button>
-          <button class="btn-secondary" type="button" onclick="cancelarEditarPerfil()">Cancelar</button>
-        </div>
-      </form>
-      <div class="msg" id="editarPerfilMsg"></div>
-    </div>
-
-    <div class="msg" id="perfilMsg"></div>
-  </div>
-</section>
-
-<!-- MI NEGOCIO -->
-<section class="hero" id="registrar-negocio" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardNegocio()">← Volver</button></div>
-    <h1 class="panel-title">Mi <span class="gold">Negocio</span></h1>
-    <form id="negocioForm" style="max-width:500px;">
-      <div class="form-group"><label>Nombre del negocio *</label><input type="text" id="negNombre" placeholder="Ej: Barbería El Estilo" required></div>
-      <div class="form-group"><label>Descripción</label><textarea id="negDescripcion" placeholder="Describe tu negocio..." rows="3" style="resize:vertical;"></textarea></div>
-      <div class="form-group"><label>Dirección</label><input type="text" id="negDireccion" placeholder="Calle 123 #45-67"></div>
-      <div class="form-group"><label>Ciudad</label><input type="text" id="negCiudad" placeholder="Bogotá"></div>
-      <div class="form-group"><label>Teléfono</label><input type="text" id="negTelefono" placeholder="3001234567"></div>
-      <div class="form-group"><label>Correo del negocio</label><input type="email" id="negCorreo" placeholder="negocio@correo.com"></div>
-      <button class="btn-primary" type="submit" style="margin-top:8px;">Guardar Negocio</button>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Registrar <span class="gold">Negocio</span></h1>
+    <form id="negocioForm">
+      <input type="text" id="negNombre" placeholder="Nombre del negocio" required><br><br>
+      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)"><br><br>
+      <input type="text" id="negDireccion" placeholder="Dirección (opcional)"><br><br>
+      <input type="text" id="negTelefono" placeholder="Teléfono (opcional)"><br><br>
+      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)"><br><br>
+      <button class="btn-primary" type="submit">Guardar Negocio</button>
     </form>
-    <div class="msg" id="negocioMsg"></div>
+    <span id="negocioMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+    </div>
   </div>
 </section>
 
-<!-- SERVICIOS -->
-<section class="hero" id="servicios" style="display:none;align-items:flex-start;">
+<!-- ── MI PERFIL ── -->
+<section class="hero" id="mi-perfil" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:1000px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardNegocio()">← Volver</button></div>
-    <div class="toolbar">
-      <h1 class="panel-title" style="margin-bottom:0;"> <span class="gold">Servicios</span></h1>
-      <button class="btn-primary" onclick="abrirModalServicio()">+ Nuevo Servicio</button>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Mi <span class="gold">Perfil</span></h1>
+    <div id="perfilInfo" style="margin-top:24px;font-size:15px;line-height:2.2;">
+      <p>Nombre: <strong id="perfilNombre"></strong></p>
+      <p>Apellido: <strong id="perfilApellido"></strong></p>
+      <p>Correo: <strong id="perfilCorreo"></strong></p>
+      <p>Rol: <strong id="perfilRol"></strong></p>
     </div>
-    <div class="tabla-wrap"><table><thead><tr><th>Nombre</th><th>Duración</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="bodyServicios"></tbody></table></div>
-    <div class="msg" id="serviciosMsg"></div>
+    <span id="perfilMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
+    </div>
   </div>
 </section>
 
-<!-- EMPLEADOS -->
-<section class="hero" id="empleados" style="display:none;align-items:flex-start;">
+<!-- ── VER NEGOCIOS ── -->
+<section class="hero" id="ver-negocios" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:1000px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardNegocio()">← Volver</button></div>
-    <div class="toolbar">
-      <h1 class="panel-title" style="margin-bottom:0;"> <span class="gold">Empleados</span></h1>
-      <button class="btn-primary" onclick="abrirModalEmpleado()">+ Nuevo Empleado</button>
+  <div class="hero-content centrado" style="max-width:600px;">
+    <h1 class="hero-title">Ver <span class="gold">Negocios</span></h1>
+    <div id="listaNegocios" style="margin-top:24px;text-align:left;width:100%;"></div>
+    <span id="verNegociosMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
     </div>
-    <div class="tabla-wrap"><table><thead><tr><th>Nombre</th><th>Especialidad</th><th>Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="bodyEmpleados"></tbody></table></div>
-    <div class="msg" id="empleadosMsg"></div>
   </div>
 </section>
 
-<!-- PRODUCTOS -->
-<section class="hero" id="productos" style="display:none;align-items:flex-start;">
+<!-- ── VALIDAR ACCESO ── -->
+<section class="hero" id="validar-acceso" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:1000px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardNegocio()">← Volver</button></div>
-    <div class="toolbar">
-      <h1 class="panel-title" style="margin-bottom:0;"> <span class="gold">Productos</span></h1>
-      <button class="btn-primary" onclick="abrirModalProducto()">+ Nuevo Producto</button>
+  <div class="hero-content centrado">
+    <h1 class="hero-title">Acceso <span class="gold">Negocio</span></h1>
+    <div id="validarInfo" style="margin-top:24px;font-size:15px;"></div>
+    <span id="validarMsg"></span>
+    <div style="margin-top:32px;">
+      <a class="btn-secondary" href="#" onclick="mostrarDashboardNegocio()">← Volver</a>
     </div>
-    <div class="tabla-wrap"><table><thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="bodyProductos"></tbody></table></div>
-    <div class="msg" id="productosMsg"></div>
   </div>
 </section>
 
-<!-- CITAS (propietario) -->
-<section class="hero" id="citas" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:1000px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardNegocio()">← Volver</button></div>
-    <div class="toolbar">
-      <h1 class="panel-title" style="margin-bottom:0;"> <span class="gold">Citas</span></h1>
-      <button class="btn-primary" onclick="abrirModalCita()">+ Nueva Cita</button>
-    </div>
-    <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Estado</th><th>Observaciones</th><th>Acciones</th></tr></thead><tbody id="bodyCitas"></tbody></table></div>
-    <div class="msg" id="citasMsg"></div>
-  </div>
-</section>
-
-<!-- MIS CITAS (cliente) -->
-<section class="hero" id="mis-citas" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:1000px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardCliente()">← Volver</button></div>
-    <div class="toolbar">
-      <h1 class="panel-title" style="margin-bottom:0;"> <span class="gold">Mis Citas</span></h1>
-      <button class="btn-primary" onclick="abrirModalCitaCliente()">+ Nueva Cita</button>
-    </div>
-    <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Negocio</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="bodyMisCitas"></tbody></table></div>
-    <div class="msg" id="misCitasMsg"></div>
-  </div>
-</section>
-
-<!-- VER NEGOCIOS (propietario) -->
-<section class="hero" id="ver-negocios" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:900px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="volverDashboard()">← Volver</button></div>
-    <h1 class="panel-title"> <span class="gold">Negocios</span></h1>
-    <div id="listaNegocios"></div>
-  </div>
-</section>
-
-<!-- VER NEGOCIOS (cliente — con botón de agendar) -->
-<section class="hero" id="ver-negocios-cliente" style="display:none;align-items:flex-start;">
-  <div class="hero-bg"></div>
-  <div class="panel-wrap" style="max-width:900px;">
-    <div class="panel-back"><button class="btn-secondary" onclick="mostrarDashboardCliente()">← Volver</button></div>
-    <h1 class="panel-title"> Explorar <span class="gold">Negocios</span></h1>
-    <p style="color:var(--gray);font-size:0.8rem;margin-bottom:24px;">Haz clic en "Agendar Cita" para reservar en cualquier negocio.</p>
-    <div id="listaNegociosCliente"></div>
-  </div>
-</section>
-
-<!-- ═══════════ MODALES ═══════════ -->
-
-<!-- Modal Servicio -->
-<div class="modal-overlay" id="modalServicio">
-  <div class="modal">
-    <h2 class="modal-title" id="modalServicioTitle">Nuevo Servicio</h2>
-    <input type="hidden" id="servicioId">
-    <div class="form-group"><label>Nombre *</label><input type="text" id="svcNombre" placeholder="Ej: Corte clásico"></div>
-    <div class="form-group"><label>Descripción</label><textarea id="svcDescripcion" rows="2" style="resize:none;"></textarea></div>
-    <div class="form-group"><label>Duración (min) *</label><input type="number" id="svcDuracion" placeholder="30" min="1"></div>
-    <div class="form-group"><label>Precio *</label><input type="number" id="svcPrecio" placeholder="25000" min="0"></div>
-    <div class="form-group"><label>Estado</label><select id="svcEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
-    <div class="msg" id="modalServicioMsg"></div>
-    <div class="modal-actions"><button class="btn-danger" onclick="cerrarModal('modalServicio')">Cancelar</button><button class="btn-primary" onclick="guardarServicio()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- Modal Empleado -->
-<div class="modal-overlay" id="modalEmpleado">
-  <div class="modal">
-    <h2 class="modal-title" id="modalEmpleadoTitle">Nuevo Empleado</h2>
-    <input type="hidden" id="empleadoId">
-    <div class="form-group"><label>Nombre *</label><input type="text" id="empNombre"></div>
-    <div class="form-group"><label>Apellido *</label><input type="text" id="empApellido"></div>
-    <div class="form-group"><label>Especialidad</label><input type="text" id="empEspecialidad" placeholder="Ej: Barbero"></div>
-    <div class="form-group"><label>Teléfono</label><input type="text" id="empTelefono"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="empEmail"></div>
-    <div class="form-group"><label>Estado</label><select id="empEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
-    <div class="msg" id="modalEmpleadoMsg"></div>
-    <div class="modal-actions"><button class="btn-danger" onclick="cerrarModal('modalEmpleado')">Cancelar</button><button class="btn-primary" onclick="guardarEmpleado()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- Modal Producto -->
-<div class="modal-overlay" id="modalProducto">
-  <div class="modal">
-    <h2 class="modal-title" id="modalProductoTitle">Nuevo Producto</h2>
-    <input type="hidden" id="productoId">
-    <div class="form-group"><label>Nombre *</label><input type="text" id="prodNombre"></div>
-    <div class="form-group"><label>Descripción</label><textarea id="prodDescripcion" rows="2" style="resize:none;"></textarea></div>
-    <div class="form-group"><label>Precio *</label><input type="number" id="prodPrecio" min="0"></div>
-    <div class="form-group"><label>Stock *</label><input type="number" id="prodStock" min="0"></div>
-    <div class="form-group"><label>Estado</label><select id="prodEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
-    <div class="msg" id="modalProductoMsg"></div>
-    <div class="modal-actions"><button class="btn-danger" onclick="cerrarModal('modalProducto')">Cancelar</button><button class="btn-primary" onclick="guardarProducto()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- Modal Cita (propietario) -->
-<div class="modal-overlay" id="modalCita">
-  <div class="modal">
-    <h2 class="modal-title">Nueva Cita</h2>
-    <input type="hidden" id="citaId">
-    <div class="form-group"><label>Empleado *</label><select id="citaEmpleado"><option value="">Seleccionar...</option></select></div>
-    <div class="form-group">
-      <label>Cliente *</label>
-      <select id="citaCliente"><option value="">Cargando...</option></select>
-      <p style="font-size:0.65rem;color:var(--gray);margin-top:4px;">Si no aparece, ingresa el ID manualmente:</p>
-      <input type="number" id="citaClienteId" placeholder="ID del cliente (ej: 1, 6, 8...)" style="margin-top:4px;">
-    </div>
-    <div class="form-group"><label>Fecha *</label><input type="date" id="citaFecha"></div>
-    <div class="form-group"><label>Hora inicio *</label><input type="time" id="citaHoraInicio"></div>
-    <div class="form-group"><label>Hora fin *</label><input type="time" id="citaHoraFin"></div>
-    <div class="form-group"><label>Observaciones</label><textarea id="citaObservaciones" rows="2" style="resize:none;"></textarea></div>
-    <div class="msg" id="modalCitaMsg"></div>
-    <div class="modal-actions"><button class="btn-danger" onclick="cerrarModal('modalCita')">Cancelar</button><button class="btn-primary" onclick="guardarCita()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- Modal Cita Cliente — elige negocio y empleado -->
-<div class="modal-overlay" id="modalCitaCliente">
-  <div class="modal">
-    <h2 class="modal-title">Agendar Cita</h2>
-    <input type="hidden" id="citaClienteNegocioId">
-    <div class="form-group"><label>Negocio *</label><select id="citaClienteNegocio" onchange="cargarEmpleadosCliente(this.value)"><option value="">Seleccionar negocio...</option></select></div>
-    <div class="form-group"><label>Empleado *</label><select id="citaClienteEmpleado"><option value="">Seleccionar empleado...</option></select></div>
-    <div class="form-group"><label>Fecha *</label><input type="date" id="citaClienteFecha"></div>
-    <div class="form-group"><label>Hora inicio *</label><input type="time" id="citaClienteHoraInicio"></div>
-    <div class="form-group"><label>Hora fin *</label><input type="time" id="citaClienteHoraFin"></div>
-    <div class="form-group"><label>Observaciones</label><textarea id="citaClienteObservaciones" rows="2" style="resize:none;"></textarea></div>
-    <div class="msg" id="modalCitaClienteMsg"></div>
-    <div class="modal-actions"><button class="btn-danger" onclick="cerrarModal('modalCitaCliente')">Cancelar</button><button class="btn-primary" onclick="guardarCitaCliente()">Agendar</button></div>
-  </div>
-</div>
-
-<!-- Modal Confirmar -->
-<div class="modal-overlay" id="modalConfirmar">
-  <div class="modal" style="max-width:380px;text-align:center;">
-    <h2 class="modal-title" style="color:#e74c3c;"> Confirmar</h2>
-    <p style="color:var(--white2);margin-bottom:24px;font-size:0.85rem;" id="modalConfirmarTexto">¿Estás seguro?</p>
-    <div class="modal-actions" style="justify-content:center;">
-      <button class="btn-secondary" onclick="cerrarModal('modalConfirmar')">Cancelar</button>
-      <button class="btn-danger" id="btnConfirmarEliminar">Eliminar</button>
-    </div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer id="footerMain">
-
-  <div class="footer-top">
-    <div>
-      <div class="footer-brand">SIGI-E</div>
-      <div class="footer-tagline">Sistema de Gestión Inteligente para Estética</div>
-
-    </div>
-    <div class="footer-team">
-      <div class="footer-team-title">Equipo</div>
-      <div class="footer-team-names"><span>Proyecto Final</span><span>2026</span></div>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span class="footer-copy">© 2026 SIGI-E</span>
-    <span class="footer-course">Ingeniería de Software</span>
-  </div>
-</footer>
-
-<script>
-function seleccionarRol(rol) {
-  document.getElementById("btnRolNegocio").classList.toggle("selected", rol==="negocio");
-  document.getElementById("btnRolCliente").classList.toggle("selected", rol==="cliente");
-  document.querySelector(`input[value="${rol}"]`).checked = true;
-}
-function volverDashboard() {
-  const u = JSON.parse(localStorage.getItem("usuario")||"null");
-  if (u && (u.rol==="negocio"||u.rol==="admin")) mostrarDashboardNegocio();
-  else mostrarDashboardCliente();
-}
-function mostrarEditarPerfil() {
-  const n = document.getElementById("perfilNombre").textContent;
-  const a = document.getElementById("perfilApellido").textContent;
-  const t = document.getElementById("perfilTelefono").textContent;
-  document.getElementById("editNombre").value   = n !== "—" ? n : "";
-  document.getElementById("editApellido").value = a !== "—" ? a : "";
-  document.getElementById("editTelefono").value = t !== "—" ? t : "";
-  document.getElementById("perfilEditarForm").style.display = "block";
-  document.getElementById("perfilEditarForm").scrollIntoView({behavior:"smooth"});
-}
-function cancelarEditarPerfil() {
-  document.getElementById("perfilEditarForm").style.display = "none";
-}
-</script>
+<footer></footer>
 <script src="js/main.js"></script>
 </body>
 </html>
