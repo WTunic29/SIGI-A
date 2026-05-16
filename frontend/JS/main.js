@@ -190,6 +190,26 @@ function obtenerIdNegocio(n) {
   return Number(campoNegocio(n, "id_negocio", "id", "negocio_id"));
 }
 
+function guardarNegocioActual(negocio) {
+  if (!negocio) return;
+  const idNegocio = obtenerIdNegocio(negocio);
+  if (idNegocio) localStorage.setItem("id_negocio_actual", String(idNegocio));
+}
+
+async function obtenerIdNegocioActual() {
+  const guardado = Number(localStorage.getItem("id_negocio_actual"));
+  if (guardado) return guardado;
+
+  const negocio = await obtenerMiNegocio(true);
+  const idNegocio = obtenerIdNegocio(negocio);
+  if (idNegocio) {
+    localStorage.setItem("id_negocio_actual", String(idNegocio));
+    return idNegocio;
+  }
+
+  throw new Error("No se encontró el negocio asociado a tu cuenta. Registra primero tu negocio o vuelve al panel principal.");
+}
+
 const DIAS_SEMANA = {
   1: "Lunes",
   2: "Martes",
@@ -447,7 +467,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.status === 201 || res.ok) {
         mostrarMensaje("negocioMsg", "Negocio registrado correctamente.", false);
         document.getElementById("negocioForm").reset();
-        const nombreNegocio = campoNegocio(data.negocio || data, "nombre_negocio", "nombre") || payload.nombre;
+        const negocioCreado = data.negocio || data;
+        guardarNegocioActual(negocioCreado);
+        miNegocioCache = negocioCreado;
+        const nombreNegocio = campoNegocio(negocioCreado, "nombre_negocio", "nombre") || payload.nombre;
         const span = document.getElementById("dashNombreNegocio");
         if (span) span.textContent = nombreNegocio;
       } else if (res.status === 401 || res.status === 403) {
@@ -480,6 +503,7 @@ function cargarDatosDashboard(usuario) {
         Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario.id_usuario || usuario.id)
       ) || data[0];
       miNegocioCache = miNegocio || null;
+      guardarNegocioActual(miNegocioCache);
       const span = document.getElementById("dashNombreNegocio");
       if (span) span.textContent = miNegocio ? campoNegocio(miNegocio, "nombre_negocio", "nombre") : "Sin negocio aún";
     })
@@ -722,6 +746,7 @@ async function obtenerMiNegocio(force = false) {
   miNegocioCache = Array.isArray(negocios)
     ? negocios.find(n => Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario?.id_usuario || usuario?.id)) || negocios[0]
     : null;
+  guardarNegocioActual(miNegocioCache);
   return miNegocioCache;
 }
 
@@ -740,7 +765,7 @@ function renderAdminList(items, contenedorId, tipo) {
 
     if (tipo === "empleado") {
       meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "")}`;
-      acciones = `<button onclick="seleccionarEmpleadoHorario(${id})">Horarios</button><button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Desactivar</button>`;
+      acciones = `<button onclick="seleccionarEmpleadoHorario(${id})">Horarios</button><button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Eliminar</button>`;
     }
     if (tipo === "servicio") {
       meta = `${escapeHtml(item.duracion_minutos || "—")} min · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
@@ -1180,7 +1205,7 @@ function renderMisCitas() {
       <div class="row-actions">
         ${puedeCalificar ? `<button onclick="calificarCita(${id}, ${cita.id_negocio})">Calificar</button>` : ""}
         ${puedeCancelar ? `<button onclick="cancelarMiCita(${id})">Cancelar</button>` : ""}
-        <button onclick="pagarCitaInfo(${id})">Pagar cita</button>
+        ${!cancelada ? `<button onclick="pagarCitaInfo(${id})">Pagar cita</button>` : ""}
       </div>
     </article>`;
   }).join("");
@@ -1403,7 +1428,11 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarMensaje("empleadoMsg", "Empleado actualizado correctamente.", false);
         cancelarEdicionEmpleado(false);
       } else {
-        await apiFetch(API_PATHS.empleados, { method: "POST", body: JSON.stringify(payload) });
+        const idNegocio = await obtenerIdNegocioActual();
+        await apiFetch(API_PATHS.empleados, {
+          method: "POST",
+          body: JSON.stringify({ ...payload, id_negocio: idNegocio })
+        });
         e.target.reset();
         mostrarMensaje("empleadoMsg", "Empleado creado correctamente.", false);
       }
@@ -1422,7 +1451,16 @@ document.addEventListener("DOMContentLoaded", () => {
       precio: Number(document.getElementById("serPrecio").value),
       imagen_url: document.getElementById("serImagen").value.trim() || null,
     };
-    try { await apiFetch(API_PATHS.servicios, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("servicioMsg", "Servicio creado correctamente.", false); cargarServicios(); }
+    try {
+      const idNegocio = await obtenerIdNegocioActual();
+      await apiFetch(API_PATHS.servicios, {
+        method: "POST",
+        body: JSON.stringify({ ...payload, id_negocio: idNegocio })
+      });
+      e.target.reset();
+      mostrarMensaje("servicioMsg", "Servicio creado correctamente.", false);
+      cargarServicios();
+    }
     catch (err) { mostrarMensaje("servicioMsg", err.message); }
   });
 
@@ -1435,7 +1473,16 @@ document.addEventListener("DOMContentLoaded", () => {
       stock: Number(document.getElementById("proStock").value),
       imagen_url: document.getElementById("proImagen").value.trim() || null,
     };
-    try { await apiFetch(API_PATHS.productos, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("productoMsg", "Producto creado correctamente.", false); cargarProductos(); }
+    try {
+      const idNegocio = await obtenerIdNegocioActual();
+      await apiFetch(API_PATHS.productos, {
+        method: "POST",
+        body: JSON.stringify({ ...payload, id_negocio: idNegocio })
+      });
+      e.target.reset();
+      mostrarMensaje("productoMsg", "Producto creado correctamente.", false);
+      cargarProductos();
+    }
     catch (err) { mostrarMensaje("productoMsg", err.message); }
   });
 
@@ -1516,7 +1563,7 @@ async function editarEmpleado(id) {
   }
 }
 async function eliminarEmpleado(id) {
-  if (!confirm("¿Desactivar este empleado?")) return;
+  if (!confirm("¿Eliminar este empleado definitivamente? También se eliminarán sus horarios y citas asociadas.")) return;
   try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "DELETE" }); cargarEmpleados(); }
   catch (e) { alert(e.message); }
 }

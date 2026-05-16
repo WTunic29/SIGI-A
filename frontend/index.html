@@ -298,32 +298,55 @@
   </div>
 </section>
 
-<section class="hero dashboard-screen" id="dashboard-usuario" style="display:none;">
+<section class="hero dashboard-screen user-home" id="dashboard-usuario" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="dashboard-container">
-    <div class="dashboard-header">
-      <div>
-        <p class="section-eyebrow">Panel de usuario</p>
-        <h1 class="dashboard-title">Bienvenido, <span id="userDashNombre">—</span></h1>
-        <p class="muted">Estos son los negocios disponibles para agendar o consultar.</p>
+  <div class="user-dashboard-shell">
+    <aside class="user-side-panel">
+      <div class="side-brand-mini side-menu-title">
+        <p class="section-eyebrow">Menú</p>
+        <p>Gestiona tu cuenta.</p>
       </div>
-      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
-    </div>
 
-    <div class="module-grid client-actions">
-      <article class="module-card"><span>Agenda</span><h3>Mis citas</h3><p>Consulta tus citas pendientes, canceladas y las que ya pasaron.</p><button onclick="irMisCitas()">Ver mis citas</button></article>
-      <article class="module-card"><span>Tienda</span><h3>Productos</h3><p>Consulta productos disponibles y crea pedidos.</p><button onclick="irTiendaUsuario()">Ver productos</button></article>
-      <article class="module-card"><span>Compras</span><h3>Mis pedidos</h3><p>Revisa tus pedidos y registra pagos.</p><button onclick="irMisPedidos()">Ver pedidos</button></article>
-      <article class="module-card"><span>Opiniones</span><h3>Calificaciones</h3><p>Consulta y registra calificaciones de tus citas.</p><button onclick="irMisCalificaciones()">Ver calificaciones</button></article>
-    </div>
+      <nav class="user-quick-menu" aria-label="Opciones de usuario">
+        <button type="button" onclick="irMisCitas()">
+          <span>Agenda</span>
+          <strong>Mis citas</strong>
+        </button>
+        <button type="button" onclick="irTiendaUsuario()">
+          <span>Tienda</span>
+          <strong>Productos</strong>
+        </button>
+        <button type="button" onclick="irMisPedidos()">
+          <span>Compras</span>
+          <strong>Mis pedidos</strong>
+        </button>
+        <button type="button" onclick="irMisCalificaciones()">
+          <span>Opiniones</span>
+          <strong>Calificaciones</strong>
+        </button>
+      </nav>
 
-    <div class="toolbar">
-      <input type="search" id="buscarNegocio" placeholder="Buscar negocio por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
-      <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
-    </div>
+      <button class="btn-secondary clean side-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+    </aside>
 
-    <div id="listaNegociosUsuario" class="business-grid"></div>
-    <span id="usuarioNegociosMsg" class="form-msg"></span>
+    <main class="user-business-main">
+      <div class="business-main-header">
+        <div>
+          <p class="section-eyebrow">Panel de usuario</p>
+          <h1 class="dashboard-title user-welcome-title">Hola, <span id="userDashNombre">—</span></h1>
+          <h2 class="business-subtitle">Negocios <span class="gold">disponibles</span></h2>
+          <p class="muted">Elige una barbería para ver trabajadores, servicios y agendar tu cita.</p>
+        </div>
+        <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
+      </div>
+
+      <div class="toolbar user-business-toolbar">
+        <input type="search" id="buscarNegocio" placeholder="Buscar por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
+      </div>
+
+      <div id="listaNegociosUsuario" class="business-grid user-business-grid"></div>
+      <span id="usuarioNegociosMsg" class="form-msg"></span>
+    </main>
   </div>
 </section>
 
