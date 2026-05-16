@@ -39,6 +39,7 @@ function actualizarNavbar() {
   const navUserName = document.getElementById("navUserName");
   const menuRegistrarNegocio = document.getElementById("menuRegistrarNegocio");
   const menuValidarAcceso = document.getElementById("menuValidarAcceso");
+  const menuNegocioItems = document.querySelectorAll(".menu-negocio");
 
   if (!usuario) {
     if (navGuest) navGuest.style.display = "flex";
@@ -53,6 +54,7 @@ function actualizarNavbar() {
   const esNegocio = normalizarRol(usuario.rol) === "negocio";
   if (menuRegistrarNegocio) menuRegistrarNegocio.style.display = esNegocio ? "block" : "none";
   if (menuValidarAcceso) menuValidarAcceso.style.display = esNegocio ? "block" : "none";
+  menuNegocioItems.forEach(item => item.style.display = esNegocio ? "block" : "none");
 }
 
 // ─────────────────────────────────────────────
@@ -61,7 +63,8 @@ function actualizarNavbar() {
 const TODAS = [
   "inicio", "cta", "login", "registro", "verify2fa",
   "dashboard-negocio", "dashboard-usuario", "mi-perfil",
-  "ver-negocios", "validar-acceso", "registrar-negocio"
+  "ver-negocios", "validar-acceso", "registrar-negocio",
+  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas"
 ];
 
 function setVisible(show, hide = TODAS) {
@@ -362,8 +365,9 @@ function cargarDatosDashboard(usuario) {
     .then(data => {
       if (!Array.isArray(data)) return;
       const miNegocio = data.find(n =>
-        campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id") === usuario.id
-      );
+        Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario.id_usuario || usuario.id)
+      ) || data[0];
+      miNegocioCache = miNegocio || null;
       const span = document.getElementById("dashNombreNegocio");
       if (span) span.textContent = miNegocio ? campoNegocio(miNegocio, "nombre_negocio", "nombre") : "Sin negocio aún";
     })
@@ -501,4 +505,209 @@ async function irValidarAcceso() {
     mostrarMensaje("validarMsg", "No se pudo conectar al servidor.");
     mostrarValidarAcceso();
   }
+}
+
+// ─────────────────────────────────────────────
+// MÓDULOS NEGOCIO: EMPLEADOS / SERVICIOS / INVENTARIO / CITAS
+// ─────────────────────────────────────────────
+let miNegocioCache = null;
+const API_PATHS = {
+  empleados: "/empleados/",
+  servicios: "/servicios/",
+  productos: "/productos/",
+  citas: "/citas/",
+  inventario: "/inventario-movimientos/",
+};
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+  return data;
+}
+
+function asegurarRolNegocio() {
+  const usuario = getUsuario();
+  if (!usuario || !getToken()) { mostrarLogin(); return false; }
+  if (normalizarRol(usuario.rol) !== "negocio" && normalizarRol(usuario.rol) !== "admin") {
+    alert("Esta opción es solo para cuentas tipo negocio.");
+    irDashboardPorRol();
+    return false;
+  }
+  return true;
+}
+
+async function obtenerMiNegocio(force = false) {
+  if (miNegocioCache && !force) return miNegocioCache;
+  const usuario = getUsuario();
+  const negocios = await apiFetch("/negocios/");
+  miNegocioCache = Array.isArray(negocios)
+    ? negocios.find(n => Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario?.id_usuario || usuario?.id)) || negocios[0]
+    : null;
+  return miNegocioCache;
+}
+
+function renderAdminList(items, contenedorId, tipo) {
+  const cont = document.getElementById(contenedorId);
+  if (!cont) return;
+  if (!Array.isArray(items) || items.length === 0) {
+    cont.innerHTML = `<div class="empty-state">No hay registros todavía.</div>`;
+    return;
+  }
+  cont.innerHTML = items.map(item => {
+    const id = item.id_empleado || item.id_servicio || item.id_producto || item.id_cita;
+    const nombre = escapeHtml(item.nombre || item.nombre_negocio || `Registro #${id}`);
+    let meta = "";
+    let acciones = "";
+
+    if (tipo === "empleado") {
+      meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "")}`;
+      acciones = `<button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Desactivar</button>`;
+    }
+    if (tipo === "servicio") {
+      meta = `${escapeHtml(item.duracion_minutos || "—")} min · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
+      acciones = `<button onclick="editarServicio(${id})">Editar</button><button onclick="eliminarServicio(${id})">Eliminar</button>`;
+    }
+    if (tipo === "producto") {
+      meta = `Stock: ${escapeHtml(item.stock ?? 0)} · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
+      acciones = `<button onclick="editarProducto(${id})">Editar</button><button onclick="movimientoInventario(${id})">Movimiento</button><button onclick="eliminarProducto(${id})">Desactivar</button>`;
+    }
+    if (tipo === "cita") {
+      meta = `Cliente #${escapeHtml(item.id_cliente)} · Empleado #${escapeHtml(item.id_empleado)} · ${escapeHtml(item.fecha)} ${escapeHtml(item.hora_inicio)}-${escapeHtml(item.hora_fin)} · ${escapeHtml(item.estado)}`;
+      acciones = `<button onclick="cancelarCita(${id})">Cancelar</button>`;
+    }
+
+    return `<article class="admin-item"><div><h4>${nombre}</h4><p>${meta}</p></div><div class="row-actions">${acciones}</div></article>`;
+  }).join("");
+}
+
+function mostrarGestion(id) {
+  if (!asegurarRolNegocio()) return;
+  setVisible([id]);
+}
+
+async function irGestionEmpleados() { mostrarGestion("gestion-empleados"); await cargarEmpleados(); }
+async function irGestionServicios() { mostrarGestion("gestion-servicios"); await cargarServicios(); }
+async function irGestionProductos() { mostrarGestion("gestion-productos"); await cargarProductos(); }
+async function irGestionCitas() { mostrarGestion("gestion-citas"); await cargarCitas(); }
+
+async function cargarEmpleados() {
+  try { renderAdminList(await apiFetch(API_PATHS.empleados), "listaEmpleados", "empleado"); mostrarMensaje("empleadoMsg", "", false); }
+  catch (e) { document.getElementById("listaEmpleados").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+}
+async function cargarServicios() {
+  try { renderAdminList(await apiFetch(API_PATHS.servicios), "listaServicios", "servicio"); mostrarMensaje("servicioMsg", "", false); }
+  catch (e) { document.getElementById("listaServicios").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+}
+async function cargarProductos() {
+  try { renderAdminList(await apiFetch(API_PATHS.productos), "listaProductos", "producto"); mostrarMensaje("productoMsg", "", false); }
+  catch (e) { document.getElementById("listaProductos").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+}
+async function cargarCitas() {
+  try {
+    const negocio = await obtenerMiNegocio(true);
+    if (!negocio?.id_negocio) throw new Error("Primero debes tener un negocio registrado.");
+    renderAdminList(await apiFetch(`${API_PATHS.citas}negocio/${negocio.id_negocio}`), "listaCitas", "cita");
+    mostrarMensaje("citasMsg", "", false);
+  } catch (e) {
+    document.getElementById("listaCitas").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("empleadoForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      nombre: document.getElementById("empNombre").value.trim(),
+      apellido: document.getElementById("empApellido").value.trim(),
+      telefono: document.getElementById("empTelefono").value.trim() || null,
+      email: document.getElementById("empEmail").value.trim() || null,
+      especialidad: document.getElementById("empEspecialidad").value.trim() || null,
+      foto_url: document.getElementById("empFoto").value.trim() || null,
+    };
+    try { await apiFetch(API_PATHS.empleados, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("empleadoMsg", "Empleado creado correctamente.", false); cargarEmpleados(); }
+    catch (err) { mostrarMensaje("empleadoMsg", err.message); }
+  });
+
+  document.getElementById("servicioForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      nombre: document.getElementById("serNombre").value.trim(),
+      descripcion: document.getElementById("serDescripcion").value.trim() || null,
+      duracion_minutos: Number(document.getElementById("serDuracion").value),
+      precio: Number(document.getElementById("serPrecio").value),
+      imagen_url: document.getElementById("serImagen").value.trim() || null,
+    };
+    try { await apiFetch(API_PATHS.servicios, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("servicioMsg", "Servicio creado correctamente.", false); cargarServicios(); }
+    catch (err) { mostrarMensaje("servicioMsg", err.message); }
+  });
+
+  document.getElementById("productoForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      nombre: document.getElementById("proNombre").value.trim(),
+      descripcion: document.getElementById("proDescripcion").value.trim() || null,
+      precio: Number(document.getElementById("proPrecio").value),
+      stock: Number(document.getElementById("proStock").value),
+      imagen_url: document.getElementById("proImagen").value.trim() || null,
+    };
+    try { await apiFetch(API_PATHS.productos, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("productoMsg", "Producto creado correctamente.", false); cargarProductos(); }
+    catch (err) { mostrarMensaje("productoMsg", err.message); }
+  });
+});
+
+async function editarEmpleado(id) {
+  const especialidad = prompt("Nueva especialidad del empleado:");
+  if (especialidad === null) return;
+  try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "PUT", body: JSON.stringify({ especialidad }) }); cargarEmpleados(); }
+  catch (e) { alert(e.message); }
+}
+async function eliminarEmpleado(id) {
+  if (!confirm("¿Desactivar este empleado?")) return;
+  try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "DELETE" }); cargarEmpleados(); }
+  catch (e) { alert(e.message); }
+}
+async function editarServicio(id) {
+  const precio = prompt("Nuevo precio del servicio:");
+  if (precio === null) return;
+  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "PUT", body: JSON.stringify({ precio: Number(precio) }) }); cargarServicios(); }
+  catch (e) { alert(e.message); }
+}
+async function eliminarServicio(id) {
+  if (!confirm("¿Eliminar/desactivar este servicio?")) return;
+  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "DELETE" }); cargarServicios(); }
+  catch (e) { alert(e.message); }
+}
+async function editarProducto(id) {
+  const precio = prompt("Nuevo precio del producto:");
+  if (precio === null) return;
+  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "PUT", body: JSON.stringify({ precio: Number(precio) }) }); cargarProductos(); }
+  catch (e) { alert(e.message); }
+}
+async function eliminarProducto(id) {
+  if (!confirm("¿Desactivar este producto?")) return;
+  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "DELETE" }); cargarProductos(); }
+  catch (e) { alert(e.message); }
+}
+async function movimientoInventario(id) {
+  const tipo_movimiento = prompt("Tipo de movimiento: entrada o salida", "entrada");
+  if (!tipo_movimiento) return;
+  const cantidad = prompt("Cantidad:", "1");
+  if (!cantidad) return;
+  const motivo = prompt("Motivo:", "Ajuste manual") || "Ajuste manual";
+  try {
+    await apiFetch(API_PATHS.inventario, { method: "POST", body: JSON.stringify({ id_producto: id, tipo_movimiento, cantidad: Number(cantidad), motivo }) });
+    cargarProductos();
+  } catch (e) { alert(e.message); }
+}
+async function cancelarCita(id) {
+  if (!confirm("¿Cancelar esta cita?")) return;
+  try { await apiFetch(`${API_PATHS.citas}${id}`, { method: "DELETE" }); cargarCitas(); }
+  catch (e) { alert(e.message); }
 }

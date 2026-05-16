@@ -28,6 +28,10 @@
       <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
+      <a href="#" class="menu-negocio" onclick="irGestionEmpleados()">Empleados</a>
+      <a href="#" class="menu-negocio" onclick="irGestionServicios()">Servicios</a>
+      <a href="#" class="menu-negocio" onclick="irGestionProductos()">Inventario</a>
+      <a href="#" class="menu-negocio" onclick="irGestionCitas()">Citas</a>
       <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
   </div>
@@ -249,29 +253,43 @@
       <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
 
-    <div class="stats-grid">
-      <article class="stat-card">
-        <span>Rol actual</span>
-        <strong>Negocio</strong>
-        <p>Acceso administrativo.</p>
+    <div class="module-grid">
+      <article class="module-card">
+        <span>Mi barbería</span>
+        <h3>Negocio</h3>
+        <p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p>
+        <button onclick="irRegistrarNegocio()">Registrar negocio</button>
       </article>
-      <article class="stat-card">
-        <span>Gestión</span>
-        <strong>Mi barbería</strong>
-        <p>Registra o consulta tu negocio.</p>
+      <article class="module-card">
+        <span>Agenda</span>
+        <h3>Citas</h3>
+        <p>Consulta y administra las citas asociadas a tu negocio.</p>
+        <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
-      <article class="stat-card">
-        <span>Directorio</span>
-        <strong>Negocios</strong>
-        <p>Consulta negocios disponibles.</p>
+      <article class="module-card">
+        <span>Equipo</span>
+        <h3>Empleados</h3>
+        <p>Crea empleados, consulta el listado y desactiva empleados cuando sea necesario.</p>
+        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
       </article>
-    </div>
-
-    <div class="action-grid">
-      <button onclick="irMiPerfil()">Mi perfil</button>
-      <button onclick="irRegistrarNegocio()">Registrar negocio</button>
-      <button onclick="irVerNegocios()">Ver negocios</button>
-      <button onclick="irValidarAcceso()">Validar acceso negocio</button>
+      <article class="module-card">
+        <span>Catálogo</span>
+        <h3>Servicios</h3>
+        <p>Crea servicios, define duración, precio y administra el catálogo del negocio.</p>
+        <button onclick="irGestionServicios()">Gestionar servicios</button>
+      </article>
+      <article class="module-card">
+        <span>Inventario</span>
+        <h3>Productos</h3>
+        <p>Carga productos, controla stock y registra movimientos de entrada o salida.</p>
+        <button onclick="irGestionProductos()">Gestionar inventario</button>
+      </article>
+      <article class="module-card">
+        <span>Cuenta</span>
+        <h3>Perfil</h3>
+        <p>Consulta tus datos de usuario y valida el acceso como negocio.</p>
+        <button onclick="irMiPerfil()">Mi perfil</button>
+      </article>
     </div>
   </div>
 </section>
@@ -358,6 +376,85 @@
     <div id="validarInfo" class="profile-card"></div>
     <span id="validarMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-empleados" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Equipo</p><h1 class="dashboard-title">Gestionar <span>Empleados</span></h1><p class="muted">Crea, consulta, edita o desactiva empleados de tu negocio.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="empleadoForm" class="manager-form">
+        <h3>Crear empleado</h3>
+        <div class="form-grid"><input id="empNombre" placeholder="Nombre" required><input id="empApellido" placeholder="Apellido" required></div>
+        <div class="form-grid"><input id="empTelefono" placeholder="Teléfono"><input id="empEmail" type="email" placeholder="Email"></div>
+        <input id="empEspecialidad" placeholder="Especialidad">
+        <input id="empFoto" placeholder="Foto URL opcional">
+        <button class="btn-primary full" type="submit">Guardar empleado</button>
+        <span id="empleadoMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Empleados registrados</h3><button class="btn-primary small" onclick="cargarEmpleados()">Actualizar</button></div><div id="listaEmpleados" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-servicios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Catálogo</p><h1 class="dashboard-title">Gestionar <span>Servicios</span></h1><p class="muted">Crea servicios, ajusta precios, duración y estado.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="servicioForm" class="manager-form">
+        <h3>Crear servicio</h3>
+        <input id="serNombre" placeholder="Nombre del servicio" required>
+        <input id="serDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="serDuracion" type="number" min="1" placeholder="Duración minutos" required><input id="serPrecio" type="number" min="0" step="0.01" placeholder="Precio" required></div>
+        <input id="serImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar servicio</button>
+        <span id="servicioMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Servicios registrados</h3><button class="btn-primary small" onclick="cargarServicios()">Actualizar</button></div><div id="listaServicios" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-productos" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Inventario</p><h1 class="dashboard-title">Gestionar <span>Productos</span></h1><p class="muted">Carga productos, controla stock y registra entradas o salidas.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="productoForm" class="manager-form">
+        <h3>Cargar producto</h3>
+        <input id="proNombre" placeholder="Nombre del producto" required>
+        <input id="proDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="proPrecio" type="number" min="0" step="0.01" placeholder="Precio" required><input id="proStock" type="number" min="0" placeholder="Stock inicial" required></div>
+        <input id="proImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar producto</button>
+        <span id="productoMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Productos registrados</h3><button class="btn-primary small" onclick="cargarProductos()">Actualizar</button></div><div id="listaProductos" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-citas" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Agenda</p><h1 class="dashboard-title">Gestionar <span>Citas</span></h1><p class="muted">Consulta las citas de tu negocio y cancela las que corresponda.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="list-header"><h3>Citas del negocio</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
+    <div id="listaCitas" class="admin-list"></div>
+    <span id="citasMsg" class="form-msg"></span>
   </div>
 </section>
 
