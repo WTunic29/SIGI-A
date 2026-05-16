@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}
+CMD ["sh", "-c", "echo ARRANQUE_OK && pwd && ls -la && sleep 60"]
