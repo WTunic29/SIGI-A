@@ -917,3 +917,193 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
   .admin-item { flex-direction: column; align-items: flex-start; }
   .row-actions { justify-content: flex-start; }
 }
+
+/* ── DETALLE NEGOCIO / AGENDAMIENTO CLIENTE ── */
+.business-card.clickable {
+  cursor: pointer;
+  transition: transform .25s ease, border-color .25s ease, background .25s ease;
+}
+.business-card.clickable:hover {
+  transform: translateY(-4px);
+  border-color: rgba(201,168,76,.65);
+  background: rgba(201,168,76,.06);
+}
+.btn-primary.tiny {
+  margin-top: 14px;
+  padding: 9px 14px;
+  font-size: .6rem;
+  letter-spacing: 1.5px;
+  border-radius: 999px;
+}
+.business-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+.detail-card {
+  border: 1px solid rgba(201,168,76,.22);
+  background: rgba(255,255,255,.035);
+  border-radius: 18px;
+  padding: 24px;
+}
+.detail-card h3,
+.manager-form h3,
+.list-header h3 {
+  color: var(--gold-light);
+  margin-bottom: 16px;
+}
+.detail-card p {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.detail-card span {
+  color: var(--gray);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.detail-card strong {
+  color: var(--white2);
+  font-weight: 500;
+}
+.booking-form select,
+.booking-form textarea,
+.manager-form select,
+.manager-form textarea {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(201,168,76,.28);
+  color: var(--white);
+  border-radius: 14px;
+  font-family: 'Montserrat', sans-serif;
+  outline: none;
+}
+.booking-form select option,
+.manager-form select option {
+  background: #111;
+  color: #f5f0e8;
+}
+.detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+.mini-grid {
+  display: grid;
+  gap: 14px;
+}
+.mini-card {
+  border: 1px solid rgba(201,168,76,.18);
+  background: rgba(255,255,255,.035);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.mini-card strong {
+  color: var(--gold-light);
+}
+.mini-card span {
+  color: var(--white2);
+}
+.mini-card small {
+  color: var(--gray);
+}
+@media (max-width: 900px) {
+  .business-detail-layout,
+  .detail-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.blocked-form {
+  opacity: 0.72;
+  position: relative;
+}
+.blocked-form select,
+.blocked-form input,
+.blocked-form textarea,
+.blocked-form button {
+  cursor: not-allowed;
+}
+
+/* Ajustes para horarios de empleados */
+.manager-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.spacing-top {
+  margin-top: 24px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--white2);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+.check-row input {
+  width: auto;
+}
+.schedule-info {
+  margin-top: -6px;
+  margin-bottom: 10px;
+  color: var(--gold-light);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: rgba(201,168,76,0.07);
+  border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+
+/* Selector tipo calendario para horarios */
+.day-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(42px, 1fr));
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+.day-picker label {
+  border: 1px solid rgba(201,168,76,.35);
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255,255,255,.04);
+  color: var(--white2);
+  font-size: .72rem;
+  letter-spacing: .5px;
+  transition: .2s ease;
+}
+.day-picker label:has(input:checked) {
+  background: var(--gold);
+  color: var(--black);
+  border-color: var(--gold);
+  font-weight: 700;
+}
+.day-picker input { display: none; }
+.field-help {
+  color: var(--gray);
+  font-size: .78rem;
+  line-height: 1.5;
+  margin: -2px 0 10px;
+}
+.full-link {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+@media (max-width: 768px) {
+  .day-picker { grid-template-columns: repeat(4, 1fr); }
+}

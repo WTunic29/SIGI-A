@@ -11,6 +11,7 @@ const ROLES = {
 };
 
 let negociosCache = [];
+let empleadosCache = [];
 
 // ─────────────────────────────────────────────
 // NAVBAR
@@ -64,7 +65,7 @@ const TODAS = [
   "inicio", "cta", "login", "registro", "verify2fa",
   "dashboard-negocio", "dashboard-usuario", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
-  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas"
+  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio"
 ];
 
 function setVisible(show, hide = TODAS) {
@@ -103,6 +104,7 @@ function mostrarMiPerfil() { setVisible(["mi-perfil"]); }
 function mostrarVerNegocios() { setVisible(["ver-negocios"]); }
 function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
 function mostrarRegistrarNegocio() { setVisible(["registrar-negocio"]); }
+function mostrarDetalleNegocio() { setVisible(["detalle-negocio"]); }
 
 function irDashboardPorRol() {
   const usuario = getUsuario();
@@ -179,6 +181,41 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function obtenerIdNegocio(n) {
+  return Number(campoNegocio(n, "id_negocio", "id", "negocio_id"));
+}
+
+const DIAS_SEMANA = {
+  1: "Lunes",
+  2: "Martes",
+  3: "Miércoles",
+  4: "Jueves",
+  5: "Viernes",
+  6: "Sábado",
+  7: "Domingo",
+  lunes: "Lunes",
+  martes: "Martes",
+  miercoles: "Miércoles",
+  miércoles: "Miércoles",
+  jueves: "Jueves",
+  viernes: "Viernes",
+  sabado: "Sábado",
+  sábado: "Sábado",
+  domingo: "Domingo",
+};
+
+function nombreDiaSemana(valor) {
+  return DIAS_SEMANA[String(valor).toLowerCase()] || DIAS_SEMANA[Number(valor)] || `Día ${escapeHtml(valor)}`;
+}
+
+function diasSeleccionadosHorario() {
+  return Array.from(document.querySelectorAll('input[name="horarioDias"]:checked')).map(input => Number(input.value));
+}
+
+function limpiarDiasHorario() {
+  document.querySelectorAll('input[name="horarioDias"]').forEach(input => { input.checked = false; });
+}
+
 function renderNegocios(lista, contenedorId) {
   const contenedor = document.getElementById(contenedorId);
   if (!contenedor) return;
@@ -189,14 +226,15 @@ function renderNegocios(lista, contenedorId) {
   }
 
   contenedor.innerHTML = lista.map(n => {
+    const idNegocio = obtenerIdNegocio(n);
     const nombre = escapeHtml(campoNegocio(n, "nombre_negocio", "nombre", "name") || "Negocio sin nombre");
     const descripcion = escapeHtml(campoNegocio(n, "descripcion", "description") || "Sin descripción registrada");
     const direccion = escapeHtml(campoNegocio(n, "direccion", "address") || "Sin dirección");
     const telefono = escapeHtml(campoNegocio(n, "telefono", "phone") || "Sin teléfono");
-    const correo = escapeHtml(campoNegocio(n, "correo", "email") || "Sin correo");
+    const correo = escapeHtml(campoNegocio(n, "email_negocio", "correo", "email") || "Sin correo");
 
     return `
-      <article class="business-card">
+      <article class="business-card clickable" onclick="abrirNegocioCliente(${idNegocio})">
         <div class="business-avatar">${nombre.charAt(0).toUpperCase()}</div>
         <div class="business-content">
           <h3>${nombre}</h3>
@@ -206,6 +244,7 @@ function renderNegocios(lista, contenedorId) {
             <span>📞 ${telefono}</span>
             <span>✉️ ${correo}</span>
           </div>
+          <button class="btn-primary tiny" type="button">Ver y agendar</button>
         </div>
       </article>
     `;
@@ -215,6 +254,74 @@ function renderNegocios(lista, contenedorId) {
 // ─────────────────────────────────────────────
 // FORMULARIOS
 // ─────────────────────────────────────────────
+function llenarSelectHorariosEmpleado(empleados) {
+  const select = document.getElementById("horarioEmpleadoSelect");
+  if (!select) return;
+  const lista = Array.isArray(empleados) ? empleados : [];
+  select.innerHTML = `<option value="">Selecciona empleado</option>` + lista.map(e => `
+    <option value="${e.id_empleado}">${escapeHtml(`${e.nombre || ""} ${e.apellido || ""}`.trim() || "Empleado")} - ${escapeHtml(e.especialidad || "General")}</option>
+  `).join("");
+}
+
+function seleccionarEmpleadoHorario(idEmpleado) {
+  const select = document.getElementById("horarioEmpleadoSelect");
+  if (select) select.value = String(idEmpleado);
+  cargarHorariosEmpleadoSeleccionado();
+}
+
+async function cargarHorariosEmpleadoSeleccionado() {
+  const idEmpleado = Number(document.getElementById("horarioEmpleadoSelect")?.value);
+  const cont = document.getElementById("listaHorariosEmpleado");
+  if (!cont) return;
+  if (!idEmpleado) {
+    cont.innerHTML = `<div class="empty-state">Selecciona un empleado para ver sus horarios.</div>`;
+    return;
+  }
+
+  try {
+    const data = await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idEmpleado}`));
+    const horarios = Array.isArray(data) ? data : (data.horarios || []);
+    if (!horarios.length) {
+      cont.innerHTML = `<div class="empty-state">Este empleado todavía no tiene horarios asignados.</div>`;
+      return;
+    }
+    cont.innerHTML = horarios.map(h => `
+      <article class="admin-item">
+        <div><h4>${escapeHtml(h.dia_semana || "Día")}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
+        <div class="row-actions"><button onclick="eliminarHorario(${h.id_horario})">Eliminar</button></div>
+      </article>
+    `).join("");
+  } catch (e) {
+    cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function eliminarHorario(idHorario) {
+  if (!confirm("¿Eliminar este horario?")) return;
+  try {
+    await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idHorario}`), { method: "DELETE" });
+    cargarHorariosEmpleadoSeleccionado();
+  } catch (e) { alert(e.message); }
+}
+
+async function cargarHorariosEmpleadoCliente(idEmpleado) {
+  const info = document.getElementById("citaHorarioInfo");
+  if (!info || !idEmpleado) return;
+  info.textContent = "Consultando horarios del trabajador...";
+  try {
+    const data = await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idEmpleado}`));
+    const horarios = Array.isArray(data) ? data : (data.horarios || []);
+    const disponibles = horarios.filter(h => h.disponible !== false);
+    if (!disponibles.length) {
+      info.textContent = "Este trabajador todavía no tiene horarios asignados. El negocio debe configurarlos desde Empleados → Horarios.";
+      return;
+    }
+    info.innerHTML = "Horarios disponibles: " + disponibles.map(h => `${nombreDiaSemana(h.dia_semana)} ${escapeHtml(h.hora_inicio)}-${escapeHtml(h.hora_fin)}`).join(" · ");
+  } catch (e) {
+    info.textContent = "No se pudieron cargar los horarios. Revisa que exista /horarios-empleado/ en el backend desplegado.";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   actualizarNavbar();
 
@@ -517,7 +624,34 @@ const API_PATHS = {
   productos: "/productos/",
   citas: "/citas/",
   inventario: "/inventario-movimientos/",
+  horarios: "/horarios-empleado/",
 };
+
+
+let negocioSeleccionado = null;
+let empleadosNegocioSeleccionado = [];
+let serviciosNegocioSeleccionado = [];
+
+function extraerMensajeError(data, status) {
+  if (!data) return `Error ${status}`;
+
+  const detail = data.detail || data.message || data.error;
+
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    return detail.map(err => {
+      const campo = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : "campo";
+      return `${campo}: ${err.msg || JSON.stringify(err)}`;
+    }).join(" | ");
+  }
+
+  if (typeof detail === "object") {
+    return JSON.stringify(detail);
+  }
+
+  return `Error ${status}`;
+}
 
 async function apiFetch(path, options = {}) {
   const token = getToken();
@@ -526,11 +660,40 @@ async function apiFetch(path, options = {}) {
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
-  return data;
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`[${res.status}] ${path}: ${extraerMensajeError(data, res.status)}`);
+    return data;
+  } catch (error) {
+    if (error instanceof TypeError || String(error.message).toLowerCase().includes("failed to fetch")) {
+      throw new Error("No se pudo conectar con el backend. Verifica que el servicio de Render esté activo y que la ruta exista en Swagger.");
+    }
+    throw error;
+  }
 }
+
+function esErrorRutaNoEncontrada(error) {
+  const msg = String(error?.message || "").toLowerCase();
+  return msg.includes("not found") || msg.includes("404") || msg.includes("ruta exista") || msg.includes("method not allowed");
+}
+
+async function apiFetchConRutas(paths, options = {}) {
+  let ultimoError;
+  for (const path of paths) {
+    try {
+      return await apiFetch(path, options);
+    } catch (error) {
+      ultimoError = error;
+      if (!esErrorRutaNoEncontrada(error)) break;
+    }
+  }
+  throw ultimoError;
+}
+
+const RUTAS_CITAS = ["/citas/"];
+const RUTAS_HORARIOS = ["/horarios-empleado/", "/horarios-empleados/", "/horario-empleado/", "/horarios/", "/horario/"];
 
 function asegurarRolNegocio() {
   const usuario = getUsuario();
@@ -568,7 +731,7 @@ function renderAdminList(items, contenedorId, tipo) {
 
     if (tipo === "empleado") {
       meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "")}`;
-      acciones = `<button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Desactivar</button>`;
+      acciones = `<button onclick="seleccionarEmpleadoHorario(${id})">Horarios</button><button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Desactivar</button>`;
     }
     if (tipo === "servicio") {
       meta = `${escapeHtml(item.duracion_minutos || "—")} min · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
@@ -592,14 +755,226 @@ function mostrarGestion(id) {
   setVisible([id]);
 }
 
+function esRolClienteActual() {
+  const usuario = getUsuario();
+  return normalizarRol(usuario?.rol) === "cliente";
+}
+
+function configurarFormularioAgendamientoPorRol() {
+  const form = document.getElementById("agendarCitaForm");
+  const msg = document.getElementById("agendarCitaMsg");
+  if (!form) return;
+
+  if (!esRolClienteActual()) {
+    form.classList.add("blocked-form");
+    form.querySelectorAll("select,input,textarea,button").forEach(el => el.disabled = true);
+    if (msg) {
+      msg.textContent = "Estás viendo esta barbería con una cuenta de negocio. Para agendar una cita debes iniciar sesión con una cuenta tipo Usuario/Cliente.";
+      msg.style.color = "#e8c97a";
+      msg.style.display = "block";
+    }
+    return;
+  }
+
+  form.classList.remove("blocked-form");
+  form.querySelectorAll("select,input,textarea,button").forEach(el => el.disabled = false);
+  if (msg) {
+    msg.textContent = "";
+    msg.style.display = "none";
+  }
+}
+
 async function irGestionEmpleados() { mostrarGestion("gestion-empleados"); await cargarEmpleados(); }
+
+async function abrirNegocioCliente(idNegocio) {
+  const token = getToken();
+  const usuario = getUsuario();
+
+  if (!token || !usuario) {
+    mostrarLogin();
+    mostrarMensaje("loginMsg", "Inicia sesión como usuario para agendar una cita.");
+    return;
+  }
+
+  try {
+    const negocio = negociosCache.find(n => obtenerIdNegocio(n) === Number(idNegocio)) || await apiFetch(`/negocios/${idNegocio}`);
+    negocioSeleccionado = negocio;
+
+    const nombre = campoNegocio(negocio, "nombre_negocio", "nombre") || "Negocio";
+    document.getElementById("detalleNegocioNombre").textContent = nombre;
+    document.getElementById("detalleNegocioDescripcion").textContent = campoNegocio(negocio, "descripcion") || "Sin descripción registrada.";
+    document.getElementById("detalleNegocioDireccion").textContent = campoNegocio(negocio, "direccion") || "Sin dirección";
+    document.getElementById("detalleNegocioTelefono").textContent = campoNegocio(negocio, "telefono") || "Sin teléfono";
+    document.getElementById("detalleNegocioCorreo").textContent = campoNegocio(negocio, "email_negocio", "correo", "email") || "Sin correo";
+
+    await cargarDatosAgendamiento(idNegocio);
+    mostrarDetalleNegocio();
+    configurarFormularioAgendamientoPorRol();
+  } catch (e) {
+    mostrarMensaje("usuarioNegociosMsg", e.message || "No se pudo abrir el negocio.");
+  }
+}
+
+async function cargarDatosAgendamiento(idNegocio) {
+  const [empleados, servicios] = await Promise.all([
+    apiFetch(API_PATHS.empleados),
+    apiFetch(API_PATHS.servicios),
+  ]);
+
+  empleadosNegocioSeleccionado = (Array.isArray(empleados) ? empleados : [])
+    .filter(e => Number(e.id_negocio) === Number(idNegocio) && (e.estado || "activo") === "activo");
+
+  serviciosNegocioSeleccionado = (Array.isArray(servicios) ? servicios : [])
+    .filter(s => Number(s.id_negocio) === Number(idNegocio) && (s.estado || "activo") === "activo");
+
+  renderEmpleadosCliente();
+  renderServiciosCliente();
+  llenarSelectAgendamiento();
+}
+
+function renderEmpleadosCliente() {
+  const contenedor = document.getElementById("detalleEmpleadosNegocio");
+  if (!contenedor) return;
+
+  if (!empleadosNegocioSeleccionado.length) {
+    contenedor.innerHTML = `<div class="empty-state">Este negocio todavía no tiene empleados activos.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = empleadosNegocioSeleccionado.map(e => `
+    <div class="mini-card">
+      <strong>${escapeHtml(`${e.nombre || ""} ${e.apellido || ""}`.trim() || "Empleado")}</strong>
+      <span>${escapeHtml(e.especialidad || "Sin especialidad")}</span>
+      <small>${escapeHtml(e.telefono || "Sin teléfono")}</small>
+    </div>
+  `).join("");
+}
+
+function renderServiciosCliente() {
+  const contenedor = document.getElementById("detalleServiciosNegocio");
+  if (!contenedor) return;
+
+  if (!serviciosNegocioSeleccionado.length) {
+    contenedor.innerHTML = `<div class="empty-state">Este negocio todavía no tiene servicios activos.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = serviciosNegocioSeleccionado.map(s => `
+    <div class="mini-card">
+      <strong>${escapeHtml(s.nombre || "Servicio")}</strong>
+      <span>${escapeHtml(s.descripcion || "Sin descripción")}</span>
+      <small>${Number(s.duracion_minutos || 30)} min · $${Number(s.precio || 0).toLocaleString("es-CO")}</small>
+    </div>
+  `).join("");
+}
+
+function llenarSelectAgendamiento() {
+  const selectEmpleado = document.getElementById("citaEmpleado");
+  const selectServicio = document.getElementById("citaServicio");
+  if (!selectEmpleado || !selectServicio) return;
+
+  selectEmpleado.innerHTML = `<option value="">Selecciona un trabajador</option>` + empleadosNegocioSeleccionado.map(e => `
+    <option value="${e.id_empleado}">${escapeHtml(`${e.nombre || ""} ${e.apellido || ""}`.trim() || "Empleado")} - ${escapeHtml(e.especialidad || "General")}</option>
+  `).join("");
+
+  selectServicio.innerHTML = `<option value="">Selecciona un servicio</option>` + serviciosNegocioSeleccionado.map(s => `
+    <option value="${s.id_servicio}" data-duracion="${Number(s.duracion_minutos || 30)}" data-precio="${Number(s.precio || 0)}">${escapeHtml(s.nombre || "Servicio")} - ${Number(s.duracion_minutos || 30)} min - $${Number(s.precio || 0).toLocaleString("es-CO")}</option>
+  `).join("");
+}
+
+function normalizarHoraApi(hora) {
+  if (!hora) return "";
+  const partes = String(hora).split(":");
+  const hh = String(partes[0] || "00").padStart(2, "0");
+  const mm = String(partes[1] || "00").padStart(2, "0");
+  const ss = String(partes[2] || "00").padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+function sumarMinutosHora(hora, minutos) {
+  const [hh, mm] = String(hora || "").split(":").map(Number);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return "";
+  const total = hh * 60 + mm + Number(minutos || 30);
+  const h2 = String(Math.floor(total / 60) % 24).padStart(2, "0");
+  const m2 = String(total % 60).padStart(2, "0");
+  return `${h2}:${m2}:00`;
+}
+
+async function agendarCitaCliente(e) {
+  e.preventDefault();
+
+  const usuario = getUsuario();
+  if (!usuario || !getToken()) return mostrarLogin();
+
+  if (normalizarRol(usuario.rol) !== "cliente") {
+    return mostrarMensaje("agendarCitaMsg", "Para agendar debes ingresar con una cuenta tipo Usuario/Cliente. Las cuentas de negocio solo gestionan empleados, servicios, inventario y citas recibidas.");
+  }
+
+  if (!negocioSeleccionado) return mostrarMensaje("agendarCitaMsg", "Primero selecciona una barbería.");
+
+  const idNegocio = obtenerIdNegocio(negocioSeleccionado);
+  const idEmpleado = Number(document.getElementById("citaEmpleado").value);
+  const idServicio = Number(document.getElementById("citaServicio").value);
+  const fecha = document.getElementById("citaFecha").value;
+  const horaInicioInput = document.getElementById("citaHora").value;
+  const horaInicio = normalizarHoraApi(horaInicioInput);
+  const observaciones = document.getElementById("citaObservaciones").value.trim() || null;
+
+  const servicio = serviciosNegocioSeleccionado.find(s => Number(s.id_servicio) === idServicio);
+  const duracion = Number(servicio?.duracion_minutos || 30);
+  const precio = Number(servicio?.precio || 0);
+  const horaFin = sumarMinutosHora(horaInicio, duracion);
+
+  if (!idEmpleado || !idServicio || !fecha || !horaInicio || !horaFin) {
+    mostrarMensaje("agendarCitaMsg", "Completa trabajador, servicio, fecha y hora.");
+    return;
+  }
+
+  try {
+    const citaPayload = {
+      id_negocio: idNegocio,
+      id_empleado: idEmpleado,
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      observaciones,
+    };
+
+    console.log("Payload cita enviado:", citaPayload);
+
+    const cita = await apiFetchConRutas(RUTAS_CITAS, {
+      method: "POST",
+      body: JSON.stringify(citaPayload),
+    });
+
+    if (cita?.id_cita && idServicio) {
+      await apiFetchConRutas([`/citas/${cita.id_cita}/detalle`], {
+        method: "POST",
+        body: JSON.stringify({ id_servicio: idServicio, precio, duracion }),
+      }).catch(() => null);
+    }
+
+    e.target.reset();
+    mostrarMensaje("agendarCitaMsg", `Cita agendada correctamente de ${horaInicio} a ${horaFin}.`, false);
+  } catch (error) {
+    mostrarMensaje("agendarCitaMsg", error.message || "No se pudo agendar la cita.");
+  }
+}
+
 async function irGestionServicios() { mostrarGestion("gestion-servicios"); await cargarServicios(); }
 async function irGestionProductos() { mostrarGestion("gestion-productos"); await cargarProductos(); }
 async function irGestionCitas() { mostrarGestion("gestion-citas"); await cargarCitas(); }
 
 async function cargarEmpleados() {
-  try { renderAdminList(await apiFetch(API_PATHS.empleados), "listaEmpleados", "empleado"); mostrarMensaje("empleadoMsg", "", false); }
-  catch (e) { document.getElementById("listaEmpleados").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+  try {
+    const empleados = await apiFetch(API_PATHS.empleados);
+    empleadosCache = Array.isArray(empleados) ? empleados : [];
+    renderAdminList(empleadosCache, "listaEmpleados", "empleado");
+    llenarSelectHorariosEmpleado(empleadosCache);
+    mostrarMensaje("empleadoMsg", "", false);
+  } catch (e) {
+    document.getElementById("listaEmpleados").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
 }
 async function cargarServicios() {
   try { renderAdminList(await apiFetch(API_PATHS.servicios), "listaServicios", "servicio"); mostrarMensaje("servicioMsg", "", false); }
@@ -613,16 +988,85 @@ async function cargarCitas() {
   try {
     const negocio = await obtenerMiNegocio(true);
     if (!negocio?.id_negocio) throw new Error("Primero debes tener un negocio registrado.");
-    renderAdminList(await apiFetch(`${API_PATHS.citas}negocio/${negocio.id_negocio}`), "listaCitas", "cita");
+    renderAdminList(await apiFetchConRutas([`/citas/negocio/${negocio.id_negocio}`, `/cita/negocio/${negocio.id_negocio}`]), "listaCitas", "cita");
     mostrarMensaje("citasMsg", "", false);
   } catch (e) {
     document.getElementById("listaCitas").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
   }
 }
 
+function llenarSelectHorariosEmpleado(empleados) {
+  const select = document.getElementById("horarioEmpleadoSelect");
+  if (!select) return;
+  const lista = Array.isArray(empleados) ? empleados : [];
+  select.innerHTML = `<option value="">Selecciona empleado</option>` + lista.map(e => `
+    <option value="${e.id_empleado}">${escapeHtml(`${e.nombre || ""} ${e.apellido || ""}`.trim() || "Empleado")} - ${escapeHtml(e.especialidad || "General")}</option>
+  `).join("");
+}
+
+function seleccionarEmpleadoHorario(idEmpleado) {
+  const select = document.getElementById("horarioEmpleadoSelect");
+  if (select) select.value = String(idEmpleado);
+  cargarHorariosEmpleadoSeleccionado();
+}
+
+async function cargarHorariosEmpleadoSeleccionado() {
+  const idEmpleado = Number(document.getElementById("horarioEmpleadoSelect")?.value);
+  const cont = document.getElementById("listaHorariosEmpleado");
+  if (!cont) return;
+  if (!idEmpleado) {
+    cont.innerHTML = `<div class="empty-state">Selecciona un empleado para ver sus horarios.</div>`;
+    return;
+  }
+
+  try {
+    const data = await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idEmpleado}`));
+    const horarios = Array.isArray(data) ? data : (data.horarios || []);
+    if (!horarios.length) {
+      cont.innerHTML = `<div class="empty-state">Este empleado todavía no tiene horarios asignados.</div>`;
+      return;
+    }
+    cont.innerHTML = horarios.map(h => `
+      <article class="admin-item">
+        <div><h4>${escapeHtml(h.dia_semana || "Día")}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
+        <div class="row-actions"><button onclick="eliminarHorario(${h.id_horario})">Eliminar</button></div>
+      </article>
+    `).join("");
+  } catch (e) {
+    cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function eliminarHorario(idHorario) {
+  if (!confirm("¿Eliminar este horario?")) return;
+  try {
+    await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idHorario}`), { method: "DELETE" });
+    cargarHorariosEmpleadoSeleccionado();
+  } catch (e) { alert(e.message); }
+}
+
+async function cargarHorariosEmpleadoCliente(idEmpleado) {
+  const info = document.getElementById("citaHorarioInfo");
+  if (!info || !idEmpleado) return;
+  info.textContent = "Consultando horarios del trabajador...";
+  try {
+    const data = await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idEmpleado}`));
+    const horarios = Array.isArray(data) ? data : (data.horarios || []);
+    const disponibles = horarios.filter(h => h.disponible !== false);
+    if (!disponibles.length) {
+      info.textContent = "Este trabajador todavía no tiene horarios asignados. El negocio debe configurarlos desde Empleados → Horarios.";
+      return;
+    }
+    info.innerHTML = "Horarios disponibles: " + disponibles.map(h => `${nombreDiaSemana(h.dia_semana)} ${escapeHtml(h.hora_inicio)}-${escapeHtml(h.hora_fin)}`).join(" · ");
+  } catch (e) {
+    info.textContent = "No se pudieron cargar los horarios. Revisa que exista /horarios-empleado/ en el backend desplegado.";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("empleadoForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const idEditar = document.getElementById("empId")?.value;
     const payload = {
       nombre: document.getElementById("empNombre").value.trim(),
       apellido: document.getElementById("empApellido").value.trim(),
@@ -631,8 +1075,25 @@ document.addEventListener("DOMContentLoaded", () => {
       especialidad: document.getElementById("empEspecialidad").value.trim() || null,
       foto_url: document.getElementById("empFoto").value.trim() || null,
     };
-    try { await apiFetch(API_PATHS.empleados, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("empleadoMsg", "Empleado creado correctamente.", false); cargarEmpleados(); }
-    catch (err) { mostrarMensaje("empleadoMsg", err.message); }
+    if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      mostrarMensaje("empleadoMsg", "El correo del empleado no es válido. Ejemplo: empleado@gmail.com");
+      return;
+    }
+
+    try {
+      if (idEditar) {
+        await apiFetch(`${API_PATHS.empleados}${idEditar}`, { method: "PUT", body: JSON.stringify(payload) });
+        mostrarMensaje("empleadoMsg", "Empleado actualizado correctamente.", false);
+        cancelarEdicionEmpleado(false);
+      } else {
+        await apiFetch(API_PATHS.empleados, { method: "POST", body: JSON.stringify(payload) });
+        e.target.reset();
+        mostrarMensaje("empleadoMsg", "Empleado creado correctamente.", false);
+      }
+      cargarEmpleados();
+    } catch (err) {
+      mostrarMensaje("empleadoMsg", err.message);
+    }
   });
 
   document.getElementById("servicioForm")?.addEventListener("submit", async (e) => {
@@ -660,13 +1121,82 @@ document.addEventListener("DOMContentLoaded", () => {
     try { await apiFetch(API_PATHS.productos, { method: "POST", body: JSON.stringify(payload) }); e.target.reset(); mostrarMensaje("productoMsg", "Producto creado correctamente.", false); cargarProductos(); }
     catch (err) { mostrarMensaje("productoMsg", err.message); }
   });
+
+  document.getElementById("agendarCitaForm")?.addEventListener("submit", agendarCitaCliente);
+  document.getElementById("citaEmpleado")?.addEventListener("change", (e) => cargarHorariosEmpleadoCliente(Number(e.target.value)));
+
+  document.getElementById("horarioEmpleadoForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const idEmpleado = Number(document.getElementById("horarioEmpleadoSelect").value);
+    const dias = diasSeleccionadosHorario();
+    const payloadBase = {
+      id_empleado: idEmpleado,
+      hora_inicio: normalizarHoraApi(document.getElementById("horarioInicio").value),
+      hora_fin: normalizarHoraApi(document.getElementById("horarioFin").value),
+      disponible: document.getElementById("horarioDisponible").checked,
+    };
+
+    if (!payloadBase.id_empleado || !dias.length || !payloadBase.hora_inicio || !payloadBase.hora_fin) {
+      mostrarMensaje("horarioMsg", "Completa empleado, al menos un día, hora de inicio y hora de fin.");
+      return;
+    }
+
+    try {
+      for (const dia of dias) {
+        await apiFetchConRutas(RUTAS_HORARIOS, {
+          method: "POST",
+          body: JSON.stringify({ ...payloadBase, dia_semana: dia })
+        });
+      }
+      e.target.reset();
+      limpiarDiasHorario();
+      mostrarMensaje("horarioMsg", `Horario guardado para ${dias.length} día(s).`, false);
+      cargarHorariosEmpleadoSeleccionado();
+    } catch (err) {
+      mostrarMensaje("horarioMsg", err.message);
+    }
+  });
 });
 
+function ponerEmpleadoEnFormulario(empleado) {
+  document.getElementById("empId").value = empleado.id_empleado || "";
+  document.getElementById("empNombre").value = empleado.nombre || "";
+  document.getElementById("empApellido").value = empleado.apellido || "";
+  document.getElementById("empTelefono").value = empleado.telefono || "";
+  document.getElementById("empEmail").value = empleado.email || "";
+  document.getElementById("empEspecialidad").value = empleado.especialidad || "";
+  document.getElementById("empFoto").value = empleado.foto_url || "";
+  const title = document.getElementById("empleadoFormTitle");
+  const btn = document.getElementById("empleadoSubmitBtn");
+  const cancel = document.getElementById("empleadoCancelEditBtn");
+  if (title) title.textContent = "Editar empleado";
+  if (btn) btn.textContent = "Actualizar empleado";
+  if (cancel) cancel.style.display = "inline-flex";
+  document.getElementById("empNombre")?.focus();
+}
+
+function cancelarEdicionEmpleado(limpiarMensaje = true) {
+  const form = document.getElementById("empleadoForm");
+  if (form) form.reset();
+  const id = document.getElementById("empId");
+  if (id) id.value = "";
+  const title = document.getElementById("empleadoFormTitle");
+  const btn = document.getElementById("empleadoSubmitBtn");
+  const cancel = document.getElementById("empleadoCancelEditBtn");
+  if (title) title.textContent = "Crear empleado";
+  if (btn) btn.textContent = "Guardar empleado";
+  if (cancel) cancel.style.display = "none";
+  if (limpiarMensaje) mostrarMensaje("empleadoMsg", "", false);
+}
+
 async function editarEmpleado(id) {
-  const especialidad = prompt("Nueva especialidad del empleado:");
-  if (especialidad === null) return;
-  try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "PUT", body: JSON.stringify({ especialidad }) }); cargarEmpleados(); }
-  catch (e) { alert(e.message); }
+  let empleado = empleadosCache.find(e => Number(e.id_empleado) === Number(id));
+  try {
+    if (!empleado) empleado = await apiFetch(`${API_PATHS.empleados}${id}`);
+    ponerEmpleadoEnFormulario(empleado);
+  } catch (e) {
+    alert(e.message);
+  }
 }
 async function eliminarEmpleado(id) {
   if (!confirm("¿Desactivar este empleado?")) return;
@@ -708,6 +1238,6 @@ async function movimientoInventario(id) {
 }
 async function cancelarCita(id) {
   if (!confirm("¿Cancelar esta cita?")) return;
-  try { await apiFetch(`${API_PATHS.citas}${id}`, { method: "DELETE" }); cargarCitas(); }
+  try { await apiFetchConRutas([`/citas/${id}`, `/cita/${id}`], { method: "DELETE" }); cargarCitas(); }
   catch (e) { alert(e.message); }
 }

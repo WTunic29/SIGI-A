@@ -368,6 +368,58 @@
   </div>
 </section>
 
+
+<section class="hero dashboard-screen" id="detalle-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Agendamiento</p>
+        <h1 class="dashboard-title" id="detalleNegocioNombre">Negocio</h1>
+        <p class="muted" id="detalleNegocioDescripcion">Selecciona trabajador, servicio, fecha y hora.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irVerNegocios()">Volver</button>
+    </div>
+
+    <div class="business-detail-layout">
+      <aside class="detail-card">
+        <h3>Información</h3>
+        <p><span>Dirección</span><strong id="detalleNegocioDireccion">—</strong></p>
+        <p><span>Teléfono</span><strong id="detalleNegocioTelefono">—</strong></p>
+        <p><span>Correo</span><strong id="detalleNegocioCorreo">—</strong></p>
+      </aside>
+
+      <form id="agendarCitaForm" class="manager-form booking-form">
+        <h3>Agendar cita</h3>
+        <select id="citaEmpleado" required>
+          <option value="">Selecciona un trabajador</option>
+        </select>
+        <select id="citaServicio" required>
+          <option value="">Selecciona un servicio</option>
+        </select>
+        <div class="form-grid">
+          <input id="citaFecha" type="date" required>
+          <input id="citaHora" type="time" required>
+        </div>
+        <textarea id="citaObservaciones" rows="3" placeholder="Observaciones opcionales"></textarea>
+        <button class="btn-primary full" type="submit">Confirmar cita</button>
+        <span id="agendarCitaMsg" class="form-msg"></span>
+      </form>
+    </div>
+
+    <div class="detail-columns">
+      <div>
+        <div class="list-header"><h3>Trabajadores disponibles</h3></div>
+        <div id="detalleEmpleadosNegocio" class="mini-grid"></div>
+      </div>
+      <div>
+        <div class="list-header"><h3>Servicios disponibles</h3></div>
+        <div id="detalleServiciosNegocio" class="mini-grid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="hero" id="validar-acceso" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card">
@@ -387,16 +439,46 @@
       <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
     </div>
     <div class="manager-layout">
-      <form id="empleadoForm" class="manager-form">
-        <h3>Crear empleado</h3>
-        <div class="form-grid"><input id="empNombre" placeholder="Nombre" required><input id="empApellido" placeholder="Apellido" required></div>
-        <div class="form-grid"><input id="empTelefono" placeholder="Teléfono"><input id="empEmail" type="email" placeholder="Email"></div>
-        <input id="empEspecialidad" placeholder="Especialidad">
-        <input id="empFoto" placeholder="Foto URL opcional">
-        <button class="btn-primary full" type="submit">Guardar empleado</button>
-        <span id="empleadoMsg" class="form-msg"></span>
-      </form>
-      <div><div class="list-header"><h3>Empleados registrados</h3><button class="btn-primary small" onclick="cargarEmpleados()">Actualizar</button></div><div id="listaEmpleados" class="admin-list"></div></div>
+      <div class="manager-stack">
+        <form id="empleadoForm" class="manager-form">
+          <h3 id="empleadoFormTitle">Crear empleado</h3>
+          <input id="empId" type="hidden">
+          <div class="form-grid"><input id="empNombre" placeholder="Nombre" required><input id="empApellido" placeholder="Apellido" required></div>
+          <div class="form-grid"><input id="empTelefono" placeholder="Teléfono"><input id="empEmail" type="email" placeholder="Email"></div>
+          <input id="empEspecialidad" placeholder="Especialidad">
+          <input id="empFoto" placeholder="Foto URL opcional">
+          <button id="empleadoSubmitBtn" class="btn-primary full" type="submit">Guardar empleado</button>
+          <button id="empleadoCancelEditBtn" class="btn-secondary clean full-link" type="button" style="display:none;" onclick="cancelarEdicionEmpleado()">Cancelar edición</button>
+          <span id="empleadoMsg" class="form-msg"></span>
+        </form>
+
+        <form id="horarioEmpleadoForm" class="manager-form">
+          <h3>Asignar horario</h3>
+          <select id="horarioEmpleadoSelect" required>
+            <option value="">Selecciona empleado</option>
+          </select>
+          <div class="day-picker" id="horarioDias">
+            <label><input type="checkbox" name="horarioDias" value="1"> Lun</label>
+            <label><input type="checkbox" name="horarioDias" value="2"> Mar</label>
+            <label><input type="checkbox" name="horarioDias" value="3"> Mié</label>
+            <label><input type="checkbox" name="horarioDias" value="4"> Jue</label>
+            <label><input type="checkbox" name="horarioDias" value="5"> Vie</label>
+            <label><input type="checkbox" name="horarioDias" value="6"> Sáb</label>
+            <label><input type="checkbox" name="horarioDias" value="7"> Dom</label>
+          </div>
+          <p class="field-help">Puedes marcar varios días para guardar el mismo horario de una vez.</p>
+          <div class="form-grid"><input id="horarioInicio" type="time" required><input id="horarioFin" type="time" required></div>
+          <label class="check-row"><input id="horarioDisponible" type="checkbox" checked> Disponible</label>
+          <button class="btn-primary full" type="submit">Guardar horario</button>
+          <span id="horarioMsg" class="form-msg"></span>
+        </form>
+      </div>
+      <div>
+        <div class="list-header"><h3>Empleados registrados</h3><button class="btn-primary small" onclick="cargarEmpleados()">Actualizar</button></div>
+        <div id="listaEmpleados" class="admin-list"></div>
+        <div class="list-header spacing-top"><h3>Horarios del empleado</h3><button class="btn-primary small" onclick="cargarHorariosEmpleadoSeleccionado()">Ver horarios</button></div>
+        <div id="listaHorariosEmpleado" class="admin-list"></div>
+      </div>
     </div>
   </div>
 </section>

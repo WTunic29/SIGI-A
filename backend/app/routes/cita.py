@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime
 
 from app.database import get_db
 from app.core.deps import require_roles
@@ -26,17 +27,25 @@ def obtener_negocio_usuario(db: Session, id_usuario: int, id_negocio: int):
     ).first()
 
 
-@router.post("/", response_model=CitaResponse)
+@router.post("/", response_model=dict)
 def crear_cita(
     cita: CitaCreate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_roles(["cliente", "admin"]))
 ):
+    fecha_hora_inicio = datetime.combine(cita.fecha, cita.hora_inicio)
+    fecha_hora_fin = datetime.combine(cita.fecha, cita.hora_fin)
+
+    if fecha_hora_fin <= fecha_hora_inicio:
+        raise HTTPException(
+            status_code=400,
+            detail="La hora fin debe ser mayor a la hora inicio"
+        )
+
     cita_existente = db.query(Cita).filter(
         Cita.id_empleado == cita.id_empleado,
-        Cita.fecha == cita.fecha,
-        Cita.hora_inicio < cita.hora_fin,
-        Cita.hora_fin > cita.hora_inicio,
+        Cita.fecha_hora_inicio < fecha_hora_fin,
+        Cita.fecha_hora_fin > fecha_hora_inicio,
         Cita.estado != "cancelada"
     ).first()
 
@@ -50,9 +59,8 @@ def crear_cita(
         id_cliente=current_user.id_usuario,
         id_negocio=cita.id_negocio,
         id_empleado=cita.id_empleado,
-        fecha=cita.fecha,
-        hora_inicio=cita.hora_inicio,
-        hora_fin=cita.hora_fin,
+        fecha_hora_inicio=fecha_hora_inicio,
+        fecha_hora_fin=fecha_hora_fin,
         estado="pendiente",
         observaciones=cita.observaciones
     )
@@ -61,8 +69,17 @@ def crear_cita(
     db.commit()
     db.refresh(nueva_cita)
 
-    return nueva_cita
-
+    return {
+        "id_cita": nueva_cita.id_cita,
+        "id_cliente": nueva_cita.id_cliente,
+        "id_negocio": nueva_cita.id_negocio,
+        "id_empleado": nueva_cita.id_empleado,
+        "fecha_hora_inicio": nueva_cita.fecha_hora_inicio,
+        "fecha_hora_fin": nueva_cita.fecha_hora_fin,
+        "estado": nueva_cita.estado,
+        "observaciones": nueva_cita.observaciones,
+        "message": "Cita creada correctamente"
+    }
 
 @router.get("/negocio/{id_negocio}", response_model=List[CitaResponse])
 def listar_citas_negocio(
