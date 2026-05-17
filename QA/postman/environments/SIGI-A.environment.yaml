@@ -4,9 +4,17 @@ values:
     value: 'http://localhost:8000'
   - key: token
     value: ''
+  - key: correo_login
+    value: 'juan@example.com'
   - key: correo_2fa
     value: ''
+  - key: codigo_2fa
+    value: ''
+  - key: rol_default
+    value: 'negocio'
   - key: id_usuario
     value: ''
   - key: id_negocio
     value: ''
+  - key: id_cita
+    value: '1'

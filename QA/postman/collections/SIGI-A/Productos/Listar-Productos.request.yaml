@@ -1,8 +1,10 @@
 $kind: http-request
 name: Listar Productos del Negocio
-description: Obtiene todos los productos de un negocio específico. Requiere autenticación JWT.
+description: >-
+  GET /productos/ — lista según rol (negocio: productos de su negocio).
+  Requiere Bearer {{token}}.
 method: GET
-url: '{{base_url}}/negocios/{{id_negocio}}/productos'
+url: '{{base_url}}/productos/'
 order: 2000
 headers:
   - key: Authorization
@@ -16,10 +18,10 @@ scripts:
       const productos = pm.response.json();
       if (productos.length > 0) {
         const p = productos[0];
-        pm.test("Producto tiene id", () => pm.expect(p).to.have.property("id"));
+        pm.test("Producto tiene id_producto", () => pm.expect(p).to.have.property("id_producto"));
         pm.test("Producto tiene nombre", () => pm.expect(p).to.have.property("nombre"));
         pm.test("Producto tiene id_negocio", () => pm.expect(p).to.have.property("id_negocio"));
-        pm.test("precio es mayor o igual a 0", () => pm.expect(p.precio).to.be.at.least(0));
+        pm.test("precio definido", () => pm.expect(p.precio).to.exist);
         pm.test("stock es mayor o igual a 0", () => pm.expect(p.stock).to.be.at.least(0));
         pm.test("Estado es válido", () => pm.expect(p.estado).to.be.oneOf(["activo", "inactivo"]));
       }

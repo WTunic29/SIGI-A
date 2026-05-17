@@ -10,11 +10,7 @@ body:
   type: json
   content: |-
     {
-<<<<<<< HEAD
-      "correo": "juan@example.com",
-=======
-      "correo": "{{correo_2fa}}",
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
+      "correo": "{{correo_login}}",
       "password": "123456"
     }
 scripts:
@@ -33,10 +29,6 @@ scripts:
       if (pm.response.code === 200) {
           pm.environment.set("correo_2fa", pm.response.json().correo);
           console.log("Código 2FA enviado al correo: " + pm.response.json().correo);
-<<<<<<< HEAD
           console.log("Para testing: consulta la tabla 'codigo_2fa' en la DB o el email para obtener el código de 6 dígitos.");
-=======
-          console.log("Para testing: consulta la tabla 'codigo_2fa' en la DB para obtener el código de 6 dígitos.");
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
           console.log("Luego, establece la variable 'codigo_2fa' en el environment con ese valor.");
       }

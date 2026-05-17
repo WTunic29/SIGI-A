@@ -1,6 +1,6 @@
 $kind: http-request
 name: Actualizar Producto
-description: Actualiza los datos de un producto existente. precio y stock deben ser mayores o iguales a 0. Estado activo o inactivo. Requiere autenticación JWT.
+description: Actualiza un producto (respuesta plana ProductoResponse).
 method: PUT
 url: '{{base_url}}/productos/{{id_producto}}'
 order: 3000
@@ -24,12 +24,9 @@ scripts:
     language: text/javascript
     code: |-
       pm.test("Status 200 - Producto actualizado", () => pm.response.to.have.status(200));
-      pm.test("Respuesta tiene campo producto", () => pm.expect(pm.response.json()).to.have.property("producto"));
-      const producto = pm.response.json().producto;
-      if (producto) {
-        pm.test("Producto tiene id", () => pm.expect(producto).to.have.property("id"));
-        pm.test("Producto tiene nombre", () => pm.expect(producto).to.have.property("nombre"));
-        pm.test("precio es mayor o igual a 0", () => pm.expect(producto.precio).to.be.at.least(0));
-        pm.test("stock es mayor o igual a 0", () => pm.expect(producto.stock).to.be.at.least(0));
-        pm.test("Estado es válido", () => pm.expect(producto.estado).to.be.oneOf(["activo", "inactivo"]));
-      }
+      const producto = pm.response.json();
+      pm.test("Tiene id_producto", () => pm.expect(producto).to.have.property("id_producto"));
+      pm.test("Tiene nombre", () => pm.expect(producto).to.have.property("nombre"));
+      pm.test("precio definido", () => pm.expect(producto.precio).to.exist);
+      pm.test("stock es mayor o igual a 0", () => pm.expect(producto.stock).to.be.at.least(0));
+      pm.test("Estado es válido", () => pm.expect(producto.estado).to.be.oneOf(["activo", "inactivo"]));

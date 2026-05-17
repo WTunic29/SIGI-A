@@ -1,8 +1,10 @@
 $kind: http-request
 name: Login Usuario
-description: Autentica un usuario con correo y contraseña. Devuelve el token JWT y los datos del usuario. Guarda el token y el id_usuario en el environment automáticamente.
+description: >-
+  Alias de /auth/login — flujo 2FA (misma respuesta que Auth/Login).
+  Tras ejecutar, usar Verify-2FA con correo_2fa y codigo_2fa para obtener token.
 method: POST
-url: '{{base_url}}/users/login'
+url: '{{base_url}}/auth/login'
 order: 2000
 headers:
   - key: Content-Type
@@ -11,25 +13,17 @@ body:
   type: json
   content: |-
     {
-      "correo": "juan@example.com",
-      "password": "password123"
+      "correo": "{{correo_login}}",
+      "password": "123456"
     }
 scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      pm.test("Status 200 - Login exitoso", () => pm.response.to.have.status(200));
-      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));
-      pm.test("Respuesta tiene campo token", () => pm.expect(pm.response.json()).to.have.property("token"));
-      pm.test("Respuesta tiene campo usuario", () => pm.expect(pm.response.json()).to.have.property("usuario"));
-      const body = pm.response.json();
-      if (body.token) {
-        pm.environment.set("token", body.token);
-      }
-      const usuario = body.usuario;
-      if (usuario) {
-        pm.test("Usuario tiene id", () => pm.expect(usuario).to.have.property("id"));
-        pm.test("Usuario tiene correo", () => pm.expect(usuario).to.have.property("correo"));
-        pm.test("Estado usuario es activo", () => pm.expect(usuario.estado).to.eql("activo"));
-        pm.environment.set("id_usuario", usuario.id);
+      pm.test("Status 200 - Login iniciado", () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.expect(json).to.have.property("requieres_2fa", true);
+      pm.expect(json).to.have.property("correo");
+      if (pm.response.code === 200) {
+        pm.environment.set("correo_2fa", json.correo);
       }

@@ -2,7 +2,7 @@ $kind: http-request
 name: Crear Servicio
 description: Crea un nuevo servicio para un negocio. duracion_minutos debe ser mayor a 0 y precio mayor o igual a 0. Estado activo o inactivo. Requiere autenticación JWT.
 method: POST
-url: '{{base_url}}/servicios'
+url: '{{base_url}}/servicios/'
 order: 1000
 headers:
   - key: Content-Type
@@ -25,14 +25,11 @@ scripts:
     language: text/javascript
     code: |-
       pm.test("Status 201 - Servicio creado", () => pm.response.to.have.status(201));
-      pm.test("Respuesta tiene campo servicio", () => pm.expect(pm.response.json()).to.have.property("servicio"));
-      const servicio = pm.response.json().servicio;
-      if (servicio) {
-        pm.test("Servicio tiene id", () => pm.expect(servicio).to.have.property("id"));
-        pm.test("Servicio tiene nombre", () => pm.expect(servicio).to.have.property("nombre"));
-        pm.test("Servicio tiene id_negocio", () => pm.expect(servicio).to.have.property("id_negocio"));
-        pm.test("duracion_minutos es mayor a 0", () => pm.expect(servicio.duracion_minutos).to.be.above(0));
-        pm.test("precio es mayor o igual a 0", () => pm.expect(servicio.precio).to.be.at.least(0));
-        pm.test("Estado es válido", () => pm.expect(servicio.estado).to.be.oneOf(["activo", "inactivo"]));
-        pm.environment.set("id_servicio", servicio.id);
-      }
+      const servicio = pm.response.json();
+      pm.test("Respuesta plana ServicioResponse", () => pm.expect(servicio).to.have.property("id_servicio"));
+      pm.test("Servicio tiene nombre", () => pm.expect(servicio).to.have.property("nombre"));
+      pm.test("Servicio tiene id_negocio", () => pm.expect(servicio).to.have.property("id_negocio"));
+      pm.test("duracion_minutos es mayor a 0", () => pm.expect(servicio.duracion_minutos).to.be.above(0));
+      pm.test("precio es mayor o igual a 0", () => pm.expect(servicio.precio).to.be.at.least(0));
+      pm.test("Estado es válido", () => pm.expect(servicio.estado).to.be.oneOf(["activo", "inactivo"]));
+      pm.environment.set("id_servicio", servicio.id_servicio);

@@ -10,19 +10,11 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-<<<<<<< HEAD
-      pm.test("Status 200 - Acceso permitido a negocio", function () {
-=======
       pm.test("Status 200 - Acceso permitido para negocio", function () {
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
           pm.response.to.have.status(200);
       });
       pm.test("Respuesta tiene message y usuario", function () {
           const json = pm.response.json();
-<<<<<<< HEAD
           pm.expect(json).to.have.property("message", "Bienvenido negocio");
-=======
-          pm.expect(json).to.have.property("message");
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
           pm.expect(json).to.have.property("usuario");
       });

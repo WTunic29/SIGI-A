@@ -25,10 +25,7 @@ scripts:
     language: text/javascript
     code: |-
       pm.test("Status 200 - Empleado actualizado", () => pm.response.to.have.status(200));
-      pm.test("Respuesta tiene campo empleado", () => pm.expect(pm.response.json()).to.have.property("empleado"));
-      const empleado = pm.response.json().empleado;
-      if (empleado) {
-        pm.test("Empleado tiene id", () => pm.expect(empleado).to.have.property("id"));
-        pm.test("Empleado tiene nombre", () => pm.expect(empleado).to.have.property("nombre"));
-        pm.test("Estado es válido", () => pm.expect(empleado.estado).to.be.oneOf(["activo", "inactivo"]));
-      }
+      const empleado = pm.response.json();
+      pm.test("Respuesta plana EmpleadoResponse", () => pm.expect(empleado).to.have.property("id_empleado"));
+      pm.test("Empleado tiene nombre", () => pm.expect(empleado).to.have.property("nombre"));
+      pm.test("Estado es válido", () => pm.expect(empleado.estado).to.be.oneOf(["activo", "inactivo"]));
