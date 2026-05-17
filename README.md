@@ -13,16 +13,10 @@ SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimiza
 ### **Backend (FastAPI + PostgreSQL)**
 - **API RESTful** con autenticación JWT + 2FA
 - **Base de datos relacional** con schema optimizado
-<<<<<<< HEAD
-- **Roles de usuario**: cliente y negocio
-- **Endpoints seguros** para gestión completa
-=======
 - **Roles de usuario**: cliente, negocio, admin
-- **22 modelos SQLAlchemy** con relaciones enterprise
-- **20 schemas Pydantic** para validación automática
-- **21 endpoints FastAPI** con seguridad completa
-- **Testing profesional** con pytest y coverage
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
+- **Modelos SQLAlchemy** con relaciones entre entidades
+- **Schemas Pydantic** para validación automática
+- **Endpoints FastAPI** con seguridad por rol
 
 ### **Frontend (Web)**
 - **Interfaz responsiva** HTML/CSS/JavaScript
@@ -31,14 +25,11 @@ SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimiza
 - **Experiencia móvil-friendly**
 
 ### **QA & Testing**
-- **Postman collections** 100% funcionales
-- **9 endpoints automatizados**
-- **Validaciones completas** de API
-- **Flujo de testing** documentado
-<<<<<<< HEAD
-=======
-- **Suite pytest profesional** para backend
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
+- **Postman** (workspace YAML) para flujos manuales y Runner
+- **pytest** en `QA/tests` (SQLite en memoria, sin PostgreSQL)
+- **Newman** (pnpm) para smoke HTTP y auth parcial
+- **GitHub Actions**: pytest en PR; Newman opcional contra URL pública
+- Detalle en [`QA/README.md`](QA/README.md)
 
 ---
 
@@ -60,83 +51,50 @@ Los negocios pueden:
 
 ---
 
-<<<<<<< HEAD
-## Estructura del proyecto
-
-```
-SIGI-A/
-├── backend/
-│   ├── app/               # Código del backend (FastAPI)
-│   ├── .env.example       # Ejemplo de variables de entorno del backend
-│   └── README.md          # Documentación del backend
-├── frontend/              # Archivos estáticos e interfaz
-│   ├── CSS/
-│   ├── JS/
-│   ├── SIGI-E/
-│   └── index.html
-├── QA/                    # Postman y pruebas de API
-│   ├── .postman/
-│   ├── postman/
-│   └── README.md
-├── database/              # Scripts SQL
-│   ├── schema_actual.sql
-│   └── seeds_actual.sql
-├── .env.example           # Variables de entorno generales
-├── .gitignore
-├── README.md
-└── requirements.txt       # Dependencias Python
-=======
 ## 📁 **Estructura del Proyecto**
 
 ```
 SIGI-A/
 │
 ├── backend/                 # API FastAPI + PostgreSQL
-│   ├── app/                # Aplicación principal
-│   │   ├── models/         # 22 modelos SQLAlchemy
-│   │   ├── schemas/        # 20 schemas Pydantic
-│   │   ├── routes/         # 21 endpoints FastAPI
-│   │   ├── core/           # Configuración central
-│   │   ├── utils/          # Seguridad y utilidades
-│   │   ├── middleware/     # Middleware personalizado
-│   │   ├── database.py     # Configuración BD
-│   │   └── main.py         # Aplicación FastAPI
-│   │
-│   ├── tests/              # Suite testing profesional
-│   │   ├── test_models/    # Tests de persistencia
-│   │   ├── test_schemas/   # Tests de validación
-│   │   ├── test_routes/    # Tests de API
-│   │   ├── conftest.py     # Configuración pytest
-│   │   └── pytest.ini     # Configuración testing
-│   │
-│   ├── requirements.txt    # Dependencias Python
-│   ├── Dockerfile         # Contenedor backend
-│   ├── .env.example       # Variables de entorno
-│   └── README.md          # Documentación backend
+│   ├── app/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── routes/
+│   │   ├── core/
+│   │   ├── utils/
+│   │   ├── middleware/
+│   │   ├── database.py
+│   │   └── main.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── README.md
 │
-├── frontend/              # Interfaz web (HTML/CSS/JS)
-│   ├── CSS/               # Estilos responsivos
-│   ├── JS/                # Lógica del frontend
-│   ├── SIGI-E/            # Componentes UI
-│   └── index.html         # Página principal
+├── QA/                      # Calidad: pytest, Postman, Newman, CI
+│   ├── tests/               # Suite pytest (pythonpath → ../backend)
+│   ├── pytest.ini
+│   ├── scripts/             # validate_postman_workspace, check_xfail_budget
+│   ├── postman/             # Colecciones YAML + newman/
+│   ├── qa.ps1 / qa.sh       # check | smoke | install
+│   └── README.md
 │
-├── QA/                    # Testing con Postman
-│   ├── postman/           # Collections automatizadas
-│   ├── .postman/          # Configuración Postman
-│   └── README.md          # Documentación QA
+├── frontend/                # Interfaz web (HTML/CSS/JS)
+│   ├── CSS/
+│   ├── JS/
+│   ├── SIGI-E/
+│   └── index.html
 │
-├── database/              # Scripts base de datos
-│   ├── schema_actual.sql  # Estructura actual
-│   └── seeds_actual.sql   # Datos iniciales
+├── database/
+│   ├── schema_actual.sql
+│   └── seeds_actual.sql
 │
-├── scripts/               # Scripts mantenimiento
-├── docker-compose.yml     # Orquestación contenedores
-├── docker-compose.dev.yml # Configuración desarrollo
-├── .env.example          # Variables entorno generales
+├── .github/workflows/       # qa-pytest.yml, qa-newman-smoke.yml
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── .env.example
 ├── .gitignore
-├── requirements.txt       # Dependencias Python
-└── README.md             # Documentación general
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
+├── requirements.txt
+└── README.md
 ```
 
 ---
@@ -171,7 +129,7 @@ pip install -r requirements.txt
 
 ### 4. Configurar variables de entorno
 
-Crear un archivo `.env` basado en `.env.example` y completar los valores.
+Crear un archivo `.env` basado en `.env.example` y completar los valores. Para el backend en desarrollo, ver también `backend/.env.example` si existe.
 
 ### 5. Ejecutar el backend
 
@@ -194,6 +152,16 @@ Abrir `frontend/index.html` en el navegador o servir la carpeta `frontend/` desd
 
 Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/postman/environments/`.
 
+Para la suite automatizada (validadores + pytest):
+
+```powershell
+cd QA
+pip install -r ..\backend\requirements.txt -r requirements-ci.txt
+.\qa.ps1 check
+```
+
+Documentación completa: [`QA/README.md`](QA/README.md).
+
 ---
 
 ## **Características Principales**
@@ -210,24 +178,14 @@ Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/po
 - **Control de Inventario**: Gestiona stock y productos
 - **Reportes y Métricas**: Analiza rendimiento del negocio
 
-<<<<<<< HEAD
-## **Stack Tecnológico**
-
-- **Backend**: Python 3.x, FastAPI, SQLAlchemy, PostgreSQL
-- **Frontend**: HTML5, CSS3, JavaScript Vanilla
-- **Autenticación**: JWT + 2FA por email
-- **Base de Datos**: PostgreSQL con Docker
-- **Testing**: Postman collections automatizadas
-- **Despliegue**: Docker Compose
-=======
 ## 🛠️ **Stack Tecnológico**
 
 ### **Backend**
-- **Framework**: Python 3.11+, FastAPI
+- **Framework**: Python 3.12+, FastAPI
 - **ORM**: SQLAlchemy 2.0
 - **Base de Datos**: PostgreSQL 16 con schema `core`
 - **Validación**: Pydantic v2
-- **Testing**: pytest + pytest-cov (coverage)
+- **Testing**: pytest + pytest-cov en `QA/`
 
 ### **Frontend**
 - **Markup**: HTML5
@@ -244,35 +202,25 @@ Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/po
 
 ### **DevOps**
 - **Contenerización**: Docker + Docker Compose
-- **Testing QA**: Postman collections automatizadas
+- **CI**: GitHub Actions (`qa-pytest`, Newman smoke manual)
+- **Testing QA**: Postman + Newman
 - **Documentación**: Swagger/OpenAPI
 - **Logging**: Middleware personalizado
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 
 ## 📊 **Estado Actual del Proyecto**
 
-| Componente | Estado | Completado |
-|------------|--------|------------|
-<<<<<<< HEAD
-| Backend API | Funcional | 85% |
-| Autenticación | Completa | 100% |
-| Frontend UI | Básico | 40% |
-| Base de Datos | Estructura | 90% |
-| QA Testing | Automatizado | 100% |
-| Documentación | Completa | 95% |
-=======
-| Backend API | ✅ Enterprise | 100% |
-| Models SQLAlchemy | ✅ Completo | 22/22 |
-| Schemas Pydantic | ✅ Completo | 20/20 |
-| Routes FastAPI | ✅ Completo | 21/21 |
-| Testing Suite | ✅ Profesional | 100% |
-| Autenticación | ✅ JWT + 2FA | 100% |
-| Frontend UI | 🔄 Básico | 60% |
-| Base de Datos | ✅ PostgreSQL | 100% |
-| QA Postman | ✅ Funcional | 100% |
-| Docker Config | ✅ Listo | 100% |
-| Documentación | ✅ Completa | 100% |
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
+| Componente | Estado | Notas |
+|------------|--------|--------|
+| Backend API | Funcional | Ver Swagger en `/docs` |
+| Autenticación | Completa | JWT + 2FA |
+| Suite pytest (`QA/`) | Automatizada | ~54 passed, 1 xfail (citas) |
+| QA Postman / Newman | Funcional | Ver `QA/README.md` |
+| Frontend UI | En progreso | HTML/CSS/JS estático |
+| Base de Datos | PostgreSQL | Scripts en `database/` |
+| Docker | Configurado | `docker-compose.yml` |
+| Documentación | Actualizada | README + `QA/` |
+
+Incidencias conocidas del API: [`QA/BACKEND_ISSUES_DETECTED.md`](QA/BACKEND_ISSUES_DETECTED.md).
 
 ## **Propuesta de Valor**
 
@@ -283,50 +231,37 @@ SIGI-A transforma la gestión tradicional de centros de estética en una **exper
 - **Accesibilidad**: Acceso 24/7 desde cualquier dispositivo
 - **Crecimiento**: Herramientas analíticas para tomar decisiones
 
-El proyecto está **listo para producción** con un backend robusto, QA completo y arquitectura escalable para futuras expansiones.
-
 ---
 
-<<<<<<< HEAD
-## Mejora recomendada
+## 🧪 **Testing**
 
-- Mantener un solo archivo `requirements.txt` en la raíz para evitar duplicados.
-- Documentar claramente el uso de `QA/postman` en `QA/README.md`.
-- Añadir pruebas automáticas y validación de esquema en el backend para mejorar la calidad.
-=======
-## 🧪 **Testing Profesional**
+### **Suite pytest (recomendado)**
 
-### **Backend Testing Suite**
-```bash
-# Ejecutar todos los tests
-cd backend
-pytest -v --cov=app --cov-report=html
-
-# Tests por categoría
-pytest tests/test_models/ -v      # Tests de persistencia
-pytest tests/test_schemas/ -v     # Tests de validación
-pytest tests/test_routes/ -v      # Tests de API
-
-# Coverage report
-pytest --cov=app --cov-report=term-missing
+```powershell
+cd QA
+pip install -r ..\backend\requirements.txt -r requirements-ci.txt
+.\qa.ps1 check
 ```
 
-### **QA con Postman**
-- Importar collections desde `QA/postman/collections/`
-- Importar entorno desde `QA/postman/environments/`
-- 9 endpoints automatizados 100% funcionales
-- Validaciones completas de API
+Equivalente manual:
 
-### **Características de Testing**
-- **Base de datos temporal**: SQLite en memoria
-- **Fixtures reutilizables**: Usuarios autenticados, datos de prueba
-- **Override de dependencias**: Base de datos aislada
-- **Coverage**: Medición de cobertura de código
-- **Autenticación JWT mock**: Tokens de prueba
+```bash
+cd QA
+python -m pytest tests -v --tb=short
+python scripts/validate_postman_workspace.py
+```
+
+Los tests importan `app` desde `../backend` vía `QA/pytest.ini` y usan SQLite en memoria (`QA/tests/conftest.py`).
+
+### **Postman y Newman**
+
+- Colección YAML: `QA/postman/collections/SIGI-A/`
+- Smoke Newman: `cd QA` → `.\qa.ps1 smoke` (API levantada)
+- Guías: [`QA/postman/README.md`](QA/postman/README.md), [`QA/postman/newman/README.md`](QA/postman/newman/README.md)
 
 ---
 
-## 🔐 **Seguridad Enterprise**
+## 🔐 **Seguridad**
 
 ### **Autenticación**
 - **JWT**: Access y refresh tokens
@@ -336,63 +271,49 @@ pytest --cov=app --cov-report=term-missing
 
 ### **Autorización**
 - **Roles**: cliente, negocio, admin
-- **Ownership Validation**: Solo dueños pueden modificar sus recursos
-- **Middleware**: Security headers y logs
+- **Ownership**: Solo dueños pueden modificar sus recursos cuando aplica
 
 ### **Validaciones**
 - **Pydantic**: Validación automática de tipos
 - **SQLAlchemy**: Constraints a nivel de base de datos
-- **Sanitización**: Inputs seguros
 
 ---
 
-## 🚀 **Despliegue y Producción**
+## 🚀 **Despliegue**
 
-### **Docker (Recomendado)**
+### **Docker (recomendado)**
+
 ```bash
-# Backend con PostgreSQL
 docker-compose up -d postgres
 docker-compose up --build
-
-# Acceso a servicios
-# Backend: http://127.0.0.1:8000
-# Swagger: http://127.0.0.1:8000/docs
 ```
 
-### **Variables de Entorno**
+- Backend: `http://127.0.0.1:8000`
+- Swagger: `http://127.0.0.1:8000/docs`
+
+### **Variables de entorno**
+
 ```bash
-# Copiar y configurar
 cp .env.example .env
-cp backend/.env.example backend/.env
-
-# Variables principales
-DATABASE_URL=postgresql://user:pass@localhost:5432/sigi
-SECRET_KEY=tu-secret-key
-EMAIL_USER=tu-email@gmail.com
-EMAIL_PASSWORD=tu-app-password
+# Completar DATABASE_URL, SECRET_KEY, SMTP, etc.
 ```
 
 ---
 
-## 📝 **Próximos Pasos**
+## 📝 **Próximos pasos**
 
-1. **Frontend Avanzado**: React/Vue para mejor UX
-2. **CI/CD Pipeline**: GitHub Actions o GitLab CI
-3. **Monitoring**: Logs y métricas con Grafana/Prometheus
-4. **Performance**: Caching con Redis y optimización
-5. **Deploy Cloud**: AWS, Azure o Google Cloud
+1. **Frontend**: Mejorar UX e integración con la API
+2. **Backend**: Resolver incidencias documentadas en QA (p. ej. citas)
+3. **CI/CD**: Ampliar pipelines según entorno de despliegue
+4. **Producción**: Monitoring, caché y despliegue en cloud
 
 ---
 
-## 🎯 **Propuesta de Valor**
+## Referencias
 
-SIGI-A transforma la gestión tradicional de centros de estética en una **experiencia digital moderna**, permitiendo:
-
-- **Escala**: Conecta múltiples negocios en una plataforma
-- **Eficiencia**: Automatiza procesos manuales
-- **Accesibilidad**: Acceso 24/7 desde cualquier dispositivo
-- **Crecimiento**: Herramientas analíticas para tomar decisiones
-
-**El proyecto está listo para producción con un backend enterprise-ready, testing completo y arquitectura escalable.** 🚀
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
-
+| Tema | Documento |
+|------|-----------|
+| API backend | `backend/README.md` |
+| Tests y Postman | `QA/README.md` |
+| Guía pytest paso a paso | `QA/GUIA_TESTS.md` |
+| Bugs reproducibles | `QA/BACKEND_ISSUES_DETECTED.md` |
