@@ -2,7 +2,7 @@ $kind: http-request
 name: Get-Me
 method: GET
 url: '{{base_url}}/auth/me'
-order: 4000
+order: 240
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'

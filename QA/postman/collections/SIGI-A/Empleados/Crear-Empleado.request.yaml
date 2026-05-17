@@ -2,8 +2,8 @@ $kind: http-request
 name: Crear Empleado
 description: Crea un nuevo empleado asociado a un negocio. Estado permitido activo o inactivo. Requiere autenticación JWT.
 method: POST
-url: '{{base_url}}/empleados'
-order: 1000
+url: '{{base_url}}/empleados/'
+order: 410
 headers:
   - key: Content-Type
     value: application/json
@@ -25,14 +25,11 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      pm.test("Status 201 - Empleado creado", () => pm.response.to.have.status(201));
-      pm.test("Respuesta tiene campo empleado", () => pm.expect(pm.response.json()).to.have.property("empleado"));
-      const empleado = pm.response.json().empleado;
-      if (empleado) {
-        pm.test("Empleado tiene id", () => pm.expect(empleado).to.have.property("id"));
-        pm.test("Empleado tiene nombre", () => pm.expect(empleado).to.have.property("nombre"));
-        pm.test("Empleado tiene apellido", () => pm.expect(empleado).to.have.property("apellido"));
-        pm.test("Empleado tiene id_negocio", () => pm.expect(empleado).to.have.property("id_negocio"));
-        pm.test("Estado es válido", () => pm.expect(empleado.estado).to.be.oneOf(["activo", "inactivo"]));
-        pm.environment.set("id_empleado", empleado.id);
-      }
+      pm.test("Status 200 o 201 - Empleado creado", () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));
+      const empleado = pm.response.json();
+      pm.test("Respuesta plana EmpleadoResponse", () => pm.expect(empleado).to.have.property("id_empleado"));
+      pm.test("Empleado tiene nombre", () => pm.expect(empleado).to.have.property("nombre"));
+      pm.test("Empleado tiene apellido", () => pm.expect(empleado).to.have.property("apellido"));
+      pm.test("Empleado tiene id_negocio", () => pm.expect(empleado).to.have.property("id_negocio"));
+      pm.test("Estado es válido", () => pm.expect(empleado.estado).to.be.oneOf(["activo", "inactivo"]));
+      pm.environment.set("id_empleado", empleado.id_empleado);

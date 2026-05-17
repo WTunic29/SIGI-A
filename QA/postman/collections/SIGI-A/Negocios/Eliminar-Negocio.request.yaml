@@ -3,7 +3,7 @@ name: Eliminar Negocio
 description: Elimina un negocio por su ID. Solo el propietario puede eliminarlo. Requiere autenticación JWT.
 method: DELETE
 url: '{{base_url}}/negocios/{{id_negocio}}'
-order: 5000
+order: 350
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'

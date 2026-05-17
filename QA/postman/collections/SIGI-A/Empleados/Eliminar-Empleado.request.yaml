@@ -3,7 +3,7 @@ name: Eliminar Empleado
 description: Elimina un empleado por su ID. Requiere autenticación JWT.
 method: DELETE
 url: '{{base_url}}/empleados/{{id_empleado}}'
-order: 4000
+order: 440
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'

@@ -1,16 +1,17 @@
 $kind: collection
-<<<<<<< HEAD
 name: SIGI-A
-description: 'Colección generada desde el backend FastAPI de SIGI-A. Cubre todos los endpoints disponibles en app/routes/user.py y app/routes/negocio.py'
-variables: []
-=======
-name: SIGI-A Fixed
-description: 'Colección 100% funcional con el backend FastAPI de SIGI-A. Corrige todos los problemas de los YAML originales.'
+description: >-
+  Colección SIGI-A para el backend FastAPI: /auth (2FA + JWT), /negocios, /empleados,
+  /servicios, /productos, /citas, /pedidos, /pagos, /calificaciones, /notificaciones,
+  health (/ y /test-db). Flujo: Register → Login → Verify-2FA → Bearer {{token}}.
+  Cada request tiene un campo `order` numérico único (110…1120) para que el Collection
+  Runner siga un orden lógico al ejecutar la colección entera. Incidencias API:
+  QA/BACKEND_ISSUES_DETECTED.md (ej. POST /citas/ puede dar 500).
 variables: []
 auth: null
 events: []
 info:
-  name: SIGI-A Fixed
-  description: 'Colección 100% funcional con el backend FastAPI de SIGI-A. Corrige todos los problemas de los YAML originales.'
+  name: SIGI-A
+  description: >-
+    Colección SIGI-A — ver QA/postman/README.md (variables, flujo, orden del Runner).
   schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

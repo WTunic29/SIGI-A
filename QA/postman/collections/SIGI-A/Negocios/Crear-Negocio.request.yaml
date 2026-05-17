@@ -1,13 +1,11 @@
-<<<<<<< HEAD
-﻿$kind: http-request
-=======
 $kind: http-request
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
 name: Crear Negocio
-description: 'Crea un nuevo negocio para el usuario autenticado con rol negocio. El propietario se toma del token JWT. Requiere autenticacion JWT con rol negocio.'
+description: >-
+  Crea un negocio para el usuario autenticado (rol negocio o admin).
+  La API devuelve un NegocioResponse (JSON plano), no un objeto { message, negocio }.
 method: POST
 url: '{{base_url}}/negocios/'
-order: 1000
+order: 310
 headers:
   - key: Content-Type
     value: application/json
@@ -28,19 +26,12 @@ scripts:
     language: text/javascript
     code: |-
       pm.test("Status 201 - Negocio creado", () => pm.response.to.have.status(201));
-      pm.test("Respuesta tiene campo message", () => pm.expect(pm.response.json()).to.have.property("message"));
-      pm.test("Respuesta tiene campo negocio", () => pm.expect(pm.response.json()).to.have.property("negocio"));
-      const negocio = pm.response.json().negocio;
-      if (negocio) {
-        pm.test("Negocio tiene id", () => pm.expect(negocio).to.have.property("id"));
-        pm.test("Negocio tiene nombre", () => pm.expect(negocio).to.have.property("nombre"));
-        pm.test("Negocio tiene descripcion", () => pm.expect(negocio).to.have.property("descripcion"));
-        pm.test("Negocio tiene direccion", () => pm.expect(negocio).to.have.property("direccion"));
-        pm.test("Negocio tiene telefono", () => pm.expect(negocio).to.have.property("telefono"));
-        pm.test("Negocio tiene correo", () => pm.expect(negocio).to.have.property("correo"));
-        pm.environment.set("id_negocio", negocio.id);
-<<<<<<< HEAD
+      const j = pm.response.json();
+      pm.test("Respuesta es NegocioResponse", () => {
+        pm.expect(j).to.have.property("id_negocio");
+        pm.expect(j).to.have.property("nombre_negocio");
+        pm.expect(j).to.have.property("id_usuario_propietario");
+      });
+      if (pm.response.code === 201) {
+        pm.environment.set("id_negocio", String(j.id_negocio));
       }
-=======
-      }
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1

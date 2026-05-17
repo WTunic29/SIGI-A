@@ -3,7 +3,7 @@ name: Eliminar Servicio
 description: Elimina un servicio existente por su ID. Requiere autenticación JWT.
 method: DELETE
 url: '{{base_url}}/servicios/{{id_servicio}}'
-order: 4000
+order: 540
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'
@@ -13,5 +13,5 @@ scripts:
     code: |-
       pm.test("Status 200 o 204 - Servicio eliminado", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));
       if (pm.response.code === 200) {
-        pm.test("Respuesta tiene mensaje de confirmación", () => pm.expect(pm.response.json()).to.have.property("mensaje"));
+        pm.test("Respuesta tiene message", () => pm.expect(pm.response.json()).to.have.property("message"));
       }

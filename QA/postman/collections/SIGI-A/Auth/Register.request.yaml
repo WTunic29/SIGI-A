@@ -1,8 +1,11 @@
 $kind: http-request
 name: Register
+description: >-
+  Usa {{correo_login}} y {{password_demo}} del entorno para que Register y Login
+  coincidan sin editar el JSON. Tras 201, se actualizan correo_login / id_usuario en el entorno.
 method: POST
 url: '{{base_url}}/auth/register'
-order: 1000
+order: 210
 headers:
   - key: Content-Type
     value: application/json
@@ -12,9 +15,9 @@ body:
     {
       "nombre": "Juan",
       "apellido": "Pérez",
-      "correo": "juan@example.com",
+      "correo": "{{correo_login}}",
       "telefono": "3001234567",
-      "password": "123456",
+      "password": "{{password_demo}}",
       "rol": "{{rol_default}}"
     }
 scripts:
@@ -33,13 +36,10 @@ scripts:
       });
       pm.test("Rol retornado es válido", function () {
           const json = pm.response.json();
-<<<<<<< HEAD
           pm.expect(["cliente", "negocio", "admin"]).to.include(json.usuario.rol);
-=======
-          pm.expect(["cliente", "negocio"]).to.include(json.usuario.rol);
->>>>>>> 869846f79e1f83ea6e29e19282cdebe9458cd5a1
       });
       if (pm.response.code === 201) {
           pm.environment.set("id_usuario", pm.response.json().usuario.id);
           pm.environment.set("correo_2fa", pm.response.json().usuario.correo);
+          pm.environment.set("correo_login", pm.response.json().usuario.correo);
       }

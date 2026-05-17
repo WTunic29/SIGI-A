@@ -1,120 +1,147 @@
-# SIGI-A Postman Collections
+# Postman (`QA/postman/`)
 
-Este directorio contiene las colecciones y entornos de Postman para probar la API del backend de **SIGI-A (Sistema de Gestión Inteligente de Estética)**.
+Colecciones y **entornos** para la API SIGI-A. La app importa todo lo que vive en `QA/postman/` (ver `QA/.postman/resources.yaml`).
 
-## Estructura de archivos
+## Comando único (`qa check` / `qa smoke`)
 
-### Environments
-- **`SIGI-A-Local.env.yaml`**: Variables de entorno para pruebas locales.
-  - `base_url`: URL base del backend (por defecto `http://localhost:8000`).
-  - `token`: Token JWT para autenticación.
-  - `correo_2fa`: Correo del usuario para verificación 2FA.
-  - `codigo_2fa`: Código de 6 dígitos para 2FA (obtener de DB o email).
-  - `rol_default`: Rol por defecto para registro (cliente/negocio/admin).
-  - `id_usuario`: ID del usuario autenticado.
-  - `id_negocio`: ID del negocio creado.
+Desde `QA/`:
 
-### Collections
-- **`collection.yaml`**: Archivo principal de la colección Postman. Define la estructura y metadatos.
-- **`Auth/`**: Endpoints de autenticación.
-  - `Register.request.yaml`: Registra un nuevo usuario.
-  - `Login.request.yaml`: Inicia sesión y solicita 2FA.
-  - `Verify-2FA.request.yaml`: Verifica el código 2FA y obtiene token JWT.
-  - `Get-Me.request.yaml`: Obtiene datos del usuario autenticado (requiere token).
-  - `Solo-Negocio.request.yaml`: Endpoint protegido para rol "negocio" (requiere token).
-- **`Health/`**: Endpoints de salud del sistema.
-  - `Root.request.yaml`: Verifica que el servidor esté corriendo.
-  - `Test-DB.request.yaml`: Verifica conexión a la base de datos.
-- **`Negocios/`**: Endpoints de gestión de negocios.
-  - `Crear-Negocio.request.yaml`: Crea un nuevo negocio (requiere token y rol negocio).
-  - `Listar-Negocios.request.yaml`: Lista todos los negocios.
+```powershell
+.\qa.ps1 check          # validate Postman + xfail budget + pytest
+.\qa.ps1 smoke          # Newman health (API levantada; usa pnpm)
+.\qa.ps1 install        # pnpm install + recordatorio pip
+```
 
-## Paso a paso para ejecutar pruebas en Postman
+En Linux/macOS: `./qa.sh check` (dar `chmod +x qa.sh` si hace falta).
 
-### 1. Preparar el backend
-- Asegúrate de que PostgreSQL esté corriendo: `docker-compose up -d`.
-- Crea `backend/.env` con las credenciales de DB.
-- Activa el entorno virtual: `backend\venv\Scripts\activate`.
-- Instala dependencias: `pip install -r requirements.txt`.
-- Ejecuta el backend: `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
+Dependencias Node: **`pnpm install`** (no npm). Ver `package.json` → `packageManager`.
 
-### 2. Importar en Postman
-- Abre Postman.
-- Ve a **File > Import**.
-- Selecciona `environments/SIGI-A-Local.env.yaml` para importar el entorno.
-- Selecciona `collections/SIGI-A/collection.yaml` para importar la colección.
+## Importación rápida
 
-### 3. Configurar entorno
-- En Postman, selecciona el entorno "SIGI-A Local".
-- Verifica que `base_url` sea `http://localhost:8000`.
-- Ajusta `rol_default` si es necesario (por defecto "negocio").
+1. **File → Import**
+2. Entorno (elige uno; ambos tienen las mismas variables):
+   - `environments/SIGI-A-Local.env.yaml`
+   - o `environments/SIGI-A.environment.yaml`
+3. Colección: `collections/SIGI-A/collection.yaml`  
+   Las requests se cargan desde las subcarpetas del mismo árbol (formato Workspace de Postman).
 
-### 4. Ejecutar pruebas
-Sigue este orden para probar la API:
+4. Activa el entorno **SIGI-A Local** o **SIGI-A** en el selector superior.
 
-1. **Health/Root**:
-   - Método: GET
-   - URL: `{{base_url}}/`
-   - Esperado: Status 200, mensaje de backend funcionando.
+## Estructura
 
-2. **Health/Test-DB**:
-   - Método: GET
-   - URL: `{{base_url}}/test-db`
-   - Esperado: Status 200, `"database": "conectada"`, `"resultado": 1`.
+```
+postman/
+├── collections/SIGI-A/
+│   ├── Auth/              # Register, Login, Verify-2FA, Get-Me, Solo-Negocio
+│   ├── Health/            # Root, Test-DB
+│   ├── Negocios/
+│   ├── Productos/
+│   ├── Servicios/
+│   ├── Empleados/
+│   ├── Citas/
+│   ├── Pedidos/
+│   ├── Pagos/
+│   ├── Calificaciones/
+│   ├── Notificaciones/
+│   ├── Carrito/
+│   ├── Favoritos/
+│   ├── collection.yaml
+│   ├── .resources/
+│   └── README.md          # Resumen dentro de la colección
+├── newman/               # Smoke JSON ejecutable con Newman (CLI), ver README dentro
+├── environments/
+│   ├── SIGI-A-Local.env.yaml
+│   └── SIGI-A.environment.yaml
+└── globals/workspace.globals.yaml
+```
 
-3. **Auth/Register**:
-   - Método: POST
-   - URL: `{{base_url}}/auth/register`
-   - Body: JSON con datos del usuario (rol usa `{{rol_default}}`).
-   - Esperado: Status 201, usuario creado. Guarda `id_usuario` y `correo_2fa`.
+Los requests suelen tener **tests** (`afterResponse`) que guardan IDs en variables de entorno tras crear recursos.
 
-4. **Auth/Login**:
-   - Método: POST
-   - URL: `{{base_url}}/auth/login`
-   - Body: JSON con `correo` y `password`.
-   - Esperado: Status 200, requiere 2FA. Ver console para instrucciones.
-   - **Nota**: El código 2FA se envía al correo (en prod) o se genera en DB.
+## Collection Runner (`order`)
 
-5. **Obtener código 2FA**:
-   - Para testing: Conecta a la DB PostgreSQL.
-   - Ejecuta: `SELECT codigo FROM core.codigo_2fa WHERE id_usuario = {{id_usuario}} ORDER BY fecha_creacion DESC LIMIT 1;`
-   - Copia el código de 6 dígitos.
-   - En Postman, establece `codigo_2fa` en el entorno con ese valor.
+Cada request tiene un **`order`** numérico único en el YAML para que Postman ejecute una pasada ordenada cuando corres **la colección entera**:
 
-6. **Auth/Verify-2FA**:
-   - Método: POST
-   - URL: `{{base_url}}/auth/verify-2fa`
-   - Body: JSON con `correo` (`{{correo_2fa}}`) y `codigo` (`{{codigo_2fa}}`).
-   - Esperado: Status 200, token JWT. Guarda `token`.
+- **110–120**: Health  
+- **210–250**: Auth (Register → … → Solo-Negocio)  
+- **310–350**: Negocios  
+- **410–440**: Empleados  
+- **510–540**: Servicios  
+- **610–640**: Productos  
+- **710–750**: Citas  
+- **810–830**: Pedidos  
+- **910–920**: Pagos  
+- **1010–1020**: Calificaciones  
+- **1110–1120**: Notificaciones  
+- **1200–1210**: Carrito  
+- **1300–1310**: Favoritos  
 
-7. **Auth/Get-Me**:
-   - Método: GET
-   - URL: `{{base_url}}/auth/me`
-   - Headers: `Authorization: Bearer {{token}}`
-   - Esperado: Status 200, datos del usuario.
+Si solo necesitás un módulo, ejecutá la carpeta correspondiente o arrastrá el orden en Postman; el valor `order` es la convención del repo.
 
-8. **Auth/Solo-Negocio** (si rol es negocio):
-   - Método: GET
-   - URL: `{{base_url}}/auth/solo-negocio`
-   - Headers: `Authorization: Bearer {{token}}`
-   - Esperado: Status 200, mensaje para negocio.
+## Variables de entorno
 
-9. **Negocios/Crear-Negocio** (si rol es negocio):
-   - Método: POST
-   - URL: `{{base_url}}/negocios/`
-   - Headers: `Authorization: Bearer {{token}}`
-   - Body: JSON con datos del negocio.
-   - Esperado: Status 201, negocio creado. Guarda `id_negocio`.
+| Variable | Uso |
+|----------|-----|
+| `base_url` | Origen API (ej. `http://localhost:8000`) |
+| `token` | JWT tras **Verify-2FA** |
+| `correo_login` | Correo para **Register** y **Login** (deben coincidir) |
+| `password_demo` | Contraseña en **Register** y **Login** (misma en ambos) |
+| `correo_2fa` | Email devuelto por Login para el paso 2FA |
+| `codigo_2fa` | Código de 6 dígitos (**manual**: DB `core.codigo_2fa` o correo en dev) |
+| `rol_default` | Rol en Register: `negocio`, `cliente` o `admin` |
+| `id_usuario` | Tras Register/Verify-2FA |
+| `id_negocio` | Tras **Crear Negocio** o, si está vacío, el primer elemento al **Listar Negocios** (200) |
+| `id_empleado` | Tras **Crear Empleado** |
+| `id_servicio` | Tras **Crear Servicio** |
+| `id_producto` | Tras **Crear Producto** |
+| `id_pedido` | Tras **Crear Pedido** |
+| `id_pago` | Tras **Registrar Pago** |
+| `id_cita` | Tras crear cita OK o valor manual para otros requests de citas |
+| `id_notificacion` | Tras **Listar Notificaciones** si hay al menos una (primer elemento) |
+| `id_carrito` | Tras **Crear Carrito** o primer ítem en **Listar Carritos** |
+| `id_favorito` | Tras **Crear Favorito** |
 
-10. **Negocios/Listar-Negocios**:
-    - Método: GET
-    - URL: `{{base_url}}/negocios/`
-    - Esperado: Status 200, lista de negocios.
+## Flujo recomendado (manual)
 
-### Notas importantes
-- **2FA**: En desarrollo, obtén el código de la DB. En producción, del email.
-- **Roles**: "cliente" puede registrarse y autenticarse; "negocio" puede crear/listar negocios.
-- **Errores**: Si falla, verifica que el backend esté corriendo y la DB conectada.
-- **Scripts**: Los requests tienen tests automáticos en Postman.
+1. **Health**: `GET /`, `GET /test-db`.
+2. **Auth**: Register → Login → pegar **`codigo_2fa`** en el entorno → Verify-2FA (rellena `token`). Si `correo_2fa` o `codigo_2fa` faltan, **Verify-2FA** avisa en consola (pre-request).
+3. **Negocio** (rol negocio): Crear Negocio → otros recursos usando `{{id_negocio}}`.
+4. Empleados / servicios / productos antes de pedidos o citas cuando el orden lo exija.
+5. **Citas**: `POST /citas/` puede responder **500** por bug modelo/rutas → `QA/BACKEND_ISSUES_DETECTED.md`.
 
-Para más detalles, consulta la documentación del backend en `backend/README.md`.
+Consulta **`collections/SIGI-A/README.md`** para tabla de rutas por carpeta.
+
+## Validación estática (`QA/scripts`)
+
+Comprueba que cada `*.request.yaml` tiene `method`, `url`, `order` único y que todas las **`{{variables}}`** existen en **entornos** + **`.resources/definition.yaml`**. También exige mismas claves en `SIGI-A-Local` y `SIGI-A.environment`.
+
+Desde **`QA`**:
+
+```bash
+python scripts/validate_postman_workspace.py
+```
+
+Se ejecuta también en **`QA (pytest)` en GitHub Actions** antes de pytest.
+
+## Newman (CLI, smoke opcional)
+
+Colección mínima en JSON (**sin auth**) para ejecutar **`GET /`**, **`/test-db`**, **`/openapi.json`** cuando el servidor esté accesible. Instrucciones e integración opcional CI manual: **`newman/README.md`**.
+
+Si `ENVIRONMENT=production` en el backend, `/openapi.json` puede estar **deshabilitado**; en ese caso el tercer request del smoke esperaría fallar a propósito (quitarlo o ejecutar sólo los dos primeros pasos).
+
+## Scripts de mantenimiento (YAML / Postman)
+
+- **`collections/SIGI-A/_convert_crlf.ps1`**: CRLF dentro de esa carpeta.
+- **`QA/_fix_all_yaml.ps1`**: todo `QA/postman/**/*.yaml` → UTF-8 sin BOM, LF.
+- **`QA/_fix_bom.ps1`**: un subconjunto frecuente (Auth + environments).
+- **`QA/_write_postman_files.ps1`**: obsoleto; no regenerar la colección desde ahí (evita pisar requests alineadas con el API).
+
+## Backend en local
+
+Sin backend levantado, las requests fallan por conexión. Desde la raíz del repo (ejemplo):
+
+```bash
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+PostgreSQL debe estar configurado en `backend/.env` si usás esa base (Docker u host local).

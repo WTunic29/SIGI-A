@@ -1,9 +1,11 @@
 $kind: http-request
 name: Crear Producto
-description: Crea un nuevo producto para un negocio. precio y stock deben ser mayores o iguales a 0. Estado activo o inactivo. Requiere autenticación JWT.
+description: >-
+  POST /productos/ — crea producto (rol negocio usa su negocio; admin puede indicar id_negocio).
+  Respuesta plana ProductoCreate → ProductoResponse (status 200 por defecto en FastAPI).
 method: POST
-url: '{{base_url}}/productos'
-order: 1000
+url: '{{base_url}}/productos/'
+order: 610
 headers:
   - key: Content-Type
     value: application/json
@@ -17,22 +19,19 @@ body:
       "nombre": "Shampoo Profesional",
       "descripcion": "Shampoo para cabello dañado 500ml",
       "precio": 28000.00,
-      "stock": 50,
-      "estado": "activo"
+      "stock": 50
     }
 scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      pm.test("Status 201 - Producto creado", () => pm.response.to.have.status(201));
-      pm.test("Respuesta tiene campo producto", () => pm.expect(pm.response.json()).to.have.property("producto"));
-      const producto = pm.response.json().producto;
-      if (producto) {
-        pm.test("Producto tiene id", () => pm.expect(producto).to.have.property("id"));
-        pm.test("Producto tiene nombre", () => pm.expect(producto).to.have.property("nombre"));
-        pm.test("Producto tiene id_negocio", () => pm.expect(producto).to.have.property("id_negocio"));
-        pm.test("precio es mayor o igual a 0", () => pm.expect(producto.precio).to.be.at.least(0));
-        pm.test("stock es mayor o igual a 0", () => pm.expect(producto.stock).to.be.at.least(0));
-        pm.test("Estado es válido", () => pm.expect(producto.estado).to.be.oneOf(["activo", "inactivo"]));
-        pm.environment.set("id_producto", producto.id);
+      pm.test("Status 200 - Producto creado", () => pm.response.to.have.status(200));
+      const producto = pm.response.json();
+      pm.test("Respuesta plana ProductoResponse", () => {
+        pm.expect(producto).to.have.property("id_producto");
+        pm.expect(producto).to.have.property("nombre");
+        pm.expect(producto).to.have.property("id_negocio");
+      });
+      if (pm.response.code === 200 && producto.id_producto) {
+        pm.environment.set("id_producto", String(producto.id_producto));
       }

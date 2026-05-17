@@ -1,9 +1,11 @@
 $kind: http-request
-name: Obtener Cita
-description: Obtiene los detalles de una cita específica por su ID. Requiere autenticación JWT.
+name: Listar citas del cliente (detalle por ID no expuesto)
+description: >-
+  El backend no expone GET /citas/{id} para una sola cita. Se usa GET /citas/cliente/{id_cliente}
+  (mismo patrón que "Citas del Usuario"). Requiere token; el cliente solo puede su id_usuario.
 method: GET
-url: '{{base_url}}/citas/{{id_cita}}'
-order: 2000
+url: '{{base_url}}/citas/cliente/{{id_usuario}}'
+order: 730
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'
@@ -11,15 +13,12 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      pm.test("Status 200 - Cita obtenida", () => pm.response.to.have.status(200));
-      pm.test("Respuesta tiene campo cita", () => pm.expect(pm.response.json()).to.have.property("cita"));
-      const cita = pm.response.json().cita;
-      if (cita) {
-        pm.test("Cita tiene id", () => pm.expect(cita).to.have.property("id"));
-        pm.test("Cita tiene id_cliente", () => pm.expect(cita).to.have.property("id_cliente"));
-        pm.test("Cita tiene id_negocio", () => pm.expect(cita).to.have.property("id_negocio"));
-        pm.test("Cita tiene fecha", () => pm.expect(cita).to.have.property("fecha"));
-        pm.test("Cita tiene hora_inicio", () => pm.expect(cita).to.have.property("hora_inicio"));
-        pm.test("Cita tiene hora_fin", () => pm.expect(cita).to.have.property("hora_fin"));
-        pm.test("Estado es válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
+      pm.test("Status 200", () => pm.response.to.have.status(200));
+      const citas = pm.response.json();
+      pm.test("Respuesta es array", () => pm.expect(Array.isArray(citas)).to.be.true);
+      if (citas.length > 0) {
+        const c = citas[0];
+        pm.test("Elemento tiene id_cita", () => pm.expect(c).to.have.property("id_cita"));
+        pm.test("Elemento tiene id_cliente", () => pm.expect(c).to.have.property("id_cliente"));
+        pm.test("Estado válido", () => pm.expect(c.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
       }

@@ -1,9 +1,11 @@
 $kind: http-request
 name: Listar Notificaciones
-description: 'Obtiene todas las notificaciones de un usuario. Tipos válidos: cita, pago, pedido, sistema, promocion. Requiere autenticación JWT.'
+description: >-
+  GET /notificaciones/ — notificaciones del usuario autenticado (o todas si admin).
+  Requiere Bearer {{token}}.
 method: GET
-url: '{{base_url}}/usuarios/{{id_usuario}}/notificaciones'
-order: 1000
+url: '{{base_url}}/notificaciones/'
+order: 1110
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'
@@ -16,7 +18,8 @@ scripts:
       const notificaciones = pm.response.json();
       if (notificaciones.length > 0) {
         const n = notificaciones[0];
-        pm.test("Notificacion tiene id", () => pm.expect(n).to.have.property("id"));
+        pm.environment.set("id_notificacion", String(n.id_notificacion));
+        pm.test("Notificacion tiene id_notificacion", () => pm.expect(n).to.have.property("id_notificacion"));
         pm.test("Notificacion tiene id_usuario", () => pm.expect(n).to.have.property("id_usuario"));
         pm.test("Notificacion tiene titulo", () => pm.expect(n).to.have.property("titulo"));
         pm.test("Notificacion tiene mensaje", () => pm.expect(n).to.have.property("mensaje"));

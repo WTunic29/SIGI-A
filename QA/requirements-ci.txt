@@ -1,0 +1,8 @@
+# Dependencias solo para ejecutar pytest sobre el backend vía QA/pytest.ini.
+# Instalar junto con backend/requirements.txt, por ejemplo:
+#   pip install -r backend/requirements.txt -r QA/requirements-ci.txt
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
+httpx>=0.27.0
+PyYAML>=6.0.0

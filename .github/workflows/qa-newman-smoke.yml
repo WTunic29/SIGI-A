@@ -1,0 +1,56 @@
+name: QA (Newman smoke opcional)
+
+# Newman necesita una API alcanzable desde el runner (no sirve localhost de tu PC).
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL base del API (ej. https://staging.ejemplo.com)"
+        required: true
+        type: string
+        default: "http://127.0.0.1:8000"
+      collection:
+        description: "Colección Newman"
+        required: true
+        type: choice
+        options:
+          - smoke
+          - auth-partial
+        default: smoke
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: QA
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: QA/pnpm-lock.yaml
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Newman smoke
+        if: inputs.collection == 'smoke'
+        run: >-
+          pnpm run postman:newman:smoke --
+          --env-var base_url=${{ github.event.inputs.base_url }}
+
+      - name: Run Newman auth partial
+        if: inputs.collection == 'auth-partial'
+        run: >-
+          pnpm run postman:newman:auth-partial --
+          --env-var base_url=${{ github.event.inputs.base_url }}

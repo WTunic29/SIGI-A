@@ -1,0 +1,65 @@
+{
+  "info": {
+    "_postman_id": "sigia-qa-auth-partial",
+    "name": "SIGI-A Auth parcial (Newman)",
+    "description": "Register + Login sin 2FA (útil contra API con correo único por entorno). No sustituye Verify-2FA ni pytest.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth — POST /auth/register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const j = pm.response.json();",
+              "if (j.usuario) {",
+              "  pm.environment.set('id_usuario', j.usuario.id);",
+              "  pm.environment.set('correo_login', j.usuario.correo);",
+              "  pm.environment.set('correo_2fa', j.usuario.correo);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"QA\",\n  \"apellido\": \"Newman\",\n  \"correo\": \"{{correo_login}}\",\n  \"telefono\": \"3000000000\",\n  \"password\": \"{{password_demo}}\",\n  \"rol\": \"{{rol_default}}\"\n}"
+        },
+        "url": "{{base_url}}/auth/register"
+      }
+    },
+    {
+      "name": "Auth — POST /auth/login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('requiere 2FA', () => pm.expect(j.requieres_2fa).to.eql(true));",
+              "if (j.correo) pm.environment.set('correo_2fa', j.correo);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"{{correo_login}}\",\n  \"password\": \"{{password_demo}}\"\n}"
+        },
+        "url": "{{base_url}}/auth/login"
+      }
+    }
+  ]
+}

@@ -1,9 +1,11 @@
 $kind: http-request
 name: Listar Servicios del Negocio
-description: Obtiene todos los servicios de un negocio específico. Requiere autenticación JWT.
+description: >-
+  GET /servicios/ — lista servicios del negocio del usuario autenticado (rol negocio).
+  Requiere Bearer {{token}}.
 method: GET
-url: '{{base_url}}/negocios/{{id_negocio}}/servicios'
-order: 2000
+url: '{{base_url}}/servicios/'
+order: 520
 headers:
   - key: Authorization
     value: 'Bearer {{token}}'
@@ -16,7 +18,7 @@ scripts:
       const servicios = pm.response.json();
       if (servicios.length > 0) {
         const s = servicios[0];
-        pm.test("Servicio tiene id", () => pm.expect(s).to.have.property("id"));
+        pm.test("Servicio tiene id_servicio", () => pm.expect(s).to.have.property("id_servicio"));
         pm.test("Servicio tiene nombre", () => pm.expect(s).to.have.property("nombre"));
         pm.test("Servicio tiene id_negocio", () => pm.expect(s).to.have.property("id_negocio"));
         pm.test("duracion_minutos es mayor a 0", () => pm.expect(s.duracion_minutos).to.be.above(0));

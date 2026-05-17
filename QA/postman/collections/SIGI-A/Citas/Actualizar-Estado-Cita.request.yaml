@@ -1,9 +1,11 @@
 $kind: http-request
 name: Actualizar Estado de Cita
-description: 'Actualiza el estado de una cita. Estados válidos: pendiente, confirmada, cancelada, completada, no_asistio. Requiere autenticación JWT.'
+description: >-
+  PUT /citas/{id_cita} con body CitaUpdate (p. ej. solo estado). No existe PUT /citas/:id/estado en el backend.
+  Rol negocio o admin. Respuesta plana CitaResponse.
 method: PUT
-url: '{{base_url}}/citas/{{id_cita}}/estado'
-order: 4000
+url: '{{base_url}}/citas/{{id_cita}}'
+order: 740
 headers:
   - key: Content-Type
     value: application/json
@@ -20,9 +22,6 @@ scripts:
     language: text/javascript
     code: |-
       pm.test("Status 200 - Estado actualizado", () => pm.response.to.have.status(200));
-      pm.test("Respuesta tiene campo cita", () => pm.expect(pm.response.json()).to.have.property("cita"));
-      const cita = pm.response.json().cita;
-      if (cita) {
-        pm.test("Cita tiene id", () => pm.expect(cita).to.have.property("id"));
-        pm.test("Estado es válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
-      }
+      const cita = pm.response.json();
+      pm.test("CitaResponse plana: id_cita", () => pm.expect(cita).to.have.property("id_cita"));
+      pm.test("Estado es válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
