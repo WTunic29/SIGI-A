@@ -1,4 +1,5 @@
 import random
+import secrets
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -8,11 +9,24 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.deps import get_current_user, require_role
 from app.core.rate_limit import limiter
+
 from app.models.codigo_2fa import Codigo2FA
 from app.models.sesion import Sesion
 from app.models.user import Usuario
-from app.schemas.user import UsuarioCreate, UsuarioLogin, Verificar2FA, CambiarRolUsuario
-from app.utils.email import enviar_codigo_email
+from app.models.token_activacion import TokenActivacion
+
+from app.schemas.user import (
+    UsuarioCreate,
+    UsuarioLogin,
+    Verificar2FA,
+    CambiarRolUsuario
+)
+
+from app.utils.email import (
+    enviar_codigo_email,
+    enviar_link_activacion_email
+)
+
 from app.utils.security import (
     SECRET_KEY,
     ALGORITHM,
@@ -25,6 +39,11 @@ from app.utils.security import (
 
 router = APIRouter()
 
+
+# =========================
+# USUARIO ACTUAL
+# =========================
+
 @router.get("/me")
 def get_me(current_user: Usuario = Depends(get_current_user)):
     return {
@@ -32,17 +51,27 @@ def get_me(current_user: Usuario = Depends(get_current_user)):
         "nombre": current_user.nombre,
         "apellido": current_user.apellido,
         "correo": current_user.correo,
-        "rol": current_user.rol
+        "rol": current_user.rol,
+        "estado": current_user.estado
     }
 
+
+# =========================
+# REGISTRO
+# =========================
 
 @router.post("/register", status_code=201)
 def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
     try:
-        existente = db.query(Usuario).filter(Usuario.correo == user.correo).first()
+        existente = db.query(Usuario).filter(
+            Usuario.correo == user.correo
+        ).first()
 
         if existente:
-            raise HTTPException(status_code=400, detail="El correo ya está registrado")
+            raise HTTPException(
+                status_code=400,
+                detail="El correo ya está registrado"
+            )
 
         nuevo_usuario = Usuario(
             nombre=user.nombre,
@@ -58,14 +87,37 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(nuevo_usuario)
 
+        token_activacion = secrets.token_urlsafe(48)
+
+        nuevo_token = TokenActivacion(
+            id_usuario=nuevo_usuario.id_usuario,
+            token=token_activacion,
+            fecha_expiracion=datetime.utcnow() + timedelta(hours=24),
+            usado=False
+        )
+
+        db.add(nuevo_token)
+        db.commit()
+
+        link_activacion = (
+            "https://sigi-a.onrender.com/auth/activar-cuenta"
+            f"?token={token_activacion}"
+        )
+
+        enviar_link_activacion_email(
+            nuevo_usuario.correo,
+            link_activacion
+        )
+
         return {
-            "message": "Usuario creado correctamente",
+            "message": "Usuario creado correctamente. Revisa tu correo para activar la cuenta.",
             "usuario": {
                 "id": nuevo_usuario.id_usuario,
                 "nombre": nuevo_usuario.nombre,
                 "apellido": nuevo_usuario.apellido,
                 "correo": nuevo_usuario.correo,
-                "rol": nuevo_usuario.rol
+                "rol": nuevo_usuario.rol,
+                "estado": nuevo_usuario.estado
             }
         }
 
@@ -77,13 +129,63 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# =========================
+# ACTIVAR CUENTA
+# =========================
 
-@router.get("/solo-negocio")
-def solo_negocio(user: Usuario = Depends(require_role("negocio"))):
+@router.get("/activar-cuenta")
+def activar_cuenta(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    token_db = db.query(TokenActivacion).filter(
+        TokenActivacion.token == token,
+        TokenActivacion.usado == False
+    ).first()
+
+    if not token_db:
+        raise HTTPException(
+            status_code=400,
+            detail="Token de activación inválido o ya usado"
+        )
+
+    if token_db.fecha_expiracion < datetime.utcnow():
+        raise HTTPException(
+            status_code=400,
+            detail="El token de activación ha expirado"
+        )
+
+    usuario = db.query(Usuario).filter(
+        Usuario.id_usuario == token_db.id_usuario
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
+
+    if usuario.estado == "activo":
+        token_db.usado = True
+        db.commit()
+
+        return {
+            "message": "La cuenta ya estaba activa. Ya puedes iniciar sesión."
+        }
+
+    usuario.estado = "activo"
+    token_db.usado = True
+
+    db.commit()
+
     return {
-        "message": "Bienvenido negocio",
-        "usuario": user.nombre
+        "message": "Cuenta activada correctamente. Ya puedes iniciar sesión."
     }
+
+
+# =========================
+# LOGIN
+# =========================
 
 @limiter.limit("5/minute")
 @router.post("/login")
@@ -93,13 +195,21 @@ def login_user(
     db: Session = Depends(get_db)
 ):
     try:
-        usuario = db.query(Usuario).filter(Usuario.correo == user.correo).first()
+        usuario = db.query(Usuario).filter(
+            Usuario.correo == user.correo
+        ).first()
 
         if not usuario:
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            raise HTTPException(
+                status_code=401,
+                detail="Credenciales inválidas"
+            )
 
         if not verify_password(user.password, usuario.password_hash):
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            raise HTTPException(
+                status_code=401,
+                detail="Credenciales inválidas"
+            )
 
         if usuario.estado != "activo":
             raise HTTPException(
@@ -134,6 +244,11 @@ def login_user(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# =========================
+# VERIFICAR 2FA
+# =========================
+
 @limiter.limit("5/minute")
 @router.post("/verify-2fa")
 def verify_2fa(
@@ -142,7 +257,6 @@ def verify_2fa(
     db: Session = Depends(get_db)
 ):
     try:
-
         usuario = db.query(Usuario).filter(
             Usuario.correo == data.correo
         ).first()
@@ -151,6 +265,12 @@ def verify_2fa(
             raise HTTPException(
                 status_code=404,
                 detail="Usuario no encontrado"
+            )
+
+        if usuario.estado != "activo":
+            raise HTTPException(
+                status_code=403,
+                detail="La cuenta no está activa."
             )
 
         codigo_db = (
@@ -206,23 +326,20 @@ def verify_2fa(
         )
 
         db.add(nueva_sesion)
-
         db.commit()
 
         return {
             "message": "2FA validado correctamente",
-
             "access_token": access_token,
             "refresh_token": refresh_token,
-
             "token_type": "bearer",
-
             "usuario": {
                 "id": usuario.id_usuario,
                 "nombre": usuario.nombre,
                 "apellido": usuario.apellido,
                 "correo": usuario.correo,
-                "rol": usuario.rol
+                "rol": usuario.rol,
+                "estado": usuario.estado
             }
         }
 
@@ -235,6 +352,23 @@ def verify_2fa(
             status_code=500,
             detail=str(e)
         )
+
+
+# =========================
+# SOLO NEGOCIO
+# =========================
+
+@router.get("/solo-negocio")
+def solo_negocio(user: Usuario = Depends(require_role("negocio"))):
+    return {
+        "message": "Bienvenido negocio",
+        "usuario": user.nombre
+    }
+
+
+# =========================
+# ADMIN - CAMBIAR ROL
+# =========================
 
 @router.patch("/usuarios/{id_usuario}/rol")
 def cambiar_rol_usuario(
@@ -249,7 +383,9 @@ def cambiar_rol_usuario(
             detail="Solo el superadministrador puede modificar roles"
         )
 
-    usuario = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    usuario = db.query(Usuario).filter(
+        Usuario.id_usuario == id_usuario
+    ).first()
 
     if not usuario:
         raise HTTPException(
@@ -268,6 +404,11 @@ def cambiar_rol_usuario(
         "correo": usuario.correo,
         "nuevo_rol": usuario.rol
     }
+
+
+# =========================
+# ADMIN - LISTAR USUARIOS
+# =========================
 
 @router.get("/usuarios")
 def listar_usuarios(
@@ -294,6 +435,8 @@ def listar_usuarios(
         }
         for usuario in usuarios
     ]
+
+
 # =========================
 # REFRESH TOKEN
 # =========================
@@ -303,9 +446,7 @@ def refresh_token(
     refresh_token: str,
     db: Session = Depends(get_db)
 ):
-
     try:
-
         payload = jwt.decode(
             refresh_token,
             SECRET_KEY,
@@ -330,6 +471,12 @@ def refresh_token(
             raise HTTPException(
                 status_code=404,
                 detail="Usuario no encontrado"
+            )
+
+        if usuario.estado != "activo":
+            raise HTTPException(
+                status_code=403,
+                detail="La cuenta no está activa."
             )
 
         nuevo_access_token = create_access_token(
@@ -363,6 +510,8 @@ def refresh_token(
             status_code=401,
             detail="Refresh token inválido"
         )
+
+
 # =========================
 # LOGOUT
 # =========================
