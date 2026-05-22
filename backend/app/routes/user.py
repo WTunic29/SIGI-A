@@ -55,7 +55,8 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
             correo=user.correo,
             telefono=user.telefono,
             password_hash=hash_password(user.password),
-            rol=user.rol
+            rol="cliente",
+            estado="pendiente"
         )
 
         db.add(nuevo_usuario)
