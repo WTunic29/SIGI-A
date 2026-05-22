@@ -101,6 +101,12 @@ def login_user(
         if not verify_password(user.password, usuario.password_hash):
             raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
+        if usuario.estado != "activo":
+            raise HTTPException(
+                status_code=403,
+                detail="La cuenta no está activa. Debes activar tu cuenta desde el correo enviado."
+            )
+
         codigo = str(random.randint(100000, 999999))
 
         nuevo_codigo = Codigo2FA(
