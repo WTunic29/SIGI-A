@@ -218,12 +218,14 @@ def login_user(
             )
 
         codigo = str(random.randint(100000, 999999))
+        codigo_hash = hash_password(codigo)
 
         nuevo_codigo = Codigo2FA(
             id_usuario=usuario.id_usuario,
-            codigo=codigo,
+            codigo=codigo_hash,
             fecha_expiracion=datetime.utcnow() + timedelta(minutes=5),
-            usado=False
+            usado=False,
+            intentos=0
         )
 
         db.add(nuevo_codigo)
@@ -277,7 +279,6 @@ def verify_2fa(
             db.query(Codigo2FA)
             .filter(
                 Codigo2FA.id_usuario == usuario.id_usuario,
-                Codigo2FA.codigo == data.codigo,
                 Codigo2FA.usado == False
             )
             .order_by(Codigo2FA.id_codigo.desc())
@@ -294,6 +295,22 @@ def verify_2fa(
             raise HTTPException(
                 status_code=400,
                 detail="Código 2FA expirado"
+            )
+
+        if codigo_db.intentos >= 3:
+            codigo_db.usado = True
+            db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail="Código 2FA bloqueado por demasiados intentos"
+            )
+
+        if not verify_password(data.codigo, codigo_db.codigo):
+            codigo_db.intentos += 1
+            db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail="Código 2FA inválido"
             )
 
         codigo_db.usado = True
