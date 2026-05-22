@@ -1,6 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
 from pydantic import BaseModel, EmailStr, field_validator
+
 import re
 
 class UsuarioCreate(BaseModel):
@@ -40,3 +40,18 @@ class Token(BaseModel):
 class Verificar2FA(BaseModel):
     correo: EmailStr
     codigo: str
+
+class CambiarRolUsuario(BaseModel):
+    nuevo_rol: str
+
+    @field_validator("nuevo_rol")
+    @classmethod
+    def validar_rol(cls, rol: str):
+        roles_permitidos = ["cliente", "negocio", "admin", "superadmin"]
+
+        if rol not in roles_permitidos:
+            raise ValueError(
+                "Rol inválido. Los roles permitidos son: cliente, negocio, admin, superadmin"
+            )
+
+        return rol

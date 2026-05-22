@@ -1,31 +1,33 @@
 import random
 from datetime import datetime, timedelta
-from fastapi import Request
-from datetime import datetime, timedelta
-from jose import jwt, JWTError
-from app.utils.security import SECRET_KEY, ALGORITHM
-from app.core.rate_limit import limiter
-from fastapi import Request
 
-from app.models.codigo_2fa import Codigo2FA
-from app.schemas.user import Verificar2FA
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from jose import jwt, JWTError
 from sqlalchemy.orm import Session
-from app.models.sesion import Sesion
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.usuario import Usuario
+from app.schemas.user import CambiarRolUsuario
+from app.security.dependencies import get_current_user
+from app.core.deps import get_current_user, require_role
+from app.core.rate_limit import limiter
+from app.database import get_db
+from app.models.codigo_2fa import Codigo2FA
+from app.models.sesion import Sesion
 from app.models.user import Usuario
-from app.schemas.user import UsuarioCreate, UsuarioLogin
-from app.core.deps import get_current_user
-from app.core.deps import require_role
+from app.schemas.user import UsuarioCreate, UsuarioLogin, Verificar2FA
 from app.utils.email import enviar_codigo_email
 from app.utils.security import (
+    SECRET_KEY,
+    ALGORITHM,
     hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_DAYS
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 
 router = APIRouter()
@@ -234,6 +236,65 @@ def verify_2fa(
             status_code=500,
             detail=str(e)
         )
+
+@router.patch("/usuarios/{id_usuario}/rol")
+def cambiar_rol_usuario(
+    id_usuario: int,
+    datos: CambiarRolUsuario,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.rol != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el superadministrador puede modificar roles"
+        )
+
+    usuario = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    usuario.rol = datos.nuevo_rol
+
+    db.commit()
+    db.refresh(usuario)
+
+    return {
+        "message": "Rol actualizado correctamente",
+        "id_usuario": usuario.id_usuario,
+        "correo": usuario.correo,
+        "nuevo_rol": usuario.rol
+    }
+
+@router.get("/usuarios")
+def listar_usuarios(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.rol != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el superadministrador puede listar usuarios"
+        )
+
+    usuarios = db.query(Usuario).all()
+
+    return [
+        {
+            "id_usuario": usuario.id_usuario,
+            "nombre": usuario.nombre,
+            "apellido": usuario.apellido,
+            "correo": usuario.correo,
+            "telefono": usuario.telefono,
+            "rol": usuario.rol,
+            "estado": usuario.estado
+        }
+        for usuario in usuarios
+    ]
 # =========================
 # REFRESH TOKEN
 # =========================
