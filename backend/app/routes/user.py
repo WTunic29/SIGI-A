@@ -1,23 +1,17 @@
 import random
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.usuario import Usuario
-from app.schemas.user import CambiarRolUsuario
-from app.security.dependencies import get_current_user
 from app.core.deps import get_current_user, require_role
 from app.core.rate_limit import limiter
-from app.database import get_db
 from app.models.codigo_2fa import Codigo2FA
 from app.models.sesion import Sesion
 from app.models.user import Usuario
-from app.schemas.user import UsuarioCreate, UsuarioLogin, Verificar2FA
+from app.schemas.user import UsuarioCreate, UsuarioLogin, Verificar2FA, CambiarRolUsuario
 from app.utils.email import enviar_codigo_email
 from app.utils.security import (
     SECRET_KEY,
@@ -26,7 +20,6 @@ from app.utils.security import (
     verify_password,
     create_access_token,
     create_refresh_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
 
