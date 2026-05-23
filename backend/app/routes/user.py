@@ -8,6 +8,7 @@ import pyotp
 import qrcode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
@@ -304,21 +305,21 @@ def activar_cuenta(
     token: str,
     db: Session = Depends(get_db)
 ):
+    frontend_url = "https://sigi-a-frontend.onrender.com/activacion.html"
+
     token_db = db.query(TokenActivacion).filter(
         TokenActivacion.token == token,
         TokenActivacion.usado == False
     ).first()
 
     if not token_db:
-        raise HTTPException(
-            status_code=400,
-            detail="Token de activación inválido o ya usado"
+        return RedirectResponse(
+            url=f"{frontend_url}?estado=error&motivo=token_invalido"
         )
 
     if token_db.fecha_expiracion < datetime.utcnow():
-        raise HTTPException(
-            status_code=400,
-            detail="El token de activación ha expirado"
+        return RedirectResponse(
+            url=f"{frontend_url}?estado=error&motivo=token_expirado"
         )
 
     usuario = db.query(Usuario).filter(
@@ -326,28 +327,25 @@ def activar_cuenta(
     ).first()
 
     if not usuario:
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado"
+        return RedirectResponse(
+            url=f"{frontend_url}?estado=error&motivo=usuario_no_encontrado"
         )
 
     if usuario.estado == "activo":
         token_db.usado = True
         db.commit()
 
-        return {
-            "message": "La cuenta ya estaba activa. Ya puedes iniciar sesión."
-        }
+        return RedirectResponse(
+            url=f"{frontend_url}?estado=ok"
+        )
 
     usuario.estado = "activo"
     token_db.usado = True
-
     db.commit()
 
-    return {
-        "message": "Cuenta activada correctamente. Ya puedes iniciar sesión."
-    }
-
+    return RedirectResponse(
+        url=f"{frontend_url}?estado=ok"
+    )
 
 # =========================
 # LOGIN
