@@ -26,6 +26,7 @@ from app.schemas.user import (
     Verificar2FA,
     CambiarRolUsuario,
     ConfirmarMFA
+    VerificarMFA
 )
 
 from app.utils.email import (
@@ -133,6 +134,92 @@ def mfa_confirm(
 
     return {
         "message": "MFA con aplicación autenticadora activado correctamente."
+    }
+
+# =========================
+# MFA TOTP - VERIFICAR LOGIN
+# =========================
+
+@limiter.limit("5/minute")
+@router.post("/mfa/verify")
+def mfa_verify(
+    data: VerificarMFA,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(Usuario).filter(
+        Usuario.correo == data.correo
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
+
+    if usuario.estado != "activo":
+        raise HTTPException(
+            status_code=403,
+            detail="La cuenta no está activa."
+        )
+
+    if not usuario.mfa_totp_enabled or not usuario.mfa_totp_secret:
+        raise HTTPException(
+            status_code=400,
+            detail="El usuario no tiene MFA con aplicación autenticadora activo."
+        )
+
+    totp = pyotp.TOTP(usuario.mfa_totp_secret)
+
+    if not totp.verify(data.codigo, valid_window=1):
+        raise HTTPException(
+            status_code=400,
+            detail="Código MFA inválido o expirado."
+        )
+
+    access_token = create_access_token(
+        data={
+            "sub": usuario.correo,
+            "id_usuario": usuario.id_usuario,
+            "rol": usuario.rol
+        }
+    )
+
+    refresh_token = create_refresh_token(
+        data={
+            "sub": usuario.correo,
+            "id_usuario": usuario.id_usuario
+        }
+    )
+
+    nueva_sesion = Sesion(
+        id_usuario=usuario.id_usuario,
+        token=access_token,
+        fecha_inicio=datetime.utcnow(),
+        fecha_expiracion=datetime.utcnow() + timedelta(
+            days=REFRESH_TOKEN_EXPIRE_DAYS
+        ),
+        ip=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        activa=True
+    )
+
+    db.add(nueva_sesion)
+    db.commit()
+
+    return {
+        "message": "MFA validado correctamente",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "usuario": {
+            "id": usuario.id_usuario,
+            "nombre": usuario.nombre,
+            "apellido": usuario.apellido,
+            "correo": usuario.correo,
+            "rol": usuario.rol,
+            "estado": usuario.estado
+        }
     }
 
 # =========================

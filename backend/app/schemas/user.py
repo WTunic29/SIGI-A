@@ -58,3 +58,7 @@ class CambiarRolUsuario(BaseModel):
 
 class ConfirmarMFA(BaseModel):
     codigo: str
+
+class VerificarMFA(BaseModel):
+    correo: EmailStr
+    codigo: str
