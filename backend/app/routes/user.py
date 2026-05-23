@@ -213,6 +213,18 @@ def mfa_verify(
 
     db.add(nueva_sesion)
     db.commit()
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=usuario,
+        accion="LOGIN_MFA_TOTP_EXITOSO",
+        modulo="auth",
+        tabla_afectada="core.usuarios",
+        id_registro=usuario.id_usuario,
+        detalle=f"Usuario {usuario.correo} validó correctamente MFA con aplicación autenticadora.",
+        nivel="INFO",
+        resultado="OK"
+    )
 
     return {
         "message": "MFA validado correctamente",
@@ -958,7 +970,18 @@ def logout(
 
     sesion.activa = False
     db.commit()
-
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=current_user,
+        accion="LOGOUT",
+        modulo="auth",
+        tabla_afectada="core.sesiones",
+        id_registro=sesion.id_sesion,
+        detalle=f"Usuario {current_user.correo} cerró sesión correctamente.",
+        nivel="INFO",
+        resultado="OK"
+    )
     return {
         "message": "Sesión cerrada correctamente"
     }
