@@ -1651,3 +1651,20 @@ button:disabled {
 @media (max-width: 640px) {
   .toast-container { top: 78px; right: 12px; left: 12px; width: auto; }
 }
+
+.password-help {
+  display: block;
+  margin: -6px 0 14px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+.form-msg.error {
+  color: #ff7b7b;
+}
+
+.form-msg.success {
+  color: #20e58f;
+}

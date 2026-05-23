@@ -238,7 +238,8 @@
         <input type="email" id="correo" placeholder="Correo" required />
         <input type="text" id="telefono" placeholder="Teléfono" required />
       </div>
-      <input type="password" id="password" placeholder="Contraseña" required />
+      <input type="password" id="password" placeholder="Contraseña" required minlength="8" autocomplete="new-password" />
+      <small class="password-help">Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
       <button class="btn-primary full" type="submit">Registrarse</button>
     </form>
     <span id="registroMsg" class="form-msg"></span>

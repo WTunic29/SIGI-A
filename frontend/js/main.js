@@ -163,12 +163,90 @@ function mostrarMensaje(containerId, texto, esError = true) {
   msg.style.display = texto ? "block" : "none";
 }
 
+function normalizarTextoError(input) {
+  if (!input) return "";
+
+  if (typeof input === "string") {
+    return input === "[object Object]" ? "" : input;
+  }
+
+  if (input instanceof Error) {
+    return input.message === "[object Object]" ? "" : input.message;
+  }
+
+  const detail = input.detail ?? input.message ?? input.error ?? input.errors ?? input;
+
+  if (typeof detail === "string") {
+    return detail === "[object Object]" ? "" : detail;
+  }
+
+  if (Array.isArray(detail)) {
+    return detail.map((err) => {
+      const campo = Array.isArray(err?.loc) ? String(err.loc[err.loc.length - 1]) : String(err?.field || "campo");
+      const mensaje = err?.msg || err?.message || err?.type || JSON.stringify(err);
+      return `${campo}: ${mensaje}`;
+    }).join(" | ");
+  }
+
+  if (typeof detail === "object") {
+    const posible = detail.msg || detail.message || detail.detail || detail.error;
+    if (posible) return normalizarTextoError(posible);
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return "";
+    }
+  }
+
+  return String(detail || "");
+}
+
+function esErrorPassword(texto) {
+  const msg = String(texto || "").toLowerCase();
+  return msg.includes("password") ||
+    msg.includes("contraseña") ||
+    msg.includes("contrasena") ||
+    msg.includes("too short") ||
+    msg.includes("too_short") ||
+    msg.includes("min_length") ||
+    msg.includes("at least") ||
+    msg.includes("mínimo") ||
+    msg.includes("minimo") ||
+    msg.includes("uppercase") ||
+    msg.includes("lowercase") ||
+    msg.includes("special") ||
+    msg.includes("digit") ||
+    msg.includes("number");
+}
+
+function mensajePoliticaPassword() {
+  return "La contraseña no cumple los requisitos. Usa mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.";
+}
+
+function validarPasswordFuerte(password) {
+  const pass = String(password || "");
+  return pass.length >= 8 &&
+    /[A-ZÁÉÍÓÚÑ]/.test(pass) &&
+    /[a-záéíóúñ]/.test(pass) &&
+    /[0-9]/.test(pass) &&
+    /[^A-Za-zÁÉÍÓÚÑáéíóúñ0-9]/.test(pass);
+}
+
 function friendlyError(input) {
-  const raw = typeof input === "string" ? input : (input?.detail || input?.message || input?.error || "");
+  const raw = normalizarTextoError(input);
   const msg = String(raw || "").toLowerCase();
 
+  if (esErrorPassword(raw)) {
+    return mensajePoliticaPassword();
+  }
   if (msg.includes("credenciales") || msg.includes("invalid credentials") || msg.includes("incorrect")) {
     return "El correo o la contraseña no son correctos. Verifica tus datos e intenta nuevamente.";
+  }
+  if (msg.includes("correo ya") || msg.includes("already registered") || msg.includes("ya está registrado") || msg.includes("ya esta registrado")) {
+    return "Este correo ya está registrado. Inicia sesión o usa otro correo.";
+  }
+  if (msg.includes("email") || msg.includes("correo") || msg.includes("value is not a valid email")) {
+    return "Ingresa un correo electrónico válido.";
   }
   if (msg.includes("cuenta") && (msg.includes("activa") || msg.includes("activar") || msg.includes("inactive"))) {
     return "Tu cuenta aún no está activa. Revisa tu correo y activa la cuenta antes de iniciar sesión.";
@@ -192,7 +270,7 @@ function friendlyError(input) {
   if (msg.includes("failed to fetch") || msg.includes("conectar") || msg.includes("network")) {
     return "No se pudo conectar con el servidor. Espera unos segundos e intenta nuevamente.";
   }
-  if (raw) return String(raw).replace(/^\[\d+\]\s*[^:]+:\s*/, "");
+  if (raw) return raw.replace(/^\[\d+\]\s*[^:]+:\s*/, "");
   return "Ocurrió un error inesperado. Intenta nuevamente.";
 }
 
@@ -503,6 +581,13 @@ document.addEventListener("DOMContentLoaded", () => {
       rol: rolSeleccionado,
     };
 
+    if (!validarPasswordFuerte(payload.password)) {
+      const msg = mensajePoliticaPassword();
+      mostrarMensaje("registroMsg", msg);
+      showToast(msg, "error");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
@@ -516,10 +601,14 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("registroForm").reset();
         setTimeout(mostrarLogin, 1200);
       } else {
-        mostrarMensaje("registroMsg", data.detail || "Error al registrarse. Revisa los datos.");
+        const msg = friendlyError(data);
+        mostrarMensaje("registroMsg", msg);
+        showToast(msg, "error");
       }
-    } catch {
-      mostrarMensaje("registroMsg", "No se pudo conectar al servidor.");
+    } catch (error) {
+      const msg = friendlyError(error) || "No se pudo conectar al servidor.";
+      mostrarMensaje("registroMsg", msg);
+      showToast(msg, "error");
     }
   });
 
@@ -839,24 +928,8 @@ let empleadosNegocioSeleccionado = [];
 let serviciosNegocioSeleccionado = [];
 
 function extraerMensajeError(data, status) {
-  if (!data) return `Error ${status}`;
-
-  const detail = data.detail || data.message || data.error;
-
-  if (typeof detail === "string") return detail;
-
-  if (Array.isArray(detail)) {
-    return detail.map(err => {
-      const campo = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : "campo";
-      return `${campo}: ${err.msg || JSON.stringify(err)}`;
-    }).join(" | ");
-  }
-
-  if (typeof detail === "object") {
-    return JSON.stringify(detail);
-  }
-
-  return `Error ${status}`;
+  const texto = normalizarTextoError(data);
+  return texto || `Error ${status}`;
 }
 
 async function apiFetch(path, options = {}) {
