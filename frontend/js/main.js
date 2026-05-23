@@ -7,6 +7,9 @@ const ROLES = {
   cliente: "Usuario",
   usuario: "Usuario",
   admin: "Administrador",
+  administrador: "Administrador",
+  superusuario: "Superusuario",
+  superuser: "Superusuario",
   empleado: "Empleado",
 };
 
@@ -55,9 +58,10 @@ function actualizarNavbar() {
   if (navUserName) navUserName.textContent = usuario.nombre || usuario.correo || "Usuario";
 
   const rolActual = normalizarRol(usuario.rol);
-  const esNegocio = rolActual === "negocio";
-  const esCliente = rolActual === "cliente";
-  if (menuRegistrarNegocio) menuRegistrarNegocio.style.display = esNegocio ? "block" : "none";
+  const esAdmin = rolActual === "admin";
+  const esNegocio = rolActual === "negocio" || esAdmin;
+  const esCliente = rolActual === "cliente" || esAdmin;
+  if (menuRegistrarNegocio) menuRegistrarNegocio.style.display = (rolActual === "negocio") ? "block" : "none";
   if (menuValidarAcceso) menuValidarAcceso.style.display = esNegocio ? "block" : "none";
   menuNegocioItems.forEach(item => item.style.display = esNegocio ? "block" : "none");
   menuClienteItems.forEach(item => item.style.display = esCliente ? "block" : "none");
@@ -68,7 +72,7 @@ function actualizarNavbar() {
 // ─────────────────────────────────────────────
 const TODAS = [
   "inicio", "cta", "login", "registro", "recuperar-password", "verify2fa",
-  "dashboard-negocio", "dashboard-usuario", "mi-perfil",
+  "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
   "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario"
@@ -151,6 +155,7 @@ function mostrarVerify2FA(tipo = "email") {
 }
 function mostrarDashboardNegocio() { setVisible(["dashboard-negocio"]); }
 function mostrarDashboardUsuario() { setVisible(["dashboard-usuario"]); }
+function mostrarDashboardAdmin() { setVisible(["dashboard-admin"]); }
 function mostrarMiPerfil() { setVisible(["mi-perfil"]); }
 function mostrarVerNegocios() { setVisible(["ver-negocios"]); }
 function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
@@ -161,7 +166,11 @@ function irDashboardPorRol() {
   const usuario = getUsuario();
   if (!usuario) return mostrarInicio();
 
-  if (normalizarRol(usuario.rol) === "negocio") {
+  const rol = normalizarRol(usuario.rol);
+  if (rol === "admin") {
+    mostrarDashboardAdmin();
+    cargarDatosDashboardAdmin(usuario);
+  } else if (rol === "negocio") {
     mostrarDashboardNegocio();
     cargarDatosDashboard(usuario);
   } else {
@@ -341,8 +350,10 @@ function getUsuario() {
 
 function normalizarRol(rol) {
   if (!rol) return "cliente";
-  if (rol === "usuario") return "cliente";
-  return rol;
+  const value = String(rol).trim().toLowerCase();
+  if (value === "usuario" || value === "user") return "cliente";
+  if (value === "administrador" || value === "superusuario" || value === "superuser" || value === "super_admin" || value === "super-admin") return "admin";
+  return value;
 }
 
 function guardarSesion(data) {
@@ -352,13 +363,27 @@ function guardarSesion(data) {
   actualizarNavbar();
 }
 
-function cerrarSesion() {
+function limpiarSesionLocal() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("usuario");
+  localStorage.removeItem("id_negocio_actual");
   sessionStorage.removeItem("correo_2fa");
+  sessionStorage.removeItem("mfa_mode");
+}
+
+function cerrarSesion() {
+  limpiarSesionLocal();
   actualizarNavbar();
   setVisible(["inicio", "cta"]);
+}
+
+function cerrarSesionExpirada(mensaje = "Tu sesión expiró por inactividad. Inicia sesión nuevamente.") {
+  limpiarSesionLocal();
+  actualizarNavbar();
+  setVisible(["login"]);
+  mostrarMensaje("loginMsg", mensaje, true);
+  showToast(mensaje, "info", 6500);
 }
 
 function campoNegocio(n, ...keys) {
@@ -841,7 +866,49 @@ function cargarDatosDashboardUsuario(usuario) {
   document.getElementById("userDashNombre").textContent = nombre;
 }
 
-function checkSession() {
+function cargarDatosDashboardAdmin(usuario) {
+  const nombre = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.correo || "Administrador";
+  const el = document.getElementById("adminDashNombre");
+  if (el) el.textContent = nombre;
+}
+
+async function validarSesionActiva({ silencioso = false } = {}) {
+  const token = getToken();
+  const usuario = getUsuario();
+  if (!token || !usuario) return false;
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data && typeof data === "object") {
+        localStorage.setItem("usuario", JSON.stringify({ ...usuario, ...data }));
+      }
+      actualizarNavbar();
+      return true;
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      cerrarSesionExpirada();
+      return false;
+    }
+
+    if (!silencioso) {
+      showToast("No pudimos validar tu sesión. Intenta nuevamente.", "error");
+    }
+    return false;
+  } catch {
+    if (!silencioso) {
+      showToast("No se pudo validar la sesión con el servidor. Revisa tu conexión.", "error");
+    }
+    return true;
+  }
+}
+
+async function checkSession() {
   const usuario = getUsuario();
   const hash = window.location.hash;
 
@@ -859,7 +926,9 @@ function checkSession() {
     actualizarNavbar();
     return;
   }
-  irDashboardPorRol();
+
+  const sesionOk = await validarSesionActiva();
+  if (sesionOk) irDashboardPorRol();
 }
 
 // ─────────────────────────────────────────────
@@ -881,8 +950,11 @@ async function irMiPerfil() {
       document.getElementById("perfilCorreo").textContent = data.correo || "—";
       document.getElementById("perfilRol").textContent = ROLES[normalizarRol(data.rol)] || data.rol || "—";
       mostrarMensaje("perfilMsg", "", false);
+    } else if (res.status === 401 || res.status === 403) {
+      cerrarSesionExpirada();
+      return;
     } else {
-      mostrarMensaje("perfilMsg", data.detail || "No se pudo cargar el perfil.");
+      mostrarMensaje("perfilMsg", friendlyError(data.detail || data.message || "No se pudo cargar el perfil."));
     }
     mostrarMiPerfil();
   } catch {
@@ -906,7 +978,14 @@ async function obtenerNegocios() {
   const headers = token ? { "Authorization": `Bearer ${token}` } : {};
   const res = await fetch(`${API_BASE}/negocios/`, { headers });
   const data = await res.json().catch(() => []);
-  if (!res.ok) throw new Error(data.detail || "No se pudieron cargar los negocios.");
+  if (!res.ok) {
+    if (res.status === 401) {
+      cerrarSesionExpirada();
+      throw new Error("Tu sesión expiró por inactividad. Inicia sesión nuevamente.");
+    }
+    if (res.status === 403) throw new Error("No tienes permisos para consultar esta información.");
+    throw new Error(friendlyError(data.detail || data.message || "No se pudieron cargar los negocios."));
+  }
   return Array.isArray(data) ? data : [];
 }
 
@@ -1019,7 +1098,16 @@ async function apiFetch(path, options = {}) {
   try {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(friendlyError(extraerMensajeError(data, res.status)));
+    if (!res.ok) {
+      if (res.status === 401) {
+        cerrarSesionExpirada();
+        throw new Error("Tu sesión expiró por inactividad. Inicia sesión nuevamente.");
+      }
+      if (res.status === 403) {
+        throw new Error("No tienes permisos para realizar esta acción con tu usuario actual.");
+      }
+      throw new Error(friendlyError(extraerMensajeError(data, res.status)));
+    }
     return data;
   } catch (error) {
     if (error instanceof TypeError || String(error.message).toLowerCase().includes("failed to fetch")) {
@@ -1942,3 +2030,12 @@ async function cancelarCita(id) {
   try { await apiFetchConRutas([`/citas/${id}`, `/cita/${id}`], { method: "DELETE" }); cargarCitas(); }
   catch (e) { alert(e.message); }
 }
+
+
+window.addEventListener("focus", () => {
+  if (getToken()) validarSesionActiva({ silencioso: true });
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && getToken()) validarSesionActiva({ silencioso: true });
+});

@@ -375,6 +375,59 @@
   </div>
 </section>
 
+<section class="hero dashboard-screen" id="dashboard-admin" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de administración</p>
+        <h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1>
+        <p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <article class="dash-card">
+        <span>Negocios</span>
+        <strong>Directorio</strong>
+        <p>Consulta los negocios registrados en la plataforma.</p>
+        <button onclick="irVerNegocios()">Ver negocios</button>
+      </article>
+      <article class="dash-card">
+        <span>Equipo</span>
+        <strong>Empleados</strong>
+        <p>Consulta y administra empleados cuando el backend lo permita.</p>
+        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
+      </article>
+      <article class="dash-card">
+        <span>Catálogo</span>
+        <strong>Servicios</strong>
+        <p>Consulta servicios publicados por los negocios.</p>
+        <button onclick="irGestionServicios()">Gestionar servicios</button>
+      </article>
+      <article class="dash-card">
+        <span>Inventario</span>
+        <strong>Productos</strong>
+        <p>Consulta productos disponibles y controla el inventario.</p>
+        <button onclick="irGestionProductos()">Gestionar productos</button>
+      </article>
+      <article class="dash-card">
+        <span>Agenda</span>
+        <strong>Citas</strong>
+        <p>Consulta las citas registradas en el sistema.</p>
+        <button onclick="irGestionCitas()">Gestionar citas</button>
+      </article>
+      <article class="dash-card">
+        <span>Seguridad</span>
+        <strong>Mi perfil</strong>
+        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
+        <button onclick="irMiPerfil()">Mi perfil</button>
+      </article>
+    </div>
+  </div>
+</section>
+
 <section class="hero" id="registrar-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card wide">
