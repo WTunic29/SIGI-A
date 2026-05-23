@@ -26,7 +26,7 @@ from app.schemas.user import (
     UsuarioLogin,
     Verificar2FA,
     CambiarRolUsuario,
-    ConfirmarMFA
+    ConfirmarMFA,
     VerificarMFA
 )
 
