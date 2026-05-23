@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, Boolean
 from app.database import Base
 from datetime import datetime
 
@@ -17,3 +17,7 @@ class Usuario(Base):
     estado = Column(String(20), default="activo")
     fecha_creacion = Column(TIMESTAMP, default=datetime.utcnow)
     rol = Column(String(20), nullable=False, default="cliente")
+
+
+    mfa_totp_enabled = Column(Boolean, default=False)
+    mfa_totp_secret = Column(String(255), nullable=True)

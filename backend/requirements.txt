@@ -13,3 +13,7 @@ cryptography==47.0.0
 
 slowapi
 alembic==1.17.2
+
+pyotp
+qrcode
+pillow
