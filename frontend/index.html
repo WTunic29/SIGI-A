@@ -505,7 +505,7 @@
       <div>
         <p class="section-eyebrow">Agendamiento</p>
         <h1 class="dashboard-title" id="detalleNegocioNombre">Negocio</h1>
-        <p class="muted" id="detalleNegocioDescripcion">Selecciona trabajador, servicio, fecha y hora.</p>
+        <p class="muted" id="detalleNegocioDescripcion">Selecciona trabajador, servicio y fecha para ver horarios disponibles.</p>
       </div>
       <button class="btn-secondary clean" onclick="irVerNegocios()">Volver</button>
     </div>
@@ -528,8 +528,11 @@
         </select>
         <div class="form-grid">
           <input id="citaFecha" type="date" required>
-          <input id="citaHora" type="time" required>
+          <select id="citaHora" required disabled>
+            <option value="">Selecciona trabajador, servicio y fecha</option>
+          </select>
         </div>
+        <small id="citaHorarioInfo" class="helper-text booking-helper">Selecciona trabajador, servicio y fecha para cargar horarios disponibles.</small>
         <textarea id="citaObservaciones" rows="3" placeholder="Observaciones opcionales"></textarea>
         <button class="btn-primary full" type="submit">Confirmar cita</button>
         <span id="agendarCitaMsg" class="form-msg"></span>

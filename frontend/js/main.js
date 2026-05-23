@@ -1081,6 +1081,8 @@ const API_PATHS = {
 let negocioSeleccionado = null;
 let empleadosNegocioSeleccionado = [];
 let serviciosNegocioSeleccionado = [];
+let horariosEmpleadoClienteCache = [];
+let citasNegocioSeleccionadoCache = [];
 
 function extraerMensajeError(data, status) {
   const texto = normalizarTextoError(data);
@@ -1137,6 +1139,7 @@ async function apiFetchConRutas(paths, options = {}) {
 
 const RUTAS_CITAS = ["/citas/"];
 const RUTAS_HORARIOS = ["/horarios-empleado/", "/horarios-empleados/", "/horario-empleado/", "/horarios/", "/horario/"];
+const RUTA_DISPONIBILIDAD_CITAS = "/citas/disponibilidad";
 
 function asegurarRolNegocio() {
   const usuario = getUsuario();
@@ -1274,6 +1277,9 @@ async function cargarDatosAgendamiento(idNegocio) {
   renderEmpleadosCliente();
   renderServiciosCliente();
   llenarSelectAgendamiento();
+  horariosEmpleadoClienteCache = [];
+  limpiarHorasDisponibles();
+  await cargarCitasNegocioParaDisponibilidad();
 }
 
 function renderEmpleadosCliente() {
@@ -1307,7 +1313,7 @@ function renderServiciosCliente() {
     <div class="mini-card">
       <strong>${escapeHtml(s.nombre || "Servicio")}</strong>
       <span>${escapeHtml(s.descripcion || "Sin descripción")}</span>
-      <small>${Number(s.duracion_minutos || 30)} min · $${Number(s.precio || 0).toLocaleString("es-CO")}</small>
+      <small>${Number(s.duracion_minutos || 40)} min · $${Number(s.precio || 0).toLocaleString("es-CO")}</small>
     </div>
   `).join("");
 }
@@ -1322,7 +1328,7 @@ function llenarSelectAgendamiento() {
   `).join("");
 
   selectServicio.innerHTML = `<option value="">Selecciona un servicio</option>` + serviciosNegocioSeleccionado.map(s => `
-    <option value="${s.id_servicio}" data-duracion="${Number(s.duracion_minutos || 30)}" data-precio="${Number(s.precio || 0)}">${escapeHtml(s.nombre || "Servicio")} - ${Number(s.duracion_minutos || 30)} min - $${Number(s.precio || 0).toLocaleString("es-CO")}</option>
+    <option value="${s.id_servicio}" data-duracion="${Number(s.duracion_minutos || 40)}" data-precio="${Number(s.precio || 0)}">${escapeHtml(s.nombre || "Servicio")} - ${Number(s.duracion_minutos || 40)} min - $${Number(s.precio || 0).toLocaleString("es-CO")}</option>
   `).join("");
 }
 
@@ -1338,10 +1344,191 @@ function normalizarHoraApi(hora) {
 function sumarMinutosHora(hora, minutos) {
   const [hh, mm] = String(hora || "").split(":").map(Number);
   if (Number.isNaN(hh) || Number.isNaN(mm)) return "";
-  const total = hh * 60 + mm + Number(minutos || 30);
+  const total = hh * 60 + mm + Number(minutos || 40);
   const h2 = String(Math.floor(total / 60) % 24).padStart(2, "0");
   const m2 = String(total % 60).padStart(2, "0");
   return `${h2}:${m2}:00`;
+}
+
+function minutosDesdeHora(hora) {
+  const partes = String(hora || "").split(":").map(Number);
+  const hh = Number(partes[0]);
+  const mm = Number(partes[1] || 0);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+function horaDesdeMinutos(totalMinutos) {
+  const total = Math.max(0, Number(totalMinutos || 0));
+  const hh = String(Math.floor(total / 60) % 24).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
+  return `${hh}:${mm}:00`;
+}
+
+function formatearHoraVisible(hora) {
+  const mins = minutosDesdeHora(hora);
+  if (mins === null) return String(hora || "");
+  const h24 = Math.floor(mins / 60) % 24;
+  const mm = String(mins % 60).padStart(2, "0");
+  const periodo = h24 >= 12 ? "p. m." : "a. m.";
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${mm} ${periodo}`;
+}
+
+function numeroDiaSemanaFecha(fecha) {
+  if (!fecha) return null;
+  const d = new Date(`${fecha}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  const jsDay = d.getDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
+function normalizarDiaHorario(valor) {
+  if (valor === null || valor === undefined) return null;
+  const texto = String(valor).trim().toLowerCase();
+  const mapa = {
+    "1": 1, lunes: 1,
+    "2": 2, martes: 2,
+    "3": 3, miercoles: 3, miércoles: 3,
+    "4": 4, jueves: 4,
+    "5": 5, viernes: 5,
+    "6": 6, sabado: 6, sábado: 6,
+    "7": 7, domingo: 7,
+    "0": 7
+  };
+  return mapa[texto] || null;
+}
+
+function obtenerDuracionServicioSeleccionado() {
+  const idServicio = Number(document.getElementById("citaServicio")?.value);
+  const servicio = serviciosNegocioSeleccionado.find(s => Number(s.id_servicio) === idServicio);
+  return Number(servicio?.duracion_minutos || 40);
+}
+
+function limpiarHorasDisponibles(mensaje = "Selecciona trabajador, servicio y fecha") {
+  const selectHora = document.getElementById("citaHora");
+  if (!selectHora) return;
+  selectHora.innerHTML = `<option value="">${escapeHtml(mensaje)}</option>`;
+  selectHora.disabled = true;
+}
+
+function citaSeCruza(inicioA, finA, inicioB, finB) {
+  const a1 = minutosDesdeHora(inicioA);
+  const a2 = minutosDesdeHora(finA);
+  const b1 = minutosDesdeHora(inicioB);
+  const b2 = minutosDesdeHora(finB);
+  if ([a1, a2, b1, b2].some(v => v === null)) return false;
+  return a1 < b2 && b1 < a2;
+}
+
+function generarHorariosLocales({ fecha, idEmpleado, duracion }) {
+  const dia = numeroDiaSemanaFecha(fecha);
+  if (!dia || !Array.isArray(horariosEmpleadoClienteCache)) return [];
+
+  const horariosDelDia = horariosEmpleadoClienteCache.filter(h => {
+    const diaHorario = normalizarDiaHorario(h.dia_semana);
+    return h.disponible !== false && diaHorario === dia;
+  });
+
+  const citasOcupadas = (Array.isArray(citasNegocioSeleccionadoCache) ? citasNegocioSeleccionadoCache : [])
+    .filter(c => Number(c.id_empleado) === Number(idEmpleado))
+    .filter(c => String(c.fecha || "").slice(0, 10) === String(fecha))
+    .filter(c => !["cancelada", "cancelado", "rechazada", "rechazado", "anulada", "anulado"].includes(String(c.estado || "").toLowerCase()));
+
+  const slots = [];
+  horariosDelDia.forEach(h => {
+    const inicio = minutosDesdeHora(h.hora_inicio);
+    const fin = minutosDesdeHora(h.hora_fin);
+    if (inicio === null || fin === null || fin <= inicio) return;
+
+    for (let actual = inicio; actual + duracion <= fin; actual += duracion) {
+      const horaInicio = horaDesdeMinutos(actual);
+      const horaFin = horaDesdeMinutos(actual + duracion);
+      const ocupado = citasOcupadas.some(c => citaSeCruza(horaInicio, horaFin, c.hora_inicio, c.hora_fin));
+      if (!ocupado) slots.push({ hora_inicio: horaInicio, hora_fin: horaFin });
+    }
+  });
+
+  const vistos = new Set();
+  return slots
+    .sort((a, b) => minutosDesdeHora(a.hora_inicio) - minutosDesdeHora(b.hora_inicio))
+    .filter(s => {
+      if (vistos.has(s.hora_inicio)) return false;
+      vistos.add(s.hora_inicio);
+      return true;
+    });
+}
+
+async function consultarDisponibilidadBackend({ idEmpleado, idServicio, fecha }) {
+  const query = `?id_empleado=${encodeURIComponent(idEmpleado)}&id_servicio=${encodeURIComponent(idServicio)}&fecha=${encodeURIComponent(fecha)}`;
+  const data = await apiFetch(`${RUTA_DISPONIBILIDAD_CITAS}${query}`);
+  const disponibles = data?.horarios_disponibles || [];
+
+  if (!Array.isArray(disponibles)) return [];
+
+  return disponibles.map(item => ({
+    hora_inicio: normalizarHoraApi(item.hora_inicio),
+    hora_fin: normalizarHoraApi(item.hora_fin),
+  })).filter(s => s.hora_inicio && s.hora_fin);
+}
+
+async function cargarCitasNegocioParaDisponibilidad() {
+  if (!negocioSeleccionado) {
+    citasNegocioSeleccionadoCache = [];
+    return;
+  }
+  const idNegocio = obtenerIdNegocio(negocioSeleccionado);
+  try {
+    const data = await apiFetchConRutas([`/citas/negocio/${idNegocio}`, `/cita/negocio/${idNegocio}`]);
+    citasNegocioSeleccionadoCache = Array.isArray(data) ? data : (data.citas || []);
+  } catch (_) {
+    // Si el usuario cliente no tiene permiso para consultar todas las citas del negocio,
+    // el frontend igualmente mostrará horarios base; el backend debe validar cruces al crear.
+    citasNegocioSeleccionadoCache = [];
+  }
+}
+
+async function actualizarOpcionesHoraDisponible() {
+  const idEmpleado = Number(document.getElementById("citaEmpleado")?.value);
+  const idServicio = Number(document.getElementById("citaServicio")?.value);
+  const fecha = document.getElementById("citaFecha")?.value;
+  const info = document.getElementById("citaHorarioInfo");
+  const selectHora = document.getElementById("citaHora");
+  if (!selectHora) return;
+
+  if (!idEmpleado || !idServicio || !fecha) {
+    limpiarHorasDisponibles("Selecciona trabajador, servicio y fecha");
+    if (info) info.textContent = "Selecciona trabajador, servicio y fecha para consultar la disponibilidad real.";
+    return;
+  }
+
+  const duracion = obtenerDuracionServicioSeleccionado();
+  limpiarHorasDisponibles("Consultando disponibilidad...");
+  if (info) info.textContent = `Consultando horarios disponibles para un servicio de ${duracion} minutos...`;
+
+  try {
+    const slots = await consultarDisponibilidadBackend({ idEmpleado, idServicio, fecha });
+
+    if (!slots.length) {
+      limpiarHorasDisponibles("No hay horarios disponibles");
+      if (info) info.textContent = "No hay horarios disponibles para ese trabajador, servicio y fecha.";
+      return;
+    }
+
+    selectHora.disabled = false;
+    selectHora.innerHTML = `<option value="">Selecciona una hora disponible</option>` + slots.map(s => `
+      <option value="${escapeHtml(s.hora_inicio)}" data-fin="${escapeHtml(s.hora_fin)}">
+        ${escapeHtml(formatearHoraVisible(s.hora_inicio))} - ${escapeHtml(formatearHoraVisible(s.hora_fin))}
+      </option>
+    `).join("");
+    if (info) info.textContent = "Horarios disponibles consultados desde la agenda real del trabajador.";
+  } catch (error) {
+    limpiarHorasDisponibles("No se pudieron cargar horarios");
+    const msg = friendlyError(error);
+    if (info) info.textContent = msg;
+    showToast(msg, "error");
+  }
 }
 
 async function agendarCitaCliente(e) {
@@ -1360,17 +1547,13 @@ async function agendarCitaCliente(e) {
   const idEmpleado = Number(document.getElementById("citaEmpleado").value);
   const idServicio = Number(document.getElementById("citaServicio").value);
   const fecha = document.getElementById("citaFecha").value;
-  const horaInicioInput = document.getElementById("citaHora").value;
-  const horaInicio = normalizarHoraApi(horaInicioInput);
+  const selectHora = document.getElementById("citaHora");
+  const horaInicio = normalizarHoraApi(selectHora?.value);
+  const horaFinSeleccionada = normalizarHoraApi(selectHora?.selectedOptions?.[0]?.dataset?.fin);
   const observaciones = document.getElementById("citaObservaciones").value.trim() || null;
 
-  const servicio = serviciosNegocioSeleccionado.find(s => Number(s.id_servicio) === idServicio);
-  const duracion = Number(servicio?.duracion_minutos || 30);
-  const precio = Number(servicio?.precio || 0);
-  const horaFin = sumarMinutosHora(horaInicio, duracion);
-
-  if (!idEmpleado || !idServicio || !fecha || !horaInicio || !horaFin) {
-    mostrarMensaje("agendarCitaMsg", "Completa trabajador, servicio, fecha y hora.");
+  if (!idEmpleado || !idServicio || !fecha || !horaInicio) {
+    mostrarMensaje("agendarCitaMsg", "Completa trabajador, servicio, fecha y selecciona una hora disponible.");
     return;
   }
 
@@ -1378,28 +1561,24 @@ async function agendarCitaCliente(e) {
     const citaPayload = {
       id_negocio: idNegocio,
       id_empleado: idEmpleado,
+      id_servicio: idServicio,
       fecha,
       hora_inicio: horaInicio,
-      hora_fin: horaFin,
       observaciones,
     };
 
     console.log("Payload cita enviado:", citaPayload);
 
-    const cita = await apiFetchConRutas(RUTAS_CITAS, {
+    await apiFetchConRutas(RUTAS_CITAS, {
       method: "POST",
       body: JSON.stringify(citaPayload),
     });
 
-    if (cita?.id_cita && idServicio) {
-      await apiFetchConRutas([`/citas/${cita.id_cita}/detalle`], {
-        method: "POST",
-        body: JSON.stringify({ id_servicio: idServicio, precio, duracion }),
-      }).catch(() => null);
-    }
-
     e.target.reset();
-    mostrarMensaje("agendarCitaMsg", `Cita agendada correctamente de ${horaInicio} a ${horaFin}.`, false);
+    limpiarHorasDisponibles();
+    const rango = horaFinSeleccionada ? ` de ${formatearHoraVisible(horaInicio)} a ${formatearHoraVisible(horaFinSeleccionada)}` : ` a las ${formatearHoraVisible(horaInicio)}`;
+    mostrarMensaje("agendarCitaMsg", `Cita agendada correctamente${rango}.`, false);
+    showToast("Cita agendada correctamente.", "success");
   } catch (error) {
     mostrarMensaje("agendarCitaMsg", error.message || "No se pudo agendar la cita.");
   }
@@ -1498,22 +1677,30 @@ async function eliminarHorario(idHorario) {
 
 async function cargarHorariosEmpleadoCliente(idEmpleado) {
   const info = document.getElementById("citaHorarioInfo");
-  if (!info || !idEmpleado) return;
+  horariosEmpleadoClienteCache = [];
+  limpiarHorasDisponibles();
+  if (!info || !idEmpleado) {
+    await actualizarOpcionesHoraDisponible();
+    return;
+  }
+
   info.textContent = "Consultando horarios del trabajador...";
   try {
     const data = await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idEmpleado}`));
     const horarios = Array.isArray(data) ? data : (data.horarios || []);
-    const disponibles = horarios.filter(h => h.disponible !== false);
-    if (!disponibles.length) {
+    horariosEmpleadoClienteCache = horarios.filter(h => h.disponible !== false);
+    if (!horariosEmpleadoClienteCache.length) {
       info.textContent = "Este trabajador todavía no tiene horarios asignados. El negocio debe configurarlos desde Empleados → Horarios.";
+      await actualizarOpcionesHoraDisponible();
       return;
     }
-    info.innerHTML = "Horarios disponibles: " + disponibles.map(h => `${nombreDiaSemana(h.dia_semana)} ${escapeHtml(h.hora_inicio)}-${escapeHtml(h.hora_fin)}`).join(" · ");
+    info.innerHTML = "Horarios del trabajador: " + horariosEmpleadoClienteCache.map(h => `${nombreDiaSemana(h.dia_semana)} ${escapeHtml(h.hora_inicio)}-${escapeHtml(h.hora_fin)}`).join(" · ");
+    await actualizarOpcionesHoraDisponible();
   } catch (e) {
-    info.textContent = "No se pudieron cargar los horarios. Revisa que exista /horarios-empleado/ en el backend desplegado.";
+    info.textContent = "No se pudieron cargar los horarios del trabajador. El backend debe exponer horarios por empleado para calcular disponibilidad.";
+    await actualizarOpcionesHoraDisponible();
   }
 }
-
 
 // ─────────────────────────────────────────────
 // MÓDULOS USUARIO: MIS CITAS / CALIFICACIONES / PEDIDOS / PAGOS
@@ -1913,6 +2100,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("agendarCitaForm")?.addEventListener("submit", agendarCitaCliente);
   document.getElementById("citaEmpleado")?.addEventListener("change", (e) => cargarHorariosEmpleadoCliente(Number(e.target.value)));
+  document.getElementById("citaServicio")?.addEventListener("change", actualizarOpcionesHoraDisponible);
+  document.getElementById("citaFecha")?.addEventListener("change", actualizarOpcionesHoraDisponible);
 
   document.getElementById("horarioEmpleadoForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
