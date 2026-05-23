@@ -1716,3 +1716,97 @@ button:disabled {
   opacity: .68;
   cursor: not-allowed;
 }
+
+/* Modal profesional para reemplazar alert/prompt/confirm del navegador */
+.ui-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(14px);
+}
+.ui-modal-backdrop.show { display: flex !important; }
+.ui-modal-card {
+  width: min(520px, 100%);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(28,28,27,.98), rgba(13,13,13,.98));
+  box-shadow: 0 32px 90px rgba(0,0,0,.55);
+  padding: 26px;
+  animation: modalIn .18s ease-out;
+}
+.ui-modal-eyebrow {
+  margin-bottom: 8px;
+  color: var(--gold-light);
+  font-family: 'Montserrat', sans-serif;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+}
+.ui-modal-title {
+  margin: 0 0 8px;
+  color: var(--white);
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+  line-height: .98;
+}
+.ui-modal-text {
+  margin: 0 0 18px;
+  color: var(--gray);
+  line-height: 1.55;
+}
+.ui-modal-fields {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+.ui-modal-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--gold-light);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.ui-modal-field input,
+.ui-modal-field select,
+.ui-modal-field textarea {
+  width: 100%;
+  border: 1px solid rgba(201, 168, 76, .35);
+  border-radius: 16px;
+  background: rgba(255,255,255,.055);
+  color: var(--white);
+  padding: 14px 15px;
+  outline: none;
+}
+.ui-modal-field textarea { min-height: 96px; resize: vertical; }
+.ui-modal-field input:focus,
+.ui-modal-field select:focus,
+.ui-modal-field textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, .14);
+}
+.ui-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ui-modal-actions .btn-secondary,
+.ui-modal-actions .btn-primary { min-width: 130px; }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (max-width: 640px) {
+  .ui-modal-card { padding: 22px; }
+  .ui-modal-actions { flex-direction: column-reverse; }
+  .ui-modal-actions .btn-secondary,
+  .ui-modal-actions .btn-primary { width: 100%; }
+}

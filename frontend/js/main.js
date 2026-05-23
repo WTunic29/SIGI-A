@@ -324,6 +324,139 @@ function showToast(message, type = "info", duration = 4200) {
   setTimeout(close, duration);
 }
 
+
+function closeUiModal(result = null) {
+  const modal = document.getElementById("uiModalRoot");
+  if (!modal) return;
+  modal.classList.remove("show");
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = "";
+  if (typeof modal._resolver === "function") {
+    const resolve = modal._resolver;
+    modal._resolver = null;
+    resolve(result);
+  }
+}
+
+function openUiModal({ eyebrow = "SIGI-E", title = "Confirmación", text = "", fields = [], confirmText = "Aceptar", cancelText = "Cancelar", showCancel = true, danger = false } = {}) {
+  const modal = document.getElementById("uiModalRoot");
+  if (!modal) {
+    showToast("No se pudo abrir la ventana de confirmación.", "error");
+    return Promise.resolve(null);
+  }
+
+  const fieldsHtml = fields.map((field) => {
+    const id = escapeHtml(field.id);
+    const label = escapeHtml(field.label || "Campo");
+    const placeholder = escapeHtml(field.placeholder || "");
+    const value = escapeHtml(field.value ?? "");
+    const min = field.min !== undefined ? ` min="${escapeHtml(field.min)}"` : "";
+    const max = field.max !== undefined ? ` max="${escapeHtml(field.max)}"` : "";
+    const step = field.step !== undefined ? ` step="${escapeHtml(field.step)}"` : "";
+    const required = field.required === false ? "" : " required";
+
+    if (field.type === "textarea") {
+      return `<div class="ui-modal-field"><label for="${id}">${label}</label><textarea id="${id}" placeholder="${placeholder}"${required}>${value}</textarea></div>`;
+    }
+
+    if (field.type === "select") {
+      const options = (field.options || []).map(opt => `<option value="${escapeHtml(opt.value)}" ${String(opt.value) === String(field.value ?? "") ? "selected" : ""}>${escapeHtml(opt.label)}</option>`).join("");
+      return `<div class="ui-modal-field"><label for="${id}">${label}</label><select id="${id}"${required}>${options}</select></div>`;
+    }
+
+    return `<div class="ui-modal-field"><label for="${id}">${label}</label><input id="${id}" type="${escapeHtml(field.type || "text")}" placeholder="${placeholder}" value="${value}"${min}${max}${step}${required}></div>`;
+  }).join("");
+
+  modal.innerHTML = `
+    <div class="ui-modal-card" role="dialog" aria-modal="true" aria-labelledby="uiModalTitle">
+      <div class="ui-modal-eyebrow">${escapeHtml(eyebrow)}</div>
+      <h2 class="ui-modal-title" id="uiModalTitle">${escapeHtml(title)}</h2>
+      ${text ? `<p class="ui-modal-text">${escapeHtml(text)}</p>` : ""}
+      ${fieldsHtml ? `<div class="ui-modal-fields">${fieldsHtml}</div>` : ""}
+      <div class="ui-modal-actions">
+        ${showCancel ? `<button type="button" class="btn-secondary clean" id="uiModalCancel">${escapeHtml(cancelText)}</button>` : ""}
+        <button type="button" class="btn-primary" id="uiModalConfirm">${escapeHtml(confirmText)}</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = "flex";
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+
+  return new Promise((resolve) => {
+    modal._resolver = resolve;
+    const closeCancel = () => closeUiModal(null);
+    document.getElementById("uiModalCancel")?.addEventListener("click", closeCancel);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeCancel();
+    }, { once: true });
+
+    document.getElementById("uiModalConfirm")?.addEventListener("click", () => {
+      const values = {};
+      for (const field of fields) {
+        const input = document.getElementById(field.id);
+        const rawValue = input?.value ?? "";
+        if (field.required !== false && !String(rawValue).trim()) {
+          showToast(`Completa el campo: ${field.label || field.id}.`, "error");
+          input?.focus();
+          return;
+        }
+        values[field.id] = field.type === "number" ? Number(rawValue) : rawValue;
+      }
+      closeUiModal(fields.length ? values : true);
+    });
+
+    setTimeout(() => {
+      const first = modal.querySelector("input, select, textarea, button#uiModalConfirm");
+      first?.focus();
+    }, 80);
+  });
+}
+
+async function pedirConfirmacion({ title = "¿Confirmas esta acción?", text = "", confirmText = "Aceptar", cancelText = "Cancelar", danger = false } = {}) {
+  return Boolean(await openUiModal({ eyebrow: danger ? "Acción importante" : "Confirmación", title, text, confirmText, cancelText, showCancel: true, danger }));
+}
+
+async function pedirCantidadProducto(producto) {
+  const stock = Number(producto?.stock ?? 0);
+  const result = await openUiModal({
+    eyebrow: "Tienda",
+    title: "Cantidad del producto",
+    text: `Selecciona cuántas unidades quieres pedir de ${producto?.nombre || "este producto"}.`,
+    confirmText: "Crear pedido",
+    fields: [{ id: "cantidad", label: "Cantidad", type: "number", min: 1, max: stock > 0 ? stock : undefined, step: 1, value: 1, placeholder: "Ej: 1" }]
+  });
+  if (!result) return null;
+  const cantidad = Number(result.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    showToast("Ingresa una cantidad válida mayor a cero.", "error");
+    return null;
+  }
+  if (stock > 0 && cantidad > stock) {
+    showToast(`Solo hay ${stock} unidades disponibles.`, "error");
+    return null;
+  }
+  return cantidad;
+}
+
+async function pedirPrecioNuevo(titulo, precioActual = "") {
+  const result = await openUiModal({
+    eyebrow: "Gestión",
+    title: titulo,
+    text: "Ingresa el nuevo precio. Usa solo números, sin puntos ni comas.",
+    confirmText: "Guardar precio",
+    fields: [{ id: "precio", label: "Nuevo precio", type: "number", min: 0, step: 100, value: precioActual || "", placeholder: "Ej: 25000" }]
+  });
+  if (!result) return null;
+  const precio = Number(result.precio);
+  if (!Number.isFinite(precio) || precio < 0) {
+    showToast("Ingresa un precio válido.", "error");
+    return null;
+  }
+  return precio;
+}
+
 function setButtonLoading(button, loading, textLoading = "Procesando...") {
   if (!button) return;
   if (loading) {
@@ -538,11 +671,18 @@ async function cargarHorariosEmpleadoSeleccionado() {
 }
 
 async function eliminarHorario(idHorario) {
-  if (!confirm("¿Eliminar este horario?")) return;
+  const ok = await pedirConfirmacion({
+    title: "Eliminar horario",
+    text: "Este horario dejará de estar disponible para el empleado.",
+    confirmText: "Eliminar",
+    danger: true
+  });
+  if (!ok) return;
   try {
     await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idHorario}`), { method: "DELETE" });
+    showToast("Horario eliminado correctamente.", "success");
     cargarHorariosEmpleadoSeleccionado();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 async function cargarHorariosEmpleadoCliente(idEmpleado) {
@@ -967,7 +1107,7 @@ function irRegistrarNegocio() {
   const usuario = getUsuario();
   if (!usuario) return mostrarLogin();
   if (normalizarRol(usuario.rol) !== "negocio") {
-    alert("Solo las cuentas tipo negocio pueden registrar un negocio.");
+    showToast("Solo las cuentas tipo negocio pueden registrar un negocio.", "error");
     return irDashboardPorRol();
   }
   mostrarRegistrarNegocio();
@@ -1145,7 +1285,7 @@ function asegurarRolNegocio() {
   const usuario = getUsuario();
   if (!usuario || !getToken()) { mostrarLogin(); return false; }
   if (normalizarRol(usuario.rol) !== "negocio" && normalizarRol(usuario.rol) !== "admin") {
-    alert("Esta opción es solo para cuentas tipo negocio.");
+    showToast("Esta opción es solo para cuentas tipo negocio.", "error");
     irDashboardPorRol();
     return false;
   }
@@ -1668,11 +1808,18 @@ async function cargarHorariosEmpleadoSeleccionado() {
 }
 
 async function eliminarHorario(idHorario) {
-  if (!confirm("¿Eliminar este horario?")) return;
+  const ok = await pedirConfirmacion({
+    title: "Eliminar horario",
+    text: "Este horario dejará de estar disponible para el empleado.",
+    confirmText: "Eliminar",
+    danger: true
+  });
+  if (!ok) return;
   try {
     await apiFetchConRutas(RUTAS_HORARIOS.map(r => `${r}${idHorario}`), { method: "DELETE" });
+    showToast("Horario eliminado correctamente.", "success");
     cargarHorariosEmpleadoSeleccionado();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 async function cargarHorariosEmpleadoCliente(idEmpleado) {
@@ -1720,7 +1867,7 @@ function asegurarRolCliente() {
   const usuario = getUsuario();
   if (!usuario || !getToken()) { mostrarLogin(); return false; }
   if (normalizarRol(usuario.rol) !== "cliente" && normalizarRol(usuario.rol) !== "admin") {
-    alert("Esta opción es para cuentas tipo usuario/cliente.");
+    showToast("Esta opción es para cuentas tipo usuario/cliente.", "error");
     irDashboardPorRol();
     return false;
   }
@@ -1816,29 +1963,55 @@ function renderMisCitas() {
 }
 
 async function cancelarMiCita(idCita) {
-  if (!confirm("¿Cancelar esta cita?")) return;
+  const ok = await pedirConfirmacion({
+    title: "Cancelar cita",
+    text: "La cita será cancelada y ya no aparecerá como activa.",
+    confirmText: "Cancelar cita",
+    danger: true
+  });
+  if (!ok) return;
   try {
     await apiFetch(`${API_PATHS.citas}${idCita}`, { method: "DELETE" });
+    showToast("Cita cancelada correctamente.", "success");
     await cargarMisCitas();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 async function calificarCita(idCita, idNegocio) {
-  const puntuacion = Number(prompt("Puntuación de 1 a 5:", "5"));
-  if (!puntuacion) return;
-  const comentario = prompt("Comentario:", "Buen servicio") || "";
+  const result = await openUiModal({
+    eyebrow: "Opinión",
+    title: "Calificar cita",
+    text: "Cuéntanos cómo fue tu experiencia. Tu opinión ayuda al negocio a mejorar.",
+    confirmText: "Guardar calificación",
+    fields: [
+      { id: "puntuacion", label: "Puntuación de 1 a 5", type: "number", min: 1, max: 5, step: 1, value: 5 },
+      { id: "comentario", label: "Comentario", type: "textarea", value: "Buen servicio", required: false }
+    ]
+  });
+  if (!result) return;
+  const puntuacion = Number(result.puntuacion);
+  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+    showToast("La puntuación debe estar entre 1 y 5.", "error");
+    return;
+  }
   try {
     await apiFetch(API_PATHS.calificaciones, {
       method: "POST",
-      body: JSON.stringify({ id_negocio: Number(idNegocio), id_cita: Number(idCita), puntuacion, comentario })
+      body: JSON.stringify({ id_negocio: Number(idNegocio), id_cita: Number(idCita), puntuacion, comentario: result.comentario || "" })
     });
-    alert("Calificación registrada correctamente.");
+    showToast("Calificación registrada correctamente.", "success");
     await cargarMisCalificaciones();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 function pagarCitaInfo(idCita) {
-  alert(`La cita #${idCita} ya se puede listar y calificar. Para pagar citas directamente falta que el backend de pagos acepte id_cita o que exista una ruta específica de pago de citas. Actualmente /pagos/ está ligado a id_pedido.`);
+  openUiModal({
+    eyebrow: "Pagos",
+    title: "Pago de cita no disponible aún",
+    text: `La cita #${idCita} ya se puede listar y calificar. Para pagar citas directamente falta que el backend acepte pagos asociados a id_cita o que exista una ruta específica de pagos de citas.`,
+    confirmText: "Entendido",
+    showCancel: false
+  });
 }
 
 async function irMisCalificaciones() {
@@ -1866,9 +2039,15 @@ async function cargarMisCalificaciones() {
 }
 
 async function eliminarCalificacion(id) {
-  if (!confirm("¿Eliminar esta calificación?")) return;
-  try { await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" }); cargarMisCalificaciones(); }
-  catch (e) { alert(e.message); }
+  const ok = await pedirConfirmacion({
+    title: "Eliminar calificación",
+    text: "Esta opinión se eliminará de tu historial.",
+    confirmText: "Eliminar",
+    danger: true
+  });
+  if (!ok) return;
+  try { await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" }); showToast("Calificación eliminada.", "success"); cargarMisCalificaciones(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 async function irTiendaUsuario() {
@@ -1915,9 +2094,12 @@ function renderProductosUsuario(productos) {
 
 async function crearPedidoProducto(idProducto) {
   const producto = productosUsuarioCache.find(p => Number(p.id_producto) === Number(idProducto));
-  if (!producto) return alert("Producto no encontrado.");
-  const cantidad = Number(prompt(`Cantidad para ${producto.nombre}:`, "1"));
-  if (!cantidad || cantidad < 1) return;
+  if (!producto) {
+    showToast("Producto no encontrado. Actualiza la tienda e intenta de nuevo.", "error");
+    return;
+  }
+  const cantidad = await pedirCantidadProducto(producto);
+  if (!cantidad) return;
   const total = Number(producto.precio || 0) * cantidad;
   try {
     const pedido = await apiFetch(API_PATHS.pedidos, {
@@ -1934,9 +2116,9 @@ async function crearPedidoProducto(idProducto) {
         subtotal: total
       })
     }).catch(() => null);
-    alert(`Pedido #${pedido.id_pedido} creado por $${total.toLocaleString("es-CO")}.`);
+    showToast(`Pedido #${pedido.id_pedido} creado por $${total.toLocaleString("es-CO")}.`, "success", 6200);
     await irMisPedidos();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 async function irMisPedidos() {
@@ -1988,24 +2170,42 @@ function renderMisPedidos() {
 
 async function pagarPedido(idPedido) {
   const pedido = misPedidosCache.find(p => Number(p.id_pedido) === Number(idPedido));
-  if (!pedido) return alert("Pedido no encontrado.");
-  const metodo = prompt("Método de pago:", "efectivo") || "efectivo";
-  const referencia = prompt("Referencia externa opcional:", `PED-${idPedido}-${Date.now()}`) || `PED-${idPedido}-${Date.now()}`;
+  if (!pedido) {
+    showToast("Pedido no encontrado. Actualiza tus pedidos e intenta nuevamente.", "error");
+    return;
+  }
+  const result = await openUiModal({
+    eyebrow: "Pagos",
+    title: "Registrar pago",
+    text: `Pedido #${idPedido}. Total a registrar: $${Number(pedido.total || 0).toLocaleString("es-CO")}.`,
+    confirmText: "Registrar pago",
+    fields: [
+      { id: "metodo", label: "Método de pago", type: "select", value: "efectivo", options: [
+        { value: "efectivo", label: "Efectivo" },
+        { value: "transferencia", label: "Transferencia" },
+        { value: "tarjeta", label: "Tarjeta" },
+        { value: "nequi", label: "Nequi" },
+        { value: "daviplata", label: "Daviplata" }
+      ]},
+      { id: "referencia", label: "Referencia opcional", type: "text", value: `PED-${idPedido}-${Date.now()}`, required: false }
+    ]
+  });
+  if (!result) return;
   try {
     await apiFetch(API_PATHS.pagos, {
       method: "POST",
       body: JSON.stringify({
         id_pedido: Number(idPedido),
-        metodo_pago: metodo,
-        referencia_externa: referencia,
+        metodo_pago: result.metodo || "efectivo",
+        referencia_externa: result.referencia || `PED-${idPedido}-${Date.now()}`,
         estado_pago: "aprobado",
         valor: Number(pedido.total || 0),
         respuesta_pasarela: "Pago registrado desde front"
       })
     });
-    alert("Pago registrado correctamente.");
+    showToast("Pago registrado correctamente.", "success");
     await cargarMisPedidos();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 
@@ -2173,51 +2373,78 @@ async function editarEmpleado(id) {
     if (!empleado) empleado = await apiFetch(`${API_PATHS.empleados}${id}`);
     ponerEmpleadoEnFormulario(empleado);
   } catch (e) {
-    alert(e.message);
+    showToast(friendlyError(e), "error");
   }
 }
 async function eliminarEmpleado(id) {
-  if (!confirm("¿Eliminar este empleado definitivamente? También se eliminarán sus horarios y citas asociadas.")) return;
-  try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "DELETE" }); cargarEmpleados(); }
-  catch (e) { alert(e.message); }
+  const ok = await pedirConfirmacion({
+    title: "Eliminar empleado",
+    text: "También se eliminarán sus horarios y citas asociadas. Esta acción no se puede deshacer fácilmente.",
+    confirmText: "Eliminar empleado",
+    danger: true
+  });
+  if (!ok) return;
+  try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "DELETE" }); showToast("Empleado eliminado correctamente.", "success"); cargarEmpleados(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function editarServicio(id) {
-  const precio = prompt("Nuevo precio del servicio:");
+  const servicio = serviciosCache?.find?.(s => Number(s.id_servicio) === Number(id));
+  const precio = await pedirPrecioNuevo("Actualizar precio del servicio", servicio?.precio ?? "");
   if (precio === null) return;
-  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "PUT", body: JSON.stringify({ precio: Number(precio) }) }); cargarServicios(); }
-  catch (e) { alert(e.message); }
+  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "PUT", body: JSON.stringify({ precio }) }); showToast("Precio del servicio actualizado.", "success"); cargarServicios(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function eliminarServicio(id) {
-  if (!confirm("¿Eliminar/desactivar este servicio?")) return;
-  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "DELETE" }); cargarServicios(); }
-  catch (e) { alert(e.message); }
+  const ok = await pedirConfirmacion({ title: "Eliminar o desactivar servicio", text: "El servicio dejará de estar disponible para agendar nuevas citas.", confirmText: "Continuar", danger: true });
+  if (!ok) return;
+  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "DELETE" }); showToast("Servicio actualizado correctamente.", "success"); cargarServicios(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function editarProducto(id) {
-  const precio = prompt("Nuevo precio del producto:");
+  const producto = productosCache?.find?.(p => Number(p.id_producto) === Number(id));
+  const precio = await pedirPrecioNuevo("Actualizar precio del producto", producto?.precio ?? "");
   if (precio === null) return;
-  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "PUT", body: JSON.stringify({ precio: Number(precio) }) }); cargarProductos(); }
-  catch (e) { alert(e.message); }
+  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "PUT", body: JSON.stringify({ precio }) }); showToast("Precio del producto actualizado.", "success"); cargarProductos(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function eliminarProducto(id) {
-  if (!confirm("¿Desactivar este producto?")) return;
-  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "DELETE" }); cargarProductos(); }
-  catch (e) { alert(e.message); }
+  const ok = await pedirConfirmacion({ title: "Desactivar producto", text: "El producto dejará de estar disponible en la tienda.", confirmText: "Desactivar", danger: true });
+  if (!ok) return;
+  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "DELETE" }); showToast("Producto desactivado correctamente.", "success"); cargarProductos(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function movimientoInventario(id) {
-  const tipo_movimiento = prompt("Tipo de movimiento: entrada o salida", "entrada");
-  if (!tipo_movimiento) return;
-  const cantidad = prompt("Cantidad:", "1");
-  if (!cantidad) return;
-  const motivo = prompt("Motivo:", "Ajuste manual") || "Ajuste manual";
+  const result = await openUiModal({
+    eyebrow: "Inventario",
+    title: "Registrar movimiento",
+    text: "Registra una entrada o salida de inventario con un motivo claro.",
+    confirmText: "Guardar movimiento",
+    fields: [
+      { id: "tipo_movimiento", label: "Tipo de movimiento", type: "select", value: "entrada", options: [
+        { value: "entrada", label: "Entrada" },
+        { value: "salida", label: "Salida" }
+      ]},
+      { id: "cantidad", label: "Cantidad", type: "number", min: 1, step: 1, value: 1 },
+      { id: "motivo", label: "Motivo", type: "textarea", value: "Ajuste manual", required: false }
+    ]
+  });
+  if (!result) return;
+  const cantidad = Number(result.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    showToast("Ingresa una cantidad válida mayor a cero.", "error");
+    return;
+  }
   try {
-    await apiFetch(API_PATHS.inventario, { method: "POST", body: JSON.stringify({ id_producto: id, tipo_movimiento, cantidad: Number(cantidad), motivo }) });
+    await apiFetch(API_PATHS.inventario, { method: "POST", body: JSON.stringify({ id_producto: id, tipo_movimiento: result.tipo_movimiento, cantidad, motivo: result.motivo || "Ajuste manual" }) });
+    showToast("Movimiento de inventario registrado.", "success");
     cargarProductos();
-  } catch (e) { alert(e.message); }
+  } catch (e) { showToast(friendlyError(e), "error"); }
 }
 async function cancelarCita(id) {
-  if (!confirm("¿Cancelar esta cita?")) return;
-  try { await apiFetchConRutas([`/citas/${id}`, `/cita/${id}`], { method: "DELETE" }); cargarCitas(); }
-  catch (e) { alert(e.message); }
+  const ok = await pedirConfirmacion({ title: "Cancelar cita", text: "La cita será cancelada para el negocio y el usuario.", confirmText: "Cancelar cita", danger: true });
+  if (!ok) return;
+  try { await apiFetchConRutas([`/citas/${id}`, `/cita/${id}`], { method: "DELETE" }); showToast("Cita cancelada correctamente.", "success"); cargarCitas(); }
+  catch (e) { showToast(friendlyError(e), "error"); }
 }
 
 
