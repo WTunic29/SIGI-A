@@ -88,6 +88,17 @@ def mfa_setup(
 
     current_user.mfa_totp_secret = secret
     db.commit()
+    registrar_auditoria(
+        db=db,
+        usuario=current_user,
+        accion="MFA_SETUP_QR_GENERADO",
+        modulo="auth",
+        tabla_afectada="core.usuarios",
+        id_registro=current_user.id_usuario,
+        detalle=f"Usuario {current_user.correo} generó QR para configurar MFA con aplicación autenticadora.",
+        nivel="INFO",
+        resultado="PENDIENTE"
+    )
 
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
         name=current_user.correo,
@@ -138,6 +149,17 @@ def mfa_confirm(
 
     current_user.mfa_totp_enabled = True
     db.commit()
+    registrar_auditoria(
+        db=db,
+        usuario=current_user,
+        accion="MFA_TOTP_ACTIVADO",
+        modulo="auth",
+        tabla_afectada="core.usuarios",
+        id_registro=current_user.id_usuario,
+        detalle=f"Usuario {current_user.correo} activó MFA con aplicación autenticadora correctamente.",
+        nivel="INFO",
+        resultado="OK"
+    )
 
     return {
         "message": "MFA con aplicación autenticadora activado correctamente."
@@ -818,10 +840,22 @@ def cambiar_rol_usuario(
             detail="Usuario no encontrado"
         )
 
+    rol_anterior = usuario.rol
     usuario.rol = datos.nuevo_rol
 
     db.commit()
     db.refresh(usuario)
+    registrar_auditoria(
+        db=db,
+        usuario=current_user,
+        accion="ROL_USUARIO_CAMBIADO",
+        modulo="usuarios",
+        tabla_afectada="core.usuarios",
+        id_registro=usuario.id_usuario,
+        detalle=f"Superadmin {current_user.correo} cambió el rol del usuario {usuario.correo} de {rol_anterior} a {usuario.rol}.",
+        nivel="WARNING",
+        resultado="OK"
+    )
 
     return {
         "message": "Rol actualizado correctamente",
