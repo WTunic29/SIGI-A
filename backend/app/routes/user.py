@@ -296,6 +296,14 @@ def login_user(
                 detail="La cuenta no está activa. Debes activar tu cuenta desde el correo enviado."
             )
 
+        if usuario.mfa_totp_enabled:
+            return {
+                "message": "Ingresa el código de tu aplicación autenticadora.",
+                "requiere_mfa": True,
+                "metodo": "totp",
+                "correo": usuario.correo
+            }
+
         codigos_anteriores = db.query(Codigo2FA).filter(
             Codigo2FA.id_usuario == usuario.id_usuario,
             Codigo2FA.usado == False
