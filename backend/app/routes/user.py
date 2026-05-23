@@ -24,7 +24,8 @@ from app.schemas.user import (
     UsuarioCreate,
     UsuarioLogin,
     Verificar2FA,
-    CambiarRolUsuario
+    CambiarRolUsuario,
+    ConfirmarMFA
 )
 
 from app.utils.email import (
@@ -95,6 +96,43 @@ def mfa_setup(
         "message": "Escanea este QR con Google Authenticator o Microsoft Authenticator.",
         "secret": secret,
         "qr_base64": f"data:image/png;base64,{qr_base64}"
+    }
+
+# =========================
+# MFA TOTP - CONFIRMAR
+# =========================
+
+@router.post("/mfa/confirm")
+def mfa_confirm(
+    data: ConfirmarMFA,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not current_user.mfa_totp_secret:
+        raise HTTPException(
+            status_code=400,
+            detail="Primero debes generar el QR de configuración MFA."
+        )
+
+    if current_user.mfa_totp_enabled:
+        raise HTTPException(
+            status_code=400,
+            detail="El MFA con aplicación autenticadora ya está activo."
+        )
+
+    totp = pyotp.TOTP(current_user.mfa_totp_secret)
+
+    if not totp.verify(data.codigo, valid_window=1):
+        raise HTTPException(
+            status_code=400,
+            detail="Código MFA inválido o expirado."
+        )
+
+    current_user.mfa_totp_enabled = True
+    db.commit()
+
+    return {
+        "message": "MFA con aplicación autenticadora activado correctamente."
     }
 
 # =========================

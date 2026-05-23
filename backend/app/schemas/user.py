@@ -55,3 +55,6 @@ class CambiarRolUsuario(BaseModel):
             )
 
         return rol
+
+class ConfirmarMFA(BaseModel):
+    codigo: str
