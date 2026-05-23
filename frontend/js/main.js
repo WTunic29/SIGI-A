@@ -12,6 +12,7 @@ const ROLES = {
 
 let negociosCache = [];
 let empleadosCache = [];
+let loginVerificationMode = "email";
 
 // ─────────────────────────────────────────────
 // NAVBAR
@@ -102,7 +103,33 @@ function mostrarRegistro(rol = null) {
   }
 }
 
-function mostrarVerify2FA() { setVisible(["verify2fa"]); }
+function configurarPantallaVerificacion(tipo = "email") {
+  loginVerificationMode = tipo === "totp" ? "totp" : "email";
+  sessionStorage.setItem("mfa_mode", loginVerificationMode);
+
+  const title = document.getElementById("verify2faTitle");
+  const text = document.getElementById("verify2faText");
+  const input = document.getElementById("codigo2fa");
+  const btn = document.getElementById("verify2faBtn");
+
+  if (loginVerificationMode === "totp") {
+    if (title) title.innerHTML = "Verificación con <span>App</span>";
+    if (text) text.textContent = "Ingresa el código de 6 dígitos generado por Google Authenticator o Microsoft Authenticator.";
+    if (input) input.placeholder = "Código de 6 dígitos";
+    if (btn) btn.textContent = "Verificar";
+  } else {
+    if (title) title.innerHTML = "Verificar <span>Código</span>";
+    if (text) text.textContent = "Ingresa el código de 6 dígitos que enviamos a tu correo.";
+    if (input) input.placeholder = "Código 2FA";
+    if (btn) btn.textContent = "Verificar";
+  }
+}
+
+function mostrarVerify2FA(tipo = "email") {
+  configurarPantallaVerificacion(tipo);
+  setVisible(["verify2fa"]);
+  setTimeout(() => document.getElementById("codigo2fa")?.focus(), 150);
+}
 function mostrarDashboardNegocio() { setVisible(["dashboard-negocio"]); }
 function mostrarDashboardUsuario() { setVisible(["dashboard-usuario"]); }
 function mostrarMiPerfil() { setVisible(["mi-perfil"]); }
@@ -136,6 +163,67 @@ function mostrarMensaje(containerId, texto, esError = true) {
   msg.style.display = texto ? "block" : "none";
 }
 
+function friendlyError(input) {
+  const raw = typeof input === "string" ? input : (input?.detail || input?.message || input?.error || "");
+  const msg = String(raw || "").toLowerCase();
+
+  if (msg.includes("credenciales") || msg.includes("invalid credentials") || msg.includes("incorrect")) {
+    return "El correo o la contraseña no son correctos. Verifica tus datos e intenta nuevamente.";
+  }
+  if (msg.includes("cuenta") && (msg.includes("activa") || msg.includes("activar") || msg.includes("inactive"))) {
+    return "Tu cuenta aún no está activa. Revisa tu correo y activa la cuenta antes de iniciar sesión.";
+  }
+  if (msg.includes("código") || msg.includes("codigo") || msg.includes("2fa") || msg.includes("mfa") || msg.includes("totp")) {
+    if (msg.includes("expir")) return "El código de seguridad venció. Inicia sesión nuevamente para recibir o generar un nuevo código.";
+    if (msg.includes("bloque")) return "El código fue bloqueado por varios intentos incorrectos. Inicia sesión nuevamente y solicita un nuevo código.";
+    if (msg.includes("configur")) return "La app autenticadora todavía no está configurada para esta cuenta.";
+    if (msg.includes("invál") || msg.includes("inval") || msg.includes("incorrect")) return "El código ingresado no es válido. Revisa los 6 dígitos e inténtalo nuevamente.";
+    return "No pudimos validar el código de seguridad. Revisa los 6 dígitos e inténtalo nuevamente.";
+  }
+  if (msg.includes("no autorizado") || msg.includes("unauthorized") || msg.includes("not authenticated") || msg.includes("401")) {
+    return "Tu sesión expiró o no tienes autorización. Inicia sesión nuevamente.";
+  }
+  if (msg.includes("forbidden") || msg.includes("403") || msg.includes("permiso")) {
+    return "No tienes permisos para realizar esta acción.";
+  }
+  if (msg.includes("not found") || msg.includes("404")) {
+    return "No encontramos la información solicitada. Actualiza la pantalla e intenta de nuevo.";
+  }
+  if (msg.includes("failed to fetch") || msg.includes("conectar") || msg.includes("network")) {
+    return "No se pudo conectar con el servidor. Espera unos segundos e intenta nuevamente.";
+  }
+  if (raw) return String(raw).replace(/^\[\d+\]\s*[^:]+:\s*/, "");
+  return "Ocurrió un error inesperado. Intenta nuevamente.";
+}
+
+function showToast(message, type = "info", duration = 4200) {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  const icon = type === "success" ? "✓" : type === "error" ? "!" : "i";
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><p>${escapeHtml(message)}</p><button type="button" aria-label="Cerrar">×</button>`;
+  container.appendChild(toast);
+  const close = () => {
+    toast.classList.add("hide");
+    setTimeout(() => toast.remove(), 220);
+  };
+  toast.querySelector("button")?.addEventListener("click", close);
+  setTimeout(close, duration);
+}
+
+function setButtonLoading(button, loading, textLoading = "Procesando...") {
+  if (!button) return;
+  if (loading) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = textLoading;
+    button.disabled = true;
+  } else {
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+  }
+}
+
 function getToken() {
   return localStorage.getItem("access_token");
 }
@@ -157,7 +245,7 @@ function normalizarRol(rol) {
 function guardarSesion(data) {
   localStorage.setItem("access_token", data.access_token);
   if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
-  localStorage.setItem("usuario", JSON.stringify(data.usuario));
+  if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
   actualizarNavbar();
 }
 
@@ -347,6 +435,58 @@ async function cargarHorariosEmpleadoCliente(idEmpleado) {
   }
 }
 
+async function iniciarConfiguracionMFA() {
+  const btn = document.getElementById("btnMfaSetup");
+  const box = document.getElementById("mfaSetupBox");
+  const img = document.getElementById("mfaQrImage");
+  const secret = document.getElementById("mfaSecret");
+  if (!getToken()) return mostrarLogin();
+
+  try {
+    setButtonLoading(btn, true, "Generando QR...");
+    const data = await apiFetch("/auth/mfa/setup", { method: "POST" });
+    if (img) img.src = data.qr_base64 || "";
+    if (secret) secret.textContent = data.secret ? `Clave manual: ${data.secret}` : "";
+    if (box) box.style.display = "block";
+    mostrarMensaje("perfilMsg", data.message || "Escanea el QR y confirma con el código de la app.", false);
+    showToast("Escanea el QR con tu app autenticadora.", "success");
+  } catch (error) {
+    const msg = friendlyError(error);
+    mostrarMensaje("perfilMsg", msg);
+    showToast(msg, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+async function confirmarConfiguracionMFA() {
+  const codigo = document.getElementById("mfaConfirmCodigo")?.value.trim();
+  const form = document.getElementById("mfaConfirmForm");
+  const btn = form?.querySelector("button[type='submit']");
+  if (!/^\d{6}$/.test(codigo || "")) {
+    const msg = "Ingresa un código de 6 dígitos generado por tu app autenticadora.";
+    mostrarMensaje("perfilMsg", msg);
+    showToast(msg, "error");
+    return;
+  }
+  try {
+    setButtonLoading(btn, true, "Confirmando...");
+    const data = await apiFetch("/auth/mfa/confirm", {
+      method: "POST",
+      body: JSON.stringify({ codigo })
+    });
+    mostrarMensaje("perfilMsg", data.message || "MFA con aplicación autenticadora activado correctamente.", false);
+    showToast("MFA con aplicación autenticadora activado correctamente.", "success");
+    form?.reset();
+  } catch (error) {
+    const msg = friendlyError(error);
+    mostrarMensaje("perfilMsg", msg);
+    showToast(msg, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   actualizarNavbar();
 
@@ -398,18 +538,31 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.requieres_2fa) {
+      if (res.ok && (data.requiere_mfa || data.requiere_mfa === true || data.metodo === "totp")) {
         sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
-        mostrarVerify2FA();
+        sessionStorage.setItem("mfa_mode", "totp");
+        mostrarVerify2FA("totp");
+        mostrarMensaje("verify2faMsg", "Ingresa el código de tu aplicación autenticadora.", false);
+        showToast("Verificación con app autenticadora requerida.", "info");
+      } else if (res.ok && data.requieres_2fa) {
+        sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
+        sessionStorage.setItem("mfa_mode", "email");
+        mostrarVerify2FA("email");
         mostrarMensaje("verify2faMsg", "Código enviado a tu correo.", false);
-      } else if (res.ok && data.access_token && data.usuario) {
+        showToast("Te enviamos un código de seguridad al correo.", "success");
+      } else if (res.ok && data.access_token) {
         guardarSesion(data);
+        showToast("Inicio de sesión exitoso.", "success");
         irDashboardPorRol();
       } else {
-        mostrarMensaje("loginMsg", data.detail || "Credenciales inválidas.");
+        const msg = friendlyError(data.detail || data.message || "Credenciales inválidas.");
+        mostrarMensaje("loginMsg", msg);
+        showToast(msg, "error");
       }
-    } catch {
-      mostrarMensaje("loginMsg", "No se pudo conectar al servidor.");
+    } catch (error) {
+      const msg = friendlyError(error);
+      mostrarMensaje("loginMsg", msg);
+      showToast(msg, "error");
     }
   });
 
@@ -419,24 +572,37 @@ document.addEventListener("DOMContentLoaded", () => {
       correo: sessionStorage.getItem("correo_2fa"),
       codigo: document.getElementById("codigo2fa").value.trim(),
     };
+    const mode = sessionStorage.getItem("mfa_mode") || loginVerificationMode || "email";
+    const endpoint = mode === "totp" ? "/auth/mfa/verify" : "/auth/verify-2fa";
+    const btn = document.getElementById("verify2faBtn");
 
     try {
-      const res = await fetch(`${API_BASE}/auth/verify-2fa`, {
+      setButtonLoading(btn, true, "Verificando...");
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.access_token && data.usuario) {
+      if (res.ok && data.access_token) {
         guardarSesion(data);
         sessionStorage.removeItem("correo_2fa");
+        sessionStorage.removeItem("mfa_mode");
+        document.getElementById("verify2faForm")?.reset();
+        showToast("Verificación completada correctamente.", "success");
         irDashboardPorRol();
       } else {
-        mostrarMensaje("verify2faMsg", data.detail || "Código inválido o expirado.");
+        const msg = friendlyError(data.detail || data.message || "Código inválido o expirado.");
+        mostrarMensaje("verify2faMsg", msg);
+        showToast(msg, "error");
       }
-    } catch {
-      mostrarMensaje("verify2faMsg", "No se pudo conectar al servidor.");
+    } catch (error) {
+      const msg = friendlyError(error);
+      mostrarMensaje("verify2faMsg", msg);
+      showToast(msg, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
 
@@ -517,6 +683,13 @@ function cargarDatosDashboardUsuario(usuario) {
 
 function checkSession() {
   const usuario = getUsuario();
+  const hash = window.location.hash;
+
+  if (hash === "#login") {
+    mostrarLogin();
+    return;
+  }
+
   if (!getToken() || !usuario) {
     actualizarNavbar();
     return;
@@ -697,7 +870,7 @@ async function apiFetch(path, options = {}) {
   try {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`[${res.status}] ${path}: ${extraerMensajeError(data, res.status)}`);
+    if (!res.ok) throw new Error(friendlyError(extraerMensajeError(data, res.status)));
     return data;
   } catch (error) {
     if (error instanceof TypeError || String(error.message).toLowerCase().includes("failed to fetch")) {
@@ -1015,8 +1188,15 @@ async function cargarServicios() {
   catch (e) { document.getElementById("listaServicios").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
 }
 async function cargarProductos() {
-  try { renderAdminList(await apiFetch(API_PATHS.productos), "listaProductos", "producto"); mostrarMensaje("productoMsg", "", false); }
-  catch (e) { document.getElementById("listaProductos").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+  try {
+    const productos = await apiFetch(API_PATHS.productos);
+    let lista = Array.isArray(productos) ? productos : [];
+    const idNegocio = Number(localStorage.getItem("id_negocio_actual")) || Number(obtenerIdNegocio(miNegocioCache || {}));
+    if (idNegocio) lista = lista.filter(p => !p.id_negocio || Number(p.id_negocio) === idNegocio);
+    renderAdminList(lista, "listaProductos", "producto");
+    mostrarMensaje("productoMsg", "", false);
+  }
+  catch (e) { document.getElementById("listaProductos").innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`; }
 }
 async function cargarCitas() {
   try {
@@ -1481,9 +1661,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       e.target.reset();
       mostrarMensaje("productoMsg", "Producto creado correctamente.", false);
+      showToast("Producto creado correctamente.", "success");
       cargarProductos();
     }
-    catch (err) { mostrarMensaje("productoMsg", err.message); }
+    catch (err) { const msg = friendlyError(err); mostrarMensaje("productoMsg", msg); showToast(msg, "error"); }
+  });
+
+  document.getElementById("btnMfaSetup")?.addEventListener("click", iniciarConfiguracionMFA);
+
+  document.getElementById("mfaConfirmForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await confirmarConfiguracionMFA();
   });
 
   document.getElementById("agendarCitaForm")?.addEventListener("submit", agendarCitaCliente);

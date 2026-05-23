@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <nav id="navbar">
   <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
@@ -34,7 +35,7 @@
       <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
       <a href="#" class="menu-negocio" onclick="irGestionEmpleados()">Empleados</a>
       <a href="#" class="menu-negocio" onclick="irGestionServicios()">Servicios</a>
-      <a href="#" class="menu-negocio" onclick="irGestionProductos()">Inventario</a>
+      <a href="#" class="menu-negocio" onclick="irGestionProductos()">Productos / Inventario</a>
       <a href="#" class="menu-negocio" onclick="irGestionCitas()">Citas</a>
       <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
@@ -200,12 +201,12 @@
 <section class="hero" id="verify2fa" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card">
-    <p class="section-eyebrow">Seguridad</p>
-    <h1 class="form-title">Verificar <span>Código</span></h1>
-    <p class="muted">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
+    <p class="section-eyebrow">Seguridad de la cuenta</p>
+    <h1 class="form-title" id="verify2faTitle">Verificar <span>Código</span></h1>
+    <p class="muted" id="verify2faText">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
     <form id="verify2faForm">
-      <input type="text" id="codigo2fa" placeholder="Código 2FA" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
-      <button class="btn-primary full" type="submit">Verificar</button>
+      <input type="text" id="codigo2fa" placeholder="Código de 6 dígitos" maxlength="6" pattern="\d{6}" inputmode="numeric" autocomplete="one-time-code" required />
+      <button class="btn-primary full" id="verify2faBtn" type="submit">Verificar</button>
     </form>
     <span id="verify2faMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
@@ -380,6 +381,23 @@
       <p><span>Apellido</span><strong id="perfilApellido"></strong></p>
       <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
       <p><span>Rol</span><strong id="perfilRol"></strong></p>
+    </div>
+    <div class="security-panel">
+      <div>
+        <p class="section-eyebrow">Seguridad adicional</p>
+        <h3>App autenticadora</h3>
+        <p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p>
+      </div>
+      <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
+      <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
+        <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
+        <img id="mfaQrImage" class="mfa-qr" alt="Código QR para activar MFA" />
+        <small id="mfaSecret" class="mfa-secret"></small>
+        <form id="mfaConfirmForm">
+          <input type="text" id="mfaConfirmCodigo" placeholder="Código de la app autenticadora" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
+          <button class="btn-primary full" type="submit">Confirmar activación</button>
+        </form>
+      </div>
     </div>
     <span id="perfilMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
