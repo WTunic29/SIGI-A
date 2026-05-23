@@ -562,18 +562,19 @@ def login_user(
             )
 
         if usuario.mfa_totp_enabled:
-        registrar_auditoria(
-            db=db,
-            request=request,
-            usuario=usuario,
-            accion="MFA_TOTP_SOLICITADO",
-            modulo="auth",
-            tabla_afectada="core.usuarios",
-            id_registro=usuario.id_usuario,
-            detalle=f"Usuario {usuario.correo} debe verificar MFA con aplicación autenticadora",
-            nivel="INFO",
-            resultado="PENDIENTE"
-        )
+            registrar_auditoria(
+                db=db,
+                request=request,
+                usuario=usuario,
+                accion="MFA_TOTP_SOLICITADO",
+                modulo="auth",
+                tabla_afectada="core.usuarios",
+                id_registro=usuario.id_usuario,
+                detalle=f"Usuario {usuario.correo} debe verificar MFA con aplicación autenticadora",
+                nivel="INFO",
+                resultado="PENDIENTE"
+            )
+
             return {
                 "message": "Ingresa el código de tu aplicación autenticadora.",
                 "requiere_mfa": True,
