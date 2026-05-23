@@ -8,9 +8,10 @@ class CitaCreate(BaseModel):
     id_cliente: Optional[int] = None
     id_negocio: int
     id_empleado: int
+    id_servicio: int
     fecha: date
     hora_inicio: time
-    hora_fin: time
+    hora_fin: Optional[time] = None
     observaciones: Optional[str] = None
 
 
@@ -36,6 +37,7 @@ class CitaResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class DetalleCitaCreate(BaseModel):
     id_servicio: int
