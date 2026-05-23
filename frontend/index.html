@@ -190,11 +190,30 @@
     <h1 class="form-title">Iniciar <span>Sesión</span></h1>
     <form id="loginForm">
       <input type="email" id="loginCorreo" placeholder="Correo" required />
-      <input type="password" id="loginPassword" placeholder="Contraseña" required />
+      <div class="password-field">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
       <button class="btn-primary full" type="submit">Entrar</button>
     </form>
     <span id="loginMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarRecuperarPassword()">¿Olvidaste tu contraseña?</a></p>
     <p class="form-link">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
+  </div>
+</section>
+
+<section class="hero" id="recuperar-password" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Recuperación de acceso</p>
+    <h1 class="form-title">Olvidé mi <span>Contraseña</span></h1>
+    <p class="muted">Ingresa el correo asociado a tu cuenta. Si está registrado, te enviaremos un enlace para restablecer tu contraseña.</p>
+    <form id="forgotPasswordForm">
+      <input type="email" id="forgotCorreo" placeholder="Correo electrónico" autocomplete="email" required />
+      <button class="btn-primary full" id="forgotPasswordBtn" type="submit">Enviar enlace</button>
+    </form>
+    <span id="forgotPasswordMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
   </div>
 </section>
 
@@ -236,9 +255,13 @@
         <input type="text" id="nombre" placeholder="Nombre" required />
         <input type="text" id="apellido" placeholder="Apellido" required />
         <input type="email" id="correo" placeholder="Correo" required />
+        <input type="email" id="confirmarCorreo" placeholder="Confirmar correo" required />
         <input type="text" id="telefono" placeholder="Teléfono" required />
       </div>
-      <input type="password" id="password" placeholder="Contraseña" required minlength="8" autocomplete="new-password" />
+      <div class="password-field">
+        <input type="password" id="password" placeholder="Contraseña" required minlength="8" autocomplete="new-password" />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
       <small class="password-help">Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
       <button class="btn-primary full" type="submit">Registrarse</button>
     </form>

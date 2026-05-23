@@ -62,3 +62,27 @@ class ConfirmarMFA(BaseModel):
 class VerificarMFA(BaseModel):
     correo: EmailStr
     codigo: str
+
+class ForgotPasswordRequest(BaseModel):
+    correo: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    nueva_password: str
+
+    @field_validator("nueva_password")
+    @classmethod
+    def validar_password_segura(cls, password: str):
+        if len(password) < 8:
+            raise ValueError("La contraseña debe tener mínimo 8 caracteres")
+
+        if not re.search(r"[A-Za-z]", password):
+            raise ValueError("La contraseña debe contener al menos una letra")
+
+        if not re.search(r"\d", password):
+            raise ValueError("La contraseña debe contener al menos un número")
+
+        if not re.search(r"[^A-Za-z0-9]", password):
+            raise ValueError("La contraseña debe contener al menos un símbolo")
+
+        return password

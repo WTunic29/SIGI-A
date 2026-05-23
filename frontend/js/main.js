@@ -67,7 +67,7 @@ function actualizarNavbar() {
 // NAVEGACIÓN ENTRE PANTALLAS
 // ─────────────────────────────────────────────
 const TODAS = [
-  "inicio", "cta", "login", "registro", "verify2fa",
+  "inicio", "cta", "login", "registro", "recuperar-password", "verify2fa",
   "dashboard-negocio", "dashboard-usuario", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
@@ -95,11 +95,30 @@ function mostrarInicio() {
 
 function mostrarLogin() { setVisible(["login"]); }
 
+function mostrarRecuperarPassword() {
+  setVisible(["recuperar-password"]);
+  mostrarMensaje("forgotPasswordMsg", "", false);
+  setTimeout(() => document.getElementById("forgotCorreo")?.focus(), 150);
+}
+
 function mostrarRegistro(rol = null) {
   setVisible(["registro"]);
   if (rol) {
     const input = document.querySelector(`input[name="rolRegistro"][value="${rol}"]`);
     if (input) input.checked = true;
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const visible = input.type === "text";
+  input.type = visible ? "password" : "text";
+
+  if (btn) {
+    btn.textContent = visible ? "Ver" : "Ocultar";
+    btn.setAttribute("aria-label", visible ? "Mostrar contraseña" : "Ocultar contraseña");
   }
 }
 
@@ -263,6 +282,12 @@ function friendlyError(input) {
   }
   if (msg.includes("forbidden") || msg.includes("403") || msg.includes("permiso")) {
     return "No tienes permisos para realizar esta acción.";
+  }
+  if (msg.includes("token") && (msg.includes("expir") || msg.includes("venc"))) {
+    return "El enlace para restablecer la contraseña venció. Solicita uno nuevo desde Olvidé mi contraseña.";
+  }
+  if (msg.includes("token") && (msg.includes("invalid") || msg.includes("invál") || msg.includes("inval"))) {
+    return "El enlace para restablecer la contraseña no es válido. Solicita uno nuevo desde Olvidé mi contraseña.";
   }
   if (msg.includes("not found") || msg.includes("404")) {
     return "No encontramos la información solicitada. Actualiza la pantalla e intenta de nuevo.";
@@ -572,14 +597,25 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const rolSeleccionado = document.querySelector('input[name="rolRegistro"]:checked')?.value || "cliente";
+    const correo = document.getElementById("correo").value.trim().toLowerCase();
+    const confirmarCorreo = document.getElementById("confirmarCorreo").value.trim().toLowerCase();
+
     const payload = {
       nombre: document.getElementById("nombre").value.trim(),
       apellido: document.getElementById("apellido").value.trim(),
-      correo: document.getElementById("correo").value.trim(),
+      correo,
       telefono: document.getElementById("telefono").value.trim(),
       password: document.getElementById("password").value,
       rol: rolSeleccionado,
     };
+
+    if (correo !== confirmarCorreo) {
+      const msg = "Los correos no coinciden. Revisa el correo y la confirmación antes de continuar.";
+      mostrarMensaje("registroMsg", msg);
+      showToast(msg, "error");
+      document.getElementById("confirmarCorreo")?.focus();
+      return;
+    }
 
     if (!validarPasswordFuerte(payload.password)) {
       const msg = mensajePoliticaPassword();
@@ -597,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 201 || res.ok) {
-        mostrarMensaje("registroMsg", `Cuenta creada como ${ROLES[rolSeleccionado] || rolSeleccionado}. Ahora inicia sesión.`, false);
+        mostrarMensaje("registroMsg", `Cuenta creada como ${ROLES[rolSeleccionado] || rolSeleccionado}. Revisa tu correo para activar la cuenta y luego inicia sesión.`, false);
         document.getElementById("registroForm").reset();
         setTimeout(mostrarLogin, 1200);
       } else {
@@ -609,6 +645,41 @@ document.addEventListener("DOMContentLoaded", () => {
       const msg = friendlyError(error) || "No se pudo conectar al servidor.";
       mostrarMensaje("registroMsg", msg);
       showToast(msg, "error");
+    }
+  });
+
+
+
+  document.getElementById("forgotPasswordForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const correo = document.getElementById("forgotCorreo")?.value.trim().toLowerCase();
+    const btn = document.getElementById("forgotPasswordBtn");
+
+    if (!correo) {
+      const msg = "Ingresa el correo asociado a tu cuenta.";
+      mostrarMensaje("forgotPasswordMsg", msg);
+      showToast(msg, "error");
+      return;
+    }
+
+    try {
+      setButtonLoading(btn, true, "Enviando...");
+      await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo }),
+      });
+
+      const msg = "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.";
+      mostrarMensaje("forgotPasswordMsg", msg, false);
+      showToast(msg, "success", 6500);
+      document.getElementById("forgotPasswordForm")?.reset();
+    } catch (error) {
+      const msg = "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.";
+      mostrarMensaje("forgotPasswordMsg", msg, false);
+      showToast(msg, "success", 6500);
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
 
@@ -776,6 +847,11 @@ function checkSession() {
 
   if (hash === "#login") {
     mostrarLogin();
+    return;
+  }
+
+  if (hash === "#recuperar-password") {
+    mostrarRecuperarPassword();
     return;
   }
 

@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 import base64
 from io import BytesIO
-from app.utils.auditoria import registrar_auditoria
+import hashlib
 
 import pyotp
 import qrcode
@@ -16,11 +16,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.deps import get_current_user, require_role
 from app.core.rate_limit import limiter
+from app.utils.auditoria import registrar_auditoria
 
 from app.models.codigo_2fa import Codigo2FA
 from app.models.sesion import Sesion
 from app.models.user import Usuario
 from app.models.token_activacion import TokenActivacion
+from app.models.token_recuperacion import TokenRecuperacion
 
 from app.schemas.user import (
     UsuarioCreate,
@@ -28,12 +30,15 @@ from app.schemas.user import (
     Verificar2FA,
     CambiarRolUsuario,
     ConfirmarMFA,
-    VerificarMFA
+    VerificarMFA,
+    ForgotPasswordRequest,
+    ResetPasswordRequest
 )
 
 from app.utils.email import (
     enviar_codigo_email,
-    enviar_link_activacion_email
+    enviar_link_activacion_email,
+    enviar_link_recuperacion_email
 )
 
 from app.utils.security import (
@@ -277,6 +282,18 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
             link_activacion
         )
 
+        registrar_auditoria(
+            db=db,
+            usuario=nuevo_usuario,
+            accion="USUARIO_REGISTRADO",
+            modulo="auth",
+            tabla_afectada="core.usuarios",
+            id_registro=nuevo_usuario.id_usuario,
+            detalle=f"Usuario {nuevo_usuario.correo} se registró con estado pendiente. Se envió enlace de activación al correo.",
+            nivel="INFO",
+            resultado="OK"
+        )
+
         return {
             "message": "Usuario creado correctamente. Revisa tu correo para activar la cuenta.",
             "usuario": {
@@ -344,9 +361,159 @@ def activar_cuenta(
     token_db.usado = True
     db.commit()
 
+    registrar_auditoria(
+        db=db,
+        usuario=usuario,
+        accion="CUENTA_ACTIVADA",
+        modulo="auth",
+        tabla_afectada="core.usuarios",
+        id_registro=usuario.id_usuario,
+        detalle=f"Usuario {usuario.correo} activó su cuenta mediante enlace enviado al correo.",
+        nivel="INFO",
+        resultado="OK"
+    )
+
     return RedirectResponse(
         url=f"{frontend_url}?estado=ok"
     )
+
+# =========================
+# OLVIDÉ CONTRASEÑA
+# =========================
+
+@limiter.limit("5/minute")
+@router.post("/forgot-password")
+def forgot_password(
+    request: Request,
+    data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(Usuario).filter(
+        Usuario.correo == data.correo
+    ).first()
+
+    # Respuesta genérica para no revelar si el correo existe o no
+    if not usuario:
+        return {
+            "message": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."
+        }
+
+    tokens_anteriores = db.query(TokenRecuperacion).filter(
+        TokenRecuperacion.id_usuario == usuario.id_usuario,
+        TokenRecuperacion.usado == False
+    ).all()
+
+    for token_anterior in tokens_anteriores:
+        token_anterior.usado = True
+
+    token_raw = secrets.token_urlsafe(48)
+    token_hash = hashlib.sha256(token_raw.encode()).hexdigest()
+
+    nuevo_token = TokenRecuperacion(
+        id_usuario=usuario.id_usuario,
+        token=token_hash,
+        fecha_creacion=datetime.utcnow(),
+        fecha_expiracion=datetime.utcnow() + timedelta(minutes=15),
+        usado=False
+    )
+
+    db.add(nuevo_token)
+    db.commit()
+    db.refresh(nuevo_token)
+
+    link_recuperacion = (
+        "https://sigi-a-frontend.onrender.com/restablecer.html"
+        f"?token={token_raw}"
+    )
+
+    enviar_link_recuperacion_email(
+        usuario.correo,
+        link_recuperacion
+    )
+
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=usuario,
+        accion="PASSWORD_RESET_LINK_ENVIADO",
+        modulo="auth",
+        tabla_afectada="core.tokens_recuperacion",
+        id_registro=nuevo_token.id_token,
+        detalle=f"Se envió enlace de recuperación de contraseña al correo {usuario.correo}",
+        nivel="INFO",
+        resultado="OK"
+    )
+
+    return {
+        "message": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."
+    }
+
+
+# =========================
+# RESTABLECER CONTRASEÑA
+# =========================
+
+@limiter.limit("5/minute")
+@router.post("/reset-password")
+def reset_password(
+    request: Request,
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    token_hash = hashlib.sha256(data.token.encode()).hexdigest()
+
+    token_db = db.query(TokenRecuperacion).filter(
+        TokenRecuperacion.token == token_hash,
+        TokenRecuperacion.usado == False
+    ).first()
+
+    if not token_db:
+        raise HTTPException(
+            status_code=400,
+            detail="Token inválido o ya usado"
+        )
+
+    if token_db.fecha_expiracion < datetime.utcnow():
+        token_db.usado = True
+        db.commit()
+
+        raise HTTPException(
+            status_code=400,
+            detail="El enlace de recuperación ha expirado"
+        )
+
+    usuario = db.query(Usuario).filter(
+        Usuario.id_usuario == token_db.id_usuario
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
+
+    usuario.password_hash = hash_password(data.nueva_password)
+    usuario.estado = "activo"
+    token_db.usado = True
+
+    db.commit()
+
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=usuario,
+        accion="PASSWORD_RESTABLECIDA",
+        modulo="auth",
+        tabla_afectada="core.usuarios",
+        id_registro=usuario.id_usuario,
+        detalle=f"Usuario {usuario.correo} restableció su contraseña correctamente",
+        nivel="INFO",
+        resultado="OK"
+    )
+
+    return {
+        "message": "Contraseña restablecida correctamente. Ya puedes iniciar sesión."
+    }
 
 # =========================
 # LOGIN
@@ -383,6 +550,18 @@ def login_user(
             )
 
         if usuario.mfa_totp_enabled:
+        registrar_auditoria(
+            db=db,
+            request=request,
+            usuario=usuario,
+            accion="MFA_TOTP_SOLICITADO",
+            modulo="auth",
+            tabla_afectada="core.usuarios",
+            id_registro=usuario.id_usuario,
+            detalle=f"Usuario {usuario.correo} debe verificar MFA con aplicación autenticadora",
+            nivel="INFO",
+            resultado="PENDIENTE"
+        )
             return {
                 "message": "Ingresa el código de tu aplicación autenticadora.",
                 "requiere_mfa": True,
@@ -413,7 +592,18 @@ def login_user(
         db.commit()
 
         enviar_codigo_email(usuario.correo, codigo)
-
+        registrar_auditoria(
+            db=db,
+            request=request,
+            usuario=usuario,
+            accion="OTP_ENVIADO",
+            modulo="auth",
+            tabla_afectada="core.codigos_2fa",
+            id_registro=nuevo_codigo.id_codigo,
+            detalle=f"Se envió código OTP/2FA al correo {usuario.correo}",
+            nivel="INFO",
+            resultado="OK"
+        )
         return {
             "message": "Código 2FA enviado al correo",
             "requieres_2fa": True,
@@ -489,12 +679,36 @@ def verify_2fa(
         if not verify_password(data.codigo, codigo_db.codigo):
             codigo_db.intentos += 1
             db.commit()
+            registrar_auditoria(
+                db=db,
+                request=request,
+                usuario=usuario,
+                accion="LOGIN_2FA_CORREO_FALLIDO",
+                modulo="auth",
+                tabla_afectada="core.codigos_2fa",
+                id_registro=codigo_db.id_codigo,
+                detalle=f"Código 2FA incorrecto para {usuario.correo}. Intento {codigo_db.intentos} de 3.",
+                nivel="WARNING",
+                resultado="FALLIDO"
+            )
             raise HTTPException(
                 status_code=400,
                 detail="Código 2FA inválido"
             )
 
         codigo_db.usado = True
+        registrar_auditoria(
+            db=db,
+            request=request,
+            usuario=usuario,
+            accion="LOGIN_2FA_CORREO_EXITOSO",
+            modulo="auth",
+            tabla_afectada="core.codigos_2fa",
+            id_registro=codigo_db.id_codigo,
+            detalle=f"Usuario {usuario.correo} validó correctamente el código 2FA enviado por correo.",
+            nivel="INFO",
+            resultado="OK"
+        )
 
         access_token = create_access_token(
             data={

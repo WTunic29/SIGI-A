@@ -54,3 +54,22 @@ Si no creaste esta cuenta, puedes ignorar este mensaje.
 """
 
     enviar_email(destinatario, asunto, cuerpo)
+
+def enviar_link_recuperacion_email(destinatario: str, link_recuperacion: str):
+    asunto = "Restablecer contraseña - SIGI-A"
+
+    cuerpo = f"""
+Hola,
+
+Recibimos una solicitud para restablecer tu contraseña en SIGI-A.
+
+Para crear una nueva contraseña, ingresa al siguiente enlace:
+
+{link_recuperacion}
+
+Este enlace vence en 15 minutos.
+
+Si no solicitaste este cambio, puedes ignorar este mensaje.
+"""
+
+    enviar_email(destinatario, asunto, cuerpo)

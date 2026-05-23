@@ -263,6 +263,42 @@ input {
   outline: none;
 }
 input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.08); }
+.password-field {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.password-field input {
+  padding-right: 76px;
+}
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 1px solid rgba(201,168,76,0.35);
+  background: rgba(201,168,76,0.08);
+  color: var(--gold-light);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.password-toggle:hover {
+  background: rgba(201,168,76,0.18);
+  border-color: var(--gold);
+}
+.password-help {
+  color: var(--white2);
+  opacity: 0.78;
+  line-height: 1.45;
+  margin-top: -6px;
+}
+
 .muted { color: var(--white2); opacity: 0.78; line-height: 1.7; margin-bottom: 16px; }
 .form-link { margin-top: 18px; font-size: 0.88rem; color: var(--white2); text-align: center; }
 .form-msg { display: none; margin-top: 12px; font-size: 0.9rem; text-align: center; }
