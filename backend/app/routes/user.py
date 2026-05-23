@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 import base64
 from io import BytesIO
+from app.utils.auditoria import registrar_auditoria
 
 import pyotp
 import qrcode
