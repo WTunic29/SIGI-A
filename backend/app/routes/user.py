@@ -1,6 +1,11 @@
 import random
 import secrets
 from datetime import datetime, timedelta
+import base64
+from io import BytesIO
+
+import pyotp
+import qrcode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jose import jwt, JWTError
@@ -55,6 +60,42 @@ def get_me(current_user: Usuario = Depends(get_current_user)):
         "estado": current_user.estado
     }
 
+# =========================
+# MFA TOTP - SETUP QR
+# =========================
+
+@router.post("/mfa/setup")
+def mfa_setup(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.mfa_totp_enabled:
+        raise HTTPException(
+            status_code=400,
+            detail="El MFA con aplicación autenticadora ya está activo."
+        )
+
+    secret = pyotp.random_base32()
+
+    current_user.mfa_totp_secret = secret
+    db.commit()
+
+    totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=current_user.correo,
+        issuer_name="SIGI-A"
+    )
+
+    qr = qrcode.make(totp_uri)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    return {
+        "message": "Escanea este QR con Google Authenticator o Microsoft Authenticator.",
+        "secret": secret,
+        "qr_base64": f"data:image/png;base64,{qr_base64}"
+    }
 
 # =========================
 # REGISTRO
