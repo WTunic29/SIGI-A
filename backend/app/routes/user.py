@@ -1,3 +1,4 @@
+import os
 import secrets
 from datetime import datetime, timedelta
 import base64
@@ -33,6 +34,10 @@ from app.schemas.user import (
     ForgotPasswordRequest,
     ResetPasswordRequest
 )
+
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:10000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")
 
 from app.utils.email import (
     enviar_codigo_email,
@@ -306,7 +311,7 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
         db.commit()
 
         link_activacion = (
-            "http://3.15.197.152:10000/auth/activar-cuenta"
+            f"{BACKEND_URL}/auth/activar-cuenta"
             f"?token={token_activacion}"
         )
 
@@ -356,7 +361,7 @@ def activar_cuenta(
     token: str,
     db: Session = Depends(get_db)
 ):
-    frontend_url = "http://3.15.197.152/activacion.html"
+    frontend_url = f"{FRONTEND_URL}/activacion.html"
 
     token_db = db.query(TokenActivacion).filter(
         TokenActivacion.token == token,
@@ -455,7 +460,7 @@ def forgot_password(
     db.refresh(nuevo_token)
 
     link_recuperacion = (
-        "http://3.15.197.152/restablecer.html"
+        f"{FRONTEND_URL}/restablecer.html"
         f"?token={token_raw}"
     )
 
