@@ -14,9 +14,6 @@ def enviar_email(destino: str, asunto: str, cuerpo: str):
     email_from = os.getenv("EMAIL_FROM", remitente)
 
     if not remitente or not password:
-        if os.getenv("ENVIRONMENT", "development") == "development":
-            print(f"[DEV SMTP] {asunto} → {destino}\n{cuerpo}")
-            return
         raise Exception("Faltan variables SMTP_USER o SMTP_PASSWORD en el entorno")
 
     mensaje = MIMEText(cuerpo, "plain", "utf-8")

@@ -689,10 +689,65 @@
 </section>
 
 <section class="hero dashboard-screen" id="mis-calificaciones-usuario" style="display:none;">
-  <div class="hero-bg"></div><div class="dashboard-container">
-    <div class="dashboard-header"><div><p class="section-eyebrow">Opiniones</p><h1 class="dashboard-title">Mis <span>Calificaciones</span></h1><p class="muted">Historial de calificaciones realizadas.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
-    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCalificaciones()">Actualizar</button></div>
-    <div id="listaMisCalificaciones" class="admin-list"></div><span id="misCalificacionesMsg" class="form-msg"></span>
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Opiniones y calificaciones</p>
+        <h1 class="dashboard-title">Mi <span>Centro de Calificaciones</span></h1>
+        <p class="muted">Gestiona tus opiniones, califica nuevas citas y descubre el ranking de negocios.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+
+    <div class="rating-tabs-container">
+      <div class="rating-tabs">
+        <button class="rating-tab active" onclick="switchCalificacionesTab('mis-calificaciones')">
+          <span class="tab-icon">★</span>
+          <span>Tus Calificaciones</span>
+        </button>
+        <button class="rating-tab" onclick="switchCalificacionesTab('calificar')">
+          <span class="tab-icon">✎</span>
+          <span>Calificar</span>
+        </button>
+        <button class="rating-tab" onclick="switchCalificacionesTab('ranking')">
+          <span class="tab-icon">📊</span>
+          <span>Ranking</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: TUS CALIFICACIONES -->
+    <div class="rating-tab-content active" id="tab-mis-calificaciones">
+      <div class="toolbar">
+        <button class="btn-primary" onclick="cargarMisCalificacionesTab()">Actualizar</button>
+      </div>
+      <div id="listaMisCalificacionesTab" class="admin-list"></div>
+      <span id="misCalsMsg" class="form-msg"></span>
+    </div>
+
+    <!-- TAB 2: CALIFICAR -->
+    <div class="rating-tab-content" id="tab-calificar">
+      <div class="toolbar">
+        <button class="btn-primary" onclick="cargarCitasPendientesTab()">Actualizar</button>
+      </div>
+      <div id="listaCitasPendientesTab" class="admin-list"></div>
+      <span id="calificarMsg" class="form-msg"></span>
+    </div>
+
+    <!-- TAB 3: RANKING -->
+    <div class="rating-tab-content" id="tab-ranking">
+      <div class="toolbar">
+        <input type="search" id="buscarRanking" placeholder="Buscar negocio..." oninput="filtrarRanking()" />
+        <button class="btn-primary" onclick="cargarRankingTab()">Actualizar</button>
+        <select id="ordenamientoRanking" onchange="aplicarOrdenamientoRanking()">
+          <option value="promedio">Ordenar por promedio</option>
+          <option value="cantidad">Ordenar por cantidad</option>
+        </select>
+      </div>
+      <div id="listaRankingTab" class="ranking-grid"></div>
+      <span id="rankingMsg" class="form-msg"></span>
+    </div>
   </div>
 </section>
 

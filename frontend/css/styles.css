@@ -1598,6 +1598,227 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
   .business-subtitle { font-size: clamp(1.8rem, 10vw, 2.8rem) !important; }
 }
 
+/* ─────────────────────────────────────────────
+   CALIFICACIONES - TABS Y RATING
+   ───────────────────────────────────────────── */
+
+.rating-tabs-container {
+  margin: 24px 0 32px;
+  border-bottom: 2px solid rgba(201, 168, 76, 0.15);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rating-tabs {
+  display: flex;
+  gap: 8px;
+  min-width: 100%;
+}
+
+.rating-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--gray);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.rating-tab:hover {
+  color: var(--gold-light);
+  border-bottom-color: rgba(201, 168, 76, 0.3);
+}
+
+.rating-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.rating-tab .tab-icon {
+  font-size: 1.1rem;
+}
+
+.rating-tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.rating-tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Rating Items */
+.rating-item {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rating-item:hover {
+  transform: translateX(4px);
+}
+
+.rating-stars {
+  font-size: 1.1rem;
+  color: var(--gold);
+  margin: 8px 0 6px;
+  letter-spacing: 2px;
+}
+
+/* Ranking Grid */
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.ranking-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.05), rgba(201, 168, 76, 0.02));
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.ranking-card:hover {
+  border-color: rgba(201, 168, 76, 0.3);
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(201, 168, 76, 0.03));
+  transform: translateY(-2px);
+}
+
+.ranking-position {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 50px;
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.ranking-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ranking-content h4 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+  color: var(--white);
+}
+
+.ranking-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.ranking-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.ranking-rating strong {
+  color: var(--white);
+}
+
+.ranking-count {
+  color: var(--gray);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .rating-tabs {
+    gap: 4px;
+  }
+
+  .rating-tab {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  .rating-tab .tab-icon {
+    display: none;
+  }
+
+  .ranking-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .ranking-position {
+    min-width: 45px;
+    height: 45px;
+    font-size: 1.5rem;
+  }
+
+  .ranking-card {
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rating-tabs {
+    gap: 2px;
+  }
+
+  .rating-tab {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .ranking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ranking-content h4 {
+    font-size: 0.95rem;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar input[type="search"],
+  .toolbar select,
+  .toolbar button {
+    min-width: 100% !important;
+    margin-bottom: 8px;
+  }
+
+  .toolbar select {
+    margin-bottom: 0;
+  }
+}
+
 
 /* ─────────────────────────────────────────────
    Alertas bonitas / MFA

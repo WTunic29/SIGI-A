@@ -2080,25 +2080,82 @@ function pagarCitaInfo(idCita) {
 
 async function irMisCalificaciones() {
   mostrarModuloCliente("mis-calificaciones-usuario");
-  await cargarMisCalificaciones();
+  switchCalificacionesTab('mis-calificaciones');
+  await cargarMisCalificacionesTab();
 }
 
-async function cargarMisCalificaciones() {
-  const cont = document.getElementById("listaMisCalificaciones");
+// ─────────────────────────────────────────────
+// TABS DE CALIFICACIONES
+// ─────────────────────────────────────────────
+
+let citasPendientesCache = [];
+let rankingCache = [];
+
+function switchCalificacionesTab(tabName) {
+  document.querySelectorAll('.rating-tab-content').forEach(el => {
+    el.classList.remove('active');
+  });
+  document.querySelectorAll('.rating-tab').forEach(el => {
+    el.classList.remove('active');
+  });
+  
+  const content = document.getElementById(`tab-${tabName}`);
+  if (content) content.classList.add('active');
+  
+  const button = document.querySelector(`[onclick="switchCalificacionesTab('${tabName}')"]`);
+  if (button) button.classList.add('active');
+  
+  if (tabName === 'calificar' && !citasPendientesCache.length) {
+    cargarCitasPendientesTab();
+  } else if (tabName === 'ranking' && !rankingCache.length) {
+    cargarRankingTab();
+  }
+}
+
+// ─────────────────────────────────────────────
+// TAB 1: TUS CALIFICACIONES
+// ─────────────────────────────────────────────
+
+let misCalificacionesCache = [];
+
+async function cargarMisCalificacionesTab() {
+  const cont = document.getElementById("listaMisCalificacionesTab");
+  if (!cont) {
+    cont = document.getElementById("listaMisCalificaciones");
+  }
   try {
+    if (!negociosCache.length) negociosCache = await obtenerNegocios();
+    
     const data = await apiFetch(API_PATHS.calificaciones);
     misCalificacionesCache = Array.isArray(data) ? data : [];
+    
     if (!misCalificacionesCache.length) {
       cont.innerHTML = `<div class="empty-state">Todavía no tienes calificaciones registradas.</div>`;
+      mostrarMensaje("misCalsMsg", "", false);
       return;
     }
-    cont.innerHTML = misCalificacionesCache.map(c => `<article class="admin-item">
-      <div><h4>${"★".repeat(Number(c.puntuacion || 0))}${"☆".repeat(Math.max(0, 5 - Number(c.puntuacion || 0)))}</h4><p>Cita #${escapeHtml(c.id_cita || "—")} · ${escapeHtml(c.comentario || "Sin comentario")}</p></div>
-      <div class="row-actions"><button onclick="eliminarCalificacion(${c.id_calificacion})">Eliminar</button></div>
-    </article>`).join("");
-    mostrarMensaje("misCalificacionesMsg", "", false);
+    
+    cont.innerHTML = misCalificacionesCache.map(c => {
+      const negocioNombre = negociosCache.find(n => Number(obtenerIdNegocio(n)) === Number(c.id_negocio));
+      const nombre = negocioNombre ? campoNegocio(negocioNombre, "nombre_negocio", "nombre") : `Negocio #${c.id_negocio}`;
+      const fecha = new Date(c.fecha).toLocaleDateString('es-CO');
+      
+      return `<article class="admin-item rating-item">
+        <div>
+          <h4>${escapeHtml(nombre)}</h4>
+          <p class="rating-stars">${"★".repeat(Number(c.puntuacion || 0))}${"☆".repeat(Math.max(0, 5 - Number(c.puntuacion || 0)))}</p>
+          <p>${escapeHtml(c.comentario || "Sin comentario")} · <small>${fecha}</small></p>
+        </div>
+        <div class="row-actions">
+          <button onclick="eliminarCalificacion(${c.id_calificacion})">Eliminar</button>
+        </div>
+      </article>`;
+    }).join("");
+    
+    mostrarMensaje("misCalsMsg", "", false);
   } catch (e) {
     if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    mostrarMensaje("misCalsMsg", e.message);
   }
 }
 
@@ -2110,8 +2167,183 @@ async function eliminarCalificacion(id) {
     danger: true
   });
   if (!ok) return;
-  try { await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" }); showToast("Calificación eliminada.", "success"); cargarMisCalificaciones(); }
-  catch (e) { showToast(friendlyError(e), "error"); }
+  try {
+    await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" });
+    showToast("Calificación eliminada.", "success");
+    await cargarMisCalificacionesTab();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+// ─────────────────────────────────────────────
+// TAB 2: CALIFICAR
+// ─────────────────────────────────────────────
+
+async function cargarCitasPendientesTab() {
+  const cont = document.getElementById("listaCitasPendientesTab");
+  if (!cont) return;
+  
+  try {
+    const data = await apiFetch("/calificaciones/citas-pendientes/all");
+    citasPendientesCache = Array.isArray(data) ? data : [];
+    
+    if (!citasPendientesCache.length) {
+      cont.innerHTML = `<div class="empty-state">No hay citas finalizadas pendientes de calificar.</div>`;
+      mostrarMensaje("calificarMsg", "", false);
+      return;
+    }
+    
+    cont.innerHTML = citasPendientesCache.map(cita => `
+      <article class="admin-item rating-item">
+        <div>
+          <h4>${escapeHtml(cita.negocio_nombre)}</h4>
+          <p><strong>${escapeHtml(cita.servicio_nombre)}</strong> con ${escapeHtml(cita.empleado_nombre)} ${escapeHtml(cita.empleado_apellido)}</p>
+          <p><small>${new Date(cita.fecha).toLocaleDateString('es-CO')} a las ${escapeHtml(String(cita.hora_inicio).slice(0, 5))}</small></p>
+        </div>
+        <div class="row-actions">
+          <button onclick="abrirFormularioCalificacion(${cita.id_cita}, ${cita.id_negocio}, '${escapeHtml(cita.negocio_nombre).replace(/'/g, "\\'")}')">Calificar</button>
+        </div>
+      </article>
+    `).join("");
+    
+    mostrarMensaje("calificarMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    mostrarMensaje("calificarMsg", e.message);
+  }
+}
+
+async function abrirFormularioCalificacion(idCita, idNegocio, nombreNegocio) {
+  const result = await openUiModal({
+    eyebrow: "Nueva calificación",
+    title: `Calificar ${nombreNegocio}`,
+    text: "Cuéntanos cómo fue tu experiencia. Tu opinión ayuda al negocio a mejorar.",
+    confirmText: "Guardar calificación",
+    fields: [
+      { id: "puntuacion", label: "Puntuación (1-5 estrellas)", type: "number", min: 1, max: 5, step: 1, value: 5 },
+      { id: "comentario", label: "Tu opinión", type: "textarea", value: "", required: false, placeholder: "Comparte tu experiencia..." }
+    ]
+  });
+  
+  if (!result) return;
+  
+  const puntuacion = Number(result.puntuacion);
+  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+    showToast("La puntuación debe estar entre 1 y 5.", "error");
+    return;
+  }
+  
+  try {
+    await apiFetch(API_PATHS.calificaciones, {
+      method: "POST",
+      body: JSON.stringify({
+        id_negocio: Number(idNegocio),
+        id_cita: Number(idCita),
+        puntuacion,
+        comentario: result.comentario || ""
+      })
+    });
+    
+    showToast("Calificación registrada correctamente.", "success");
+    await cargarCitasPendientesTab();
+    await cargarMisCalificacionesTab();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+// ─────────────────────────────────────────────
+// TAB 3: RANKING
+// ─────────────────────────────────────────────
+
+let rankingOrdenado = [];
+
+async function cargarRankingTab() {
+  const cont = document.getElementById("listaRankingTab");
+  if (!cont) return;
+  
+  try {
+    const data = await apiFetch("/calificaciones/ranking/all");
+    rankingCache = Array.isArray(data) ? data : [];
+    rankingOrdenado = [...rankingCache];
+    
+    if (!rankingCache.length) {
+      cont.innerHTML = `<div class="empty-state">No hay calificaciones registradas aún.</div>`;
+      mostrarMensaje("rankingMsg", "", false);
+      return;
+    }
+    
+    renderizarRanking(rankingOrdenado);
+    mostrarMensaje("rankingMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    mostrarMensaje("rankingMsg", e.message);
+  }
+}
+
+function renderizarRanking(datos) {
+  const cont = document.getElementById("listaRankingTab");
+  if (!cont) return;
+  
+  if (!datos.length) {
+    cont.innerHTML = `<div class="empty-state">No hay negocios para mostrar.</div>`;
+    return;
+  }
+  
+  cont.innerHTML = datos.map((item, idx) => `
+    <article class="ranking-card">
+      <div class="ranking-position">
+        ${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${item.posicion}°`}
+      </div>
+      <div class="ranking-content">
+        <h4>${escapeHtml(item.nombre_negocio)}</h4>
+        <div class="ranking-stats">
+          <span class="ranking-rating">
+            ${"★".repeat(Math.round(item.promedio))}${"☆".repeat(Math.max(0, 5 - Math.round(item.promedio)))}
+            <strong>${item.promedio.toFixed(1)}</strong>/5
+          </span>
+          <span class="ranking-count">
+            ${item.total_calificaciones} opinión${item.total_calificaciones !== 1 ? 'es' : ''}
+          </span>
+        </div>
+      </div>
+    </article>
+  `).join("");
+}
+
+function filtrarRanking() {
+  const query = (document.getElementById("buscarRanking")?.value || "").toLowerCase().trim();
+  
+  if (!query) {
+    rankingOrdenado = [...rankingCache];
+  } else {
+    rankingOrdenado = rankingCache.filter(r =>
+      r.nombre_negocio.toLowerCase().includes(query)
+    );
+  }
+  
+  renderizarRanking(rankingOrdenado);
+}
+
+function aplicarOrdenamientoRanking() {
+  const ordenamiento = document.getElementById("ordenamientoRanking")?.value || "promedio";
+  
+  if (ordenamiento === "cantidad") {
+    rankingOrdenado.sort((a, b) => b.total_calificaciones - a.total_calificaciones);
+  } else {
+    rankingOrdenado.sort((a, b) => b.promedio - a.promedio);
+  }
+  
+  renderizarRanking(rankingOrdenado);
+}
+
+// Mantener compatibilidad con la función antigua
+async function cargarMisCalificaciones() {
+  const cont = document.getElementById("listaMisCalificaciones");
+  if (cont) {
+    await cargarMisCalificacionesTab();
+  }
 }
 
 async function irTiendaUsuario() {
