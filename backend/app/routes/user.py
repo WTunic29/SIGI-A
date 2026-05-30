@@ -1,4 +1,4 @@
-import random
+itimedelta(hours=24)mport random
 import secrets
 from datetime import datetime, timedelta
 import base64
@@ -299,7 +299,7 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
         nuevo_token = TokenActivacion(
             id_usuario=nuevo_usuario.id_usuario,
             token=token_activacion,
-            fecha_expiracion=datetime.utcnow() + timedelta(hours=24),
+            fecha_expiracion=datetime.utcnow() + timedelta(hours=5),
             usado=False
         )
 
@@ -307,7 +307,7 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
         db.commit()
 
         link_activacion = (
-            "https://sigi-a.onrender.com/auth/activar-cuenta"
+            "http://3.15.197.152:10000/auth/activar-cuenta"
             f"?token={token_activacion}"
         )
 
@@ -357,7 +357,7 @@ def activar_cuenta(
     token: str,
     db: Session = Depends(get_db)
 ):
-    frontend_url = "https://sigi-a-frontend.onrender.com/activacion.html"
+    frontend_url = "http://3.15.197.152/activacion.html"
 
     token_db = db.query(TokenActivacion).filter(
         TokenActivacion.token == token,
@@ -456,7 +456,7 @@ def forgot_password(
     db.refresh(nuevo_token)
 
     link_recuperacion = (
-        "https://sigi-a-frontend.onrender.com/restablecer.html"
+        "http://3.15.197.152/restablecer.html"
         f"?token={token_raw}"
     )
 
