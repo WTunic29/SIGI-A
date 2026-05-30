@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.database import SessionLocal
 
@@ -10,6 +10,7 @@ from app.core.deps import (
 )
 
 from app.models.carrito import Carrito
+from app.models.carrito_detalle import CarritoDetalle
 from app.models.user import Usuario
 
 from app.schemas.carrito import (
@@ -52,6 +53,64 @@ def validar_acceso_carrito(
             detail="No autorizado"
         )
 
+# =========================
+# HELPERS CARRITO
+# =========================
+
+def obtener_carrito_activo_usuario(
+    db: Session,
+    id_usuario: int
+):
+    return db.query(Carrito).filter(
+        Carrito.id_usuario == id_usuario,
+        Carrito.estado == "activo"
+    ).order_by(
+        Carrito.id_carrito.desc()
+    ).first()
+
+
+def recalcular_total_carrito(
+    db: Session,
+    carrito: Carrito
+):
+    detalles = db.query(CarritoDetalle).filter(
+        CarritoDetalle.id_carrito == carrito.id_carrito,
+        CarritoDetalle.estado_reserva == "RESERVADO"
+    ).all()
+
+    total = sum([
+        detalle.subtotal or 0
+        for detalle in detalles
+    ])
+
+    carrito.total_estimado = total
+    carrito.fecha_actualizacion = datetime.utcnow()
+    return total
+
+# =========================
+# OBTENER CARRITO ACTIVO
+# =========================
+
+@router.get("/activo", response_model=CarritoResponse | None)
+def obtener_carrito_activo(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "admin"])
+    )
+):
+    carrito = obtener_carrito_activo_usuario(
+        db,
+        current_user.id_usuario
+    )
+
+    if not carrito:
+        return None
+
+    recalcular_total_carrito(db, carrito)
+    db.commit()
+    db.refresh(carrito)
+
+    return carrito
 
 # =========================
 # CREAR CARRITO

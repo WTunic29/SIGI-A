@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from decimal import Decimal
 
 
 class CarritoBase(BaseModel):
@@ -9,16 +10,25 @@ class CarritoBase(BaseModel):
 
 
 class CarritoCreate(CarritoBase):
-    pass
+    id_negocio: Optional[int] = None
 
 
 class CarritoUpdate(BaseModel):
     estado: Optional[str] = None
+    id_negocio: Optional[int] = None
+    fecha_expiracion: Optional[datetime] = None
+    total_estimado: Optional[Decimal] = None
 
 
-class CarritoResponse(CarritoBase):
+class CarritoResponse(BaseModel):
     id_carrito: int
-    fecha_creacion: Optional[datetime]
+    id_usuario: int
+    id_negocio: Optional[int] = None
+    estado: str
+    fecha_creacion: Optional[datetime] = None
+    fecha_expiracion: Optional[datetime] = None
+    fecha_actualizacion: Optional[datetime] = None
+    total_estimado: Optional[Decimal] = None
 
     class Config:
         from_attributes = True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, Numeric, String
+from sqlalchemy import Column, BigInteger, Integer, Numeric, String, TIMESTAMP, func
 from app.database import Base
 
 
@@ -12,10 +12,16 @@ class CarritoDetalle(Base):
 
     tipo_item = Column(String(20), nullable=False)
 
-    id_producto = Column(BigInteger)
+    id_producto = Column(BigInteger, nullable=True)
+    id_servicio = Column(BigInteger, nullable=True)
 
-    id_servicio = Column(BigInteger)
-
-    cantidad = Column(Integer, nullable=False)
+    cantidad = Column(Integer, nullable=False, default=1)
 
     precio_unitario = Column(Numeric(12, 2), nullable=False)
+    subtotal = Column(Numeric(12, 2), nullable=True)
+
+    estado_reserva = Column(String(20), nullable=True, default="RESERVADO")
+
+    fecha_reserva = Column(TIMESTAMP, nullable=True, server_default=func.now())
+    fecha_expiracion_reserva = Column(TIMESTAMP, nullable=True)
+
