@@ -7,7 +7,14 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body><body class="dashboard-loading">
+<div id="appLoader" class="app-loader">
+  <div class="app-loader-card">
+    <div class="app-loader-spinner"></div>
+    <h2>Cargando panel...</h2>
+    <p>Validando sesión y permisos del usuario.</p>
+  </div>
+</div>
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 <div id="uiModalRoot" class="ui-modal-backdrop" style="display:none;" aria-hidden="true"></div>
 

@@ -72,7 +72,7 @@ function actualizarNavbar() {
 // ─────────────────────────────────────────────
 const TODAS = [
   "inicio", "cta", "login", "registro", "recuperar-password", "verify2fa",
-  "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "mi-perfil",
+  "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "gestion-usuarios-admin", "auditoria-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
   "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario"
@@ -204,6 +204,7 @@ function irDashboardPorRol() {
     cargarDatosDashboardUsuario(usuario);
     cargarNegociosUsuario();
   }
+  finalizarCargaDashboard();
 }
 
 // ─────────────────────────────────────────────
@@ -784,6 +785,13 @@ async function confirmarConfiguracionMFA() {
 document.addEventListener("DOMContentLoaded", () => {
   actualizarNavbar();
 
+  if (esPaginaDashboardRol()) {
+    irDashboardPorRol();
+
+    setTimeout(() => {
+      finalizarCargaDashboard();
+    }, 1200);
+  }
   document.getElementById("registroForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -838,8 +846,6 @@ document.addEventListener("DOMContentLoaded", () => {
       showToast(msg, "error");
     }
   });
-
-
 
   document.getElementById("forgotPasswordForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2514,25 +2520,570 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && getToken()) validarSesionActiva({ silencioso: true });
 });
 function irGestionUsuarios() {
-  ocultarSecciones();
-  const section = document.getElementById("gestion-usuarios-admin");
-  if (section) {
-    section.style.display = "block";
-  } else {
-    mostrarToast("Sección de usuarios pendiente por crear.", "info");
-  }
+  setVisible(["gestion-usuarios-admin"]);
+  cargarUsuariosAdmin();
 }
-
 function irAuditoriaSistema() {
-  ocultarSecciones();
-  const section = document.getElementById("auditoria-admin");
-  if (section) {
-    section.style.display = "block";
-  } else {
-    mostrarToast("Sección de auditoría pendiente por crear.", "info");
+  setVisible(["auditoria-admin"]);
+  cargarResumenAuditoriaGeneral();
+  cargarAuditoriaAdmin();
+}
+
+function limpiarFiltrosAuditoria() {
+  const campos = [
+    "auditoriaCorreo",
+    "auditoriaAccion",
+    "auditoriaModulo",
+    "auditoriaResultado",
+    "auditoriaNivel"
+  ];
+
+  campos.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  const limite = document.getElementById("auditoriaLimite");
+  if (limite) limite.value = 50;
+
+  cargarAuditoriaAdmin();
+}
+let auditoriaAdminCache = [];
+
+async function cargarAuditoriaAdmin() {
+  const contenedor = document.getElementById("tablaAuditoriaAdmin");
+  const msg = document.getElementById("auditoriaAdminMsg");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "<p class='muted'>Cargando auditoría...</p>";
+  if (msg) msg.textContent = "";
+
+  const correo = document.getElementById("auditoriaCorreo")?.value.trim();
+  const accion = document.getElementById("auditoriaAccion")?.value.trim();
+  const modulo = document.getElementById("auditoriaModulo")?.value.trim();
+  const resultado = document.getElementById("auditoriaResultado")?.value;
+  const nivel = document.getElementById("auditoriaNivel")?.value;
+  const limite = document.getElementById("auditoriaLimite")?.value || 50;
+
+  const params = new URLSearchParams();
+
+  if (correo) params.append("correo_usuario", correo);
+  if (accion) params.append("accion", accion);
+  if (modulo) params.append("modulo", modulo);
+  if (resultado) params.append("resultado", resultado);
+  if (nivel) params.append("nivel", nivel);
+  if (limite) params.append("limite", limite);
+
+  try {
+    const data = await apiFetch(`/auditoria/?${params.toString()}`);
+    auditoriaAdminCache = Array.isArray(data) ? data : [];
+    renderAuditoriaAdmin(auditoriaAdminCache);
+
+  } catch (error) {
+  contenedor.innerHTML = "<p class='muted'>No se pudo cargar la auditoría.</p>";
+  if (msg) msg.textContent = friendlyError(error);
+  showToast(friendlyError(error), "error");
+}}
+
+function renderAuditoriaAdmin(registros) {
+  const contenedor = document.getElementById("tablaAuditoriaAdmin");
+  if (!contenedor) return;
+
+  if (!Array.isArray(registros) || registros.length === 0) {
+    contenedor.innerHTML = "<p class='muted'>No hay registros de auditoría para mostrar.</p>";
+    return;
+  }
+
+ contenedor.innerHTML = registros.map((item) => `
+   <div class="admin-table-row auditoria-row">
+     <span>${formatearFechaAuditoria(item.fecha_hora || item.fecha || item.created_at)}</span>
+     <span>${item.correo_usuario || "—"}</span>
+     <span>${item.rol_usuario || "—"}</span>
+     <span>${item.accion || "—"}</span>
+     <span>${item.modulo || "—"}</span>
+     <span>${item.tabla_afectada || item.tabla || "—"}</span>
+     <span>${badgeAuditoria(item.resultado, "resultado")}</span>
+     <span>${badgeAuditoria(item.nivel, "nivel")}</span>
+     <span>
+       <button 
+         type="button" 
+         class="btn-detalle-auditoria"
+         onclick="abrirDetalleAuditoria('${encodeURIComponent(JSON.stringify(item))}')">
+         Ver detalle
+       </button>
+     </span>
+   </div>
+ `).join("");
+}
+function badgeAuditoria(valor, tipo = "") {
+  const texto = String(valor || "—").toUpperCase();
+  const clase = texto
+    .replaceAll(" ", "-")
+    .replaceAll("_", "-")
+    .toLowerCase();
+
+  return `<span class="audit-badge ${tipo}-${clase}">${escapeHtml(texto)}</span>`;
+}
+
+function detalleCortoAuditoria(detalle) {
+  const texto = String(detalle || "—");
+  if (texto.length <= 80) return escapeHtml(texto);
+  return `${escapeHtml(texto.slice(0, 80))}...`;
+}
+function detalleCortoAuditoria(detalle) {
+  const texto = String(detalle || "—");
+  if (texto.length <= 80) return escapeHtml(texto);
+  return `${escapeHtml(texto.slice(0, 80))}...`;
+}
+function abrirDetalleAuditoria(itemCodificado) {
+  let item = {};
+
+  try {
+    item = JSON.parse(decodeURIComponent(itemCodificado));
+  } catch (error) {
+    mostrarToast("No se pudo abrir el detalle de auditoría.", "error");
+    return;
+  }
+
+  const modal = document.getElementById("modalDetalleAuditoria");
+  const contenido = document.getElementById("contenidoDetalleAuditoria");
+
+  if (!modal || !contenido) return;
+
+  const filas = [
+    ["Fecha", formatearFechaAuditoria(item.fecha_hora || item.fecha || item.created_at)],
+    ["Usuario", item.correo_usuario || "—"],
+    ["Rol", item.rol_usuario || "—"],
+    ["Acción", item.accion || "—"],
+    ["Módulo", item.modulo || "—"],
+    ["Tabla", item.tabla_afectada || item.tabla || "—"],
+    ["Resultado", item.resultado || "—"],
+    ["Nivel", item.nivel || "—"],
+    ["Método HTTP", item.metodo_http || "—"],
+    ["Ruta", item.ruta || "—"],
+    ["IP", item.ip || "—"],
+    ["User Agent", item.user_agent || "—"],
+    ["Detalle", item.detalle || "—"]
+  ];
+
+  contenido.innerHTML = filas.map(([titulo, valor]) => `
+    <div class="modal-auditoria-item">
+      <strong>${escapeHtml(titulo)}</strong>
+      <span>${escapeHtml(valor)}</span>
+    </div>
+  `).join("");
+
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
+}
+
+function cerrarDetalleAuditoria() {
+  const modal = document.getElementById("modalDetalleAuditoria");
+  if (modal) modal.style.display = "none";
+  document.body.classList.remove("modal-open");
+}
+function actualizarResumenAuditoria(registros) {
+  const total = registros.length;
+  const ok = registros.filter(r => (r.resultado || "").toUpperCase() === "OK").length;
+  const error = registros.filter(r => (r.resultado || "").toUpperCase() === "ERROR").length;
+  const warn = registros.filter(r => (r.nivel || "").toUpperCase() === "WARN").length;
+
+  document.getElementById("auditTotal").textContent = total;
+  document.getElementById("auditOk").textContent = ok;
+  document.getElementById("auditError").textContent = error;
+  document.getElementById("auditWarn").textContent = warn;
+}
+
+function formatearFechaAuditoria(valor) {
+  if (!valor) return "—";
+
+  try {
+    const fecha = new Date(valor);
+    if (Number.isNaN(fecha.getTime())) return valor;
+    return fecha.toLocaleString("es-CO");
+  } catch {
+    return valor;
+  }
+}
+let chartAuditoriaResultados = null;
+let chartAuditoriaNiveles = null;
+let chartAuditoriaAcciones = null;
+let chartAuditoriaModulos = null;
+
+async function cargarResumenAuditoriaGeneral() {
+  try {
+    const data = await apiFetch("/auditoria/?limite=200");
+    const registros = Array.isArray(data) ? data : [];
+
+    actualizarResumenAuditoria(registros);
+    renderGraficasAuditoriaGeneral(registros);
+
+  } catch (error) {
+    showToast("No se pudo cargar el resumen general de auditoría.", "error");
   }
 }
 
+function actualizarResumenAuditoria(registros) {
+  const lista = Array.isArray(registros) ? registros : [];
+
+  const total = lista.length;
+  const ok = lista.filter(r => String(r.resultado || "").toUpperCase() === "OK").length;
+  const error = lista.filter(r => String(r.resultado || "").toUpperCase() === "ERROR").length;
+  const warn = lista.filter(r => String(r.nivel || "").toUpperCase() === "WARN").length;
+
+  const totalEl = document.getElementById("auditTotal");
+  const okEl = document.getElementById("auditOk");
+  const errorEl = document.getElementById("auditError");
+  const warnEl = document.getElementById("auditWarn");
+
+  if (totalEl) totalEl.textContent = total;
+  if (okEl) okEl.textContent = ok;
+  if (errorEl) errorEl.textContent = error;
+  if (warnEl) warnEl.textContent = warn;
+}
+
+function contarPorCampo(registros, campo) {
+  const conteo = {};
+
+  registros.forEach(item => {
+    const valor = String(item[campo] || "SIN_DATO").toUpperCase();
+    conteo[valor] = (conteo[valor] || 0) + 1;
+  });
+
+  return conteo;
+}
+
+function renderGraficasAuditoriaGeneral(registros) {
+  if (typeof Chart === "undefined") {
+    console.warn("Chart.js no está cargado.");
+    return;
+  }
+
+  const resultados = contarPorCampo(registros, "resultado");
+  const niveles = contarPorCampo(registros, "nivel");
+  const topAcciones = obtenerTopPorCampo(registros, "accion", 6);
+  const topModulos = obtenerTopPorCampo(registros, "modulo", 6);
+
+  const ctxResultados = document.getElementById("chartAuditoriaResultados");
+  const ctxNiveles = document.getElementById("chartAuditoriaNiveles");
+  const ctxAcciones = document.getElementById("chartAuditoriaAcciones");
+  const ctxModulos = document.getElementById("chartAuditoriaModulos");
+
+  if (!ctxResultados || !ctxNiveles) return;
+
+  if (chartAuditoriaResultados) chartAuditoriaResultados.destroy();
+  if (chartAuditoriaNiveles) chartAuditoriaNiveles.destroy();
+  if (chartAuditoriaAcciones) chartAuditoriaAcciones.destroy();
+  if (chartAuditoriaModulos) chartAuditoriaModulos.destroy();
+
+  const coloresResultado = {
+    OK: "#d4af37",
+    ERROR: "#c94c4c",
+    PENDIENTE: "#d98e04",
+    SIN_DATO: "#6b7280"
+  };
+
+  const coloresNivel = {
+    INFO: "#d4af37",
+    WARN: "#d98e04",
+    WARNING: "#d98e04",
+    ERROR: "#c94c4c",
+    SIN_DATO: "#6b7280"
+  };
+
+  const labelsResultados = Object.keys(resultados);
+  const dataResultados = Object.values(resultados);
+  const backgroundResultados = labelsResultados.map(label => coloresResultado[label] || "#6b7280");
+
+  const labelsNiveles = Object.keys(niveles);
+  const dataNiveles = Object.values(niveles);
+  const backgroundNiveles = labelsNiveles.map(label => coloresNivel[label] || "#6b7280");
+
+  const opcionesDona = {
+    responsive: true,
+    maintainAspectRatio: true,
+    devicePixelRatio: 2,
+    cutout: "52%",
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          color: "#f5f1df",
+          padding: 16,
+          boxWidth: 18,
+          font: {
+            family: "Montserrat",
+            size: 13,
+            weight: "600"
+          }
+        }
+      },
+      tooltip: {
+        titleFont: {
+          family: "Montserrat",
+          size: 13,
+          weight: "700"
+        },
+        bodyFont: {
+          family: "Montserrat",
+          size: 13
+        }
+      }
+    }
+  };
+
+  const opcionesBarras = {
+    responsive: true,
+    maintainAspectRatio: false,
+    devicePixelRatio: 2,
+    indexAxis: "y",
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        titleFont: {
+          family: "Montserrat",
+          size: 13,
+          weight: "700"
+        },
+        bodyFont: {
+          family: "Montserrat",
+          size: 13
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#f5f1df",
+          font: {
+            family: "Montserrat",
+            size: 12,
+            weight: "600"
+          }
+        },
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        }
+      },
+      y: {
+        ticks: {
+          color: "#f5f1df",
+          font: {
+            family: "Montserrat",
+            size: 12,
+            weight: "600"
+          }
+        },
+        grid: {
+          color: "rgba(255,255,255,0.04)"
+        }
+      }
+    }
+  };
+
+  chartAuditoriaResultados = new Chart(ctxResultados, {
+    type: "doughnut",
+    data: {
+      labels: labelsResultados,
+      datasets: [{
+        data: dataResultados,
+        backgroundColor: backgroundResultados,
+        borderColor: "#111",
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: opcionesDona
+  });
+
+  chartAuditoriaNiveles = new Chart(ctxNiveles, {
+    type: "doughnut",
+    data: {
+      labels: labelsNiveles,
+      datasets: [{
+        data: dataNiveles,
+        backgroundColor: backgroundNiveles,
+        borderColor: "#111",
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: opcionesDona
+  });
+
+  if (ctxAcciones) {
+    chartAuditoriaAcciones = new Chart(ctxAcciones, {
+      type: "bar",
+      data: {
+        labels: topAcciones.labels,
+        datasets: [{
+          data: topAcciones.values,
+          backgroundColor: "#d4af37",
+          borderColor: "#e8c97a",
+          borderWidth: 1,
+          borderRadius: 8
+        }]
+      },
+      options: opcionesBarras
+    });
+  }
+
+  if (ctxModulos) {
+    chartAuditoriaModulos = new Chart(ctxModulos, {
+      type: "bar",
+      data: {
+        labels: topModulos.labels,
+        datasets: [{
+          data: topModulos.values,
+          backgroundColor: "#bfa14a",
+          borderColor: "#e8c97a",
+          borderWidth: 1,
+          borderRadius: 8
+        }]
+      },
+      options: opcionesBarras
+    });
+  }
+}
+function obtenerTopPorCampo(registros, campo, limite = 6) {
+  const conteo = contarPorCampo(registros, campo);
+
+  const ordenado = Object.entries(conteo)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limite);
+
+  return {
+    labels: ordenado.map(([label]) => label),
+    values: ordenado.map(([, value]) => value)
+  };
+}
 function cargarResumenAdmin() {
   mostrarToast("Resumen administrativo actualizado.", "success");
+}
+function finalizarCargaDashboard() {
+  document.body.classList.remove("dashboard-loading");
+
+  const loader = document.getElementById("appLoader");
+  if (loader) {
+    loader.style.display = "none";
+  }
+}
+let usuariosAdminCache = [];
+
+function mostrarDashboardAdmin() {
+  setVisible(["dashboard-admin"]);
+}
+
+async function cargarUsuariosAdmin() {
+  const contenedor = document.getElementById("tablaUsuariosAdmin");
+  const msg = document.getElementById("usuariosAdminMsg");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "<p class='muted'>Cargando usuarios...</p>";
+  if (msg) msg.textContent = "";
+
+  try {
+    const data = await apiRequest("/auth/usuarios");
+
+    usuariosAdminCache = Array.isArray(data) ? data : [];
+    renderUsuariosAdmin(usuariosAdminCache);
+
+  } catch (error) {
+    contenedor.innerHTML = "<p class='muted'>No se pudieron cargar los usuarios.</p>";
+    if (msg) msg.textContent = obtenerMensajeError(error);
+  }
+}
+
+function renderUsuariosAdmin(usuarios) {
+  const contenedor = document.getElementById("tablaUsuariosAdmin");
+  if (!contenedor) return;
+
+  if (!usuarios.length) {
+    contenedor.innerHTML = "<p class='muted'>No hay usuarios registrados.</p>";
+    return;
+  }
+
+  contenedor.innerHTML = usuarios.map((usuario) => `
+    <div class="admin-table-row">
+      <span>${usuario.id_usuario}</span>
+      <span>${usuario.nombre || ""} ${usuario.apellido || ""}</span>
+      <span>${usuario.correo || ""}</span>
+      <span>
+        <select onchange="cambiarRolUsuarioAdmin(${usuario.id_usuario}, this.value)">
+          <option value="cliente" ${usuario.rol === "cliente" ? "selected" : ""}>cliente</option>
+          <option value="negocio" ${usuario.rol === "negocio" ? "selected" : ""}>negocio</option>
+          <option value="admin" ${usuario.rol === "admin" ? "selected" : ""}>admin</option>
+          <option value="superadmin" ${usuario.rol === "superadmin" ? "selected" : ""}>superadmin</option>
+        </select>
+      </span>
+      <span>${usuario.estado || ""}</span>
+      <span>
+        <button class="btn-danger small" onclick="eliminarUsuarioAdmin(${usuario.id_usuario})">
+          Eliminar
+        </button>
+      </span>
+    </div>
+  `).join("");
+}
+
+function filtrarUsuariosAdmin() {
+  const input = document.getElementById("buscarUsuarioAdmin");
+  const texto = (input?.value || "").toLowerCase().trim();
+
+  if (!texto) {
+    renderUsuariosAdmin(usuariosAdminCache);
+    return;
+  }
+
+  const filtrados = usuariosAdminCache.filter((usuario) => {
+    const plano = `
+      ${usuario.id_usuario}
+      ${usuario.nombre || ""}
+      ${usuario.apellido || ""}
+      ${usuario.correo || ""}
+      ${usuario.rol || ""}
+      ${usuario.estado || ""}
+    `.toLowerCase();
+
+    return plano.includes(texto);
+  });
+
+  renderUsuariosAdmin(filtrados);
+}
+
+async function cambiarRolUsuarioAdmin(idUsuario, nuevoRol) {
+  try {
+    await apiRequest(`/auth/usuarios/${idUsuario}/rol`, {
+      method: "PATCH",
+      body: JSON.stringify({ nuevo_rol: nuevoRol })
+    });
+
+    mostrarToast("Rol actualizado correctamente.", "success");
+    cargarUsuariosAdmin();
+
+  } catch (error) {
+    mostrarToast(obtenerMensajeError(error), "error");
+    cargarUsuariosAdmin();
+  }
+}
+
+async function eliminarUsuarioAdmin(idUsuario) {
+  const confirmar = window.confirm("¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.");
+  if (!confirmar) return;
+
+  try {
+    await apiRequest(`/auth/usuarios/${idUsuario}`, {
+      method: "DELETE"
+    });
+
+    mostrarToast("Usuario eliminado correctamente.", "success");
+    cargarUsuariosAdmin();
+
+  } catch (error) {
+    mostrarToast(obtenerMensajeError(error), "error");
+  }
 }

@@ -7,7 +7,14 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body class="dashboard-loading">
+<div id="appLoader" class="app-loader">
+  <div class="app-loader-card">
+    <div class="app-loader-spinner"></div>
+    <h2>Cargando panel...</h2>
+    <p>Validando sesión y permisos del usuario.</p>
+  </div>
+</div>
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 <div id="uiModalRoot" class="ui-modal-backdrop" style="display:none;" aria-hidden="true"></div>
 
@@ -474,6 +481,175 @@
     </div>
   </div>
 </section>
+<section class="hero dashboard-screen admin-dashboard" id="auditoria-admin" style="display:none;">
+  <div class="admin-panel-pro">
+
+    <div class="admin-header-pro">
+      <div>
+        <p class="eyebrow">Superusuario</p>
+        <h1>Auditoría del sistema</h1>
+        <p>Consulta los eventos registrados por usuarios, módulos y acciones.</p>
+      </div>
+
+      <div class="admin-actions">
+        <button class="btn-secondary clean" type="button" onclick="irDashboardPorRol()">Volver</button>
+        <button class="btn-primary" type="button" onclick="cargarAuditoriaAdmin()">Actualizar</button>
+      </div>
+    </div>
+    <div class="audit-section-title">
+      <h2>Consulta filtrada</h2>
+      <p>Filtra la tabla por usuario, acción, módulo, resultado o nivel.</p>
+    </div>
+    <div class="admin-filters">
+      <input id="auditoriaCorreo" type="text" placeholder="Correo usuario">
+      <input id="auditoriaAccion" type="text" placeholder="Acción">
+      <input id="auditoriaModulo" type="text" placeholder="Módulo">
+      <select id="auditoriaResultado">
+        <option value="">Resultado</option>
+        <option value="OK">OK</option>
+        <option value="ERROR">ERROR</option>
+      </select>
+      <select id="auditoriaNivel">
+        <option value="">Nivel</option>
+        <option value="INFO">INFO</option>
+        <option value="WARN">WARN</option>
+        <option value="ERROR">ERROR</option>
+      </select>
+      <input id="auditoriaLimite" type="number" min="1" max="200" value="50" placeholder="Límite">
+      <button class="btn-primary" type="button" onclick="cargarAuditoriaAdmin()">Filtrar</button>
+      <button class="btn-secondary clean" type="button" onclick="limpiarFiltrosAuditoria()">Limpiar</button>
+    </div>
+
+    <div class="audit-section-title">
+      <h2>Resumen general</h2>
+      <p>Indicadores calculados con los últimos registros de auditoría del sistema.</p>
+    </div>
+    <div class="audit-summary" style="display:grid !important; grid-template-columns:repeat(4, minmax(0, 1fr)) !important; gap:14px; width:100%; margin:24px 0 30px;">
+      <div class="audit-card">
+        <span>Total registros</span>
+        <strong id="auditTotal">0</strong>
+      </div>
+
+      <div class="audit-card">
+        <span>OK</span>
+        <strong id="auditOk">0</strong>
+      </div>
+
+      <div class="audit-card">
+        <span>ERROR</span>
+        <strong id="auditError">0</strong>
+      </div>
+
+      <div class="audit-card">
+        <span>WARN</span>
+        <strong id="auditWarn">0</strong>
+      </div>
+    </div>
+
+    <div class="audit-charts">
+      <div class="audit-chart-card">
+        <h3>Resultados generales</h3>
+        <canvas id="chartAuditoriaResultados"></canvas>
+      </div>
+
+      <div class="audit-chart-card">
+        <h3>Niveles generales</h3>
+        <canvas id="chartAuditoriaNiveles"></canvas>
+      </div>
+
+      <div class="audit-chart-card">
+        <h3>Top acciones</h3>
+        <canvas id="chartAuditoriaAcciones"></canvas>
+      </div>
+
+      <div class="audit-chart-card">
+        <h3>Top módulos</h3>
+        <canvas id="chartAuditoriaModulos"></canvas>
+      </div>
+    </div>    
+    <p id="auditoriaAdminMsg" class="form-msg"></p>
+
+    <div class="admin-table auditoria-table">
+      <div class="admin-table-head">
+        <span>Fecha</span>
+        <span>Usuario</span>
+        <span>Rol</span>
+        <span>Acción</span>
+        <span>Módulo</span>
+        <span>Tabla</span>
+        <span>Resultado</span>
+        <span>Nivel</span>
+        <span>Acciones</span>
+      </div>
+
+      <div id="tablaAuditoriaAdmin">
+        <p class="muted">Presiona Actualizar para consultar auditoría.</p>
+      </div>
+    </div>
+    <div id="modalDetalleAuditoria" class="modal-auditoria-detalle" style="display:none;">
+      <div class="modal-auditoria-backdrop" onclick="cerrarDetalleAuditoria()"></div>
+
+      <div class="modal-auditoria-card">
+        <div class="modal-auditoria-header">
+          <div>
+            <p class="section-eyebrow">Auditoría</p>
+            <h2>Detalle del evento</h2>
+          </div>
+
+          <button type="button" class="modal-auditoria-close" onclick="cerrarDetalleAuditoria()">×</button>
+        </div>
+
+        <div id="contenidoDetalleAuditoria" class="modal-auditoria-content"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="hero dashboard-screen admin-dashboard" id="gestion-usuarios-admin" style="display:none;">
+  <div class="hero-bg"></div>
+
+  <div class="dashboard-container admin-panel-pro">
+    <div class="dashboard-header admin-header-pro">
+      <div>
+        <p class="section-eyebrow">Control de acceso</p>
+        <h1 class="dashboard-title">Gestión de <span>Usuarios</span></h1>
+        <p class="muted">
+          Consulta usuarios registrados, busca por correo, cambia roles y elimina cuentas con regla de seguridad.
+        </p>
+      </div>
+
+      <div class="admin-header-actions">
+        <button class="btn-secondary clean" onclick="mostrarDashboardAdmin()">Volver</button>
+        <button class="btn-secondary clean" onclick="cargarUsuariosAdmin()">Actualizar</button>
+      </div>
+    </div>
+
+    <div class="admin-toolbar">
+      <input 
+        type="text" 
+        id="buscarUsuarioAdmin" 
+        placeholder="Buscar por nombre, correo, rol o estado..." 
+        oninput="filtrarUsuariosAdmin()" 
+      />
+    </div>
+
+    <div class="admin-table-card">
+      <div class="admin-table-header">
+        <span>ID</span>
+        <span>Nombre</span>
+        <span>Correo</span>
+        <span>Rol</span>
+        <span>Estado</span>
+        <span>Acciones</span>
+      </div>
+
+      <div id="tablaUsuariosAdmin" class="admin-table-body">
+        <p class="muted">Presiona actualizar para cargar usuarios.</p>
+      </div>
+    </div>
+
+    <span id="usuariosAdminMsg" class="form-msg"></span>
+  </div>
+</section>
 <section class="hero" id="registrar-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card wide">
@@ -493,7 +669,6 @@
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
   </div>
 </section>
-
 <section class="hero" id="mi-perfil" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card">
@@ -756,7 +931,7 @@
     <span class="footer-course">Sistema de Gestión Inteligente</span>
   </div>
 </footer>
-
-<script src="js/main.js?v=20260530-mfa-roles"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/main.js?v=20260530-auditoria-ui-2"></script>
 </body>
 </html>
