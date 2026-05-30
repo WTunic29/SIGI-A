@@ -913,6 +913,68 @@ def listar_usuarios(
         for usuario in usuarios
     ]
 
+# =========================
+# ADMIN - ELIMINAR USUARIO
+# =========================
+
+@router.delete("/usuarios/{id_usuario}")
+def eliminar_usuario(
+    id_usuario: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.rol != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el superadministrador puede eliminar usuarios"
+        )
+
+    usuario = db.query(Usuario).filter(
+        Usuario.id_usuario == id_usuario
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    if usuario.rol == "superadmin" and usuario.estado == "activo":
+        total_superadmins_activos = db.query(Usuario).filter(
+            Usuario.rol == "superadmin",
+            Usuario.estado == "activo"
+        ).count()
+
+        if total_superadmins_activos <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede eliminar el único superadministrador activo del sistema"
+            )
+
+    correo_eliminado = usuario.correo
+    rol_eliminado = usuario.rol
+
+    db.delete(usuario)
+    db.commit()
+
+    registrar_auditoria(
+        db=db,
+        usuario=current_user,
+        accion="USUARIO_ELIMINADO",
+        modulo="usuarios",
+        tabla_afectada="core.usuarios",
+        id_registro=id_usuario,
+        detalle=f"Superadmin {current_user.correo} eliminó al usuario {correo_eliminado} con rol {rol_eliminado}.",
+        nivel="WARNING",
+        resultado="OK"
+    )
+
+    return {
+        "message": "Usuario eliminado correctamente",
+        "id_usuario": id_usuario,
+        "correo": correo_eliminado,
+        "rol": rol_eliminado
+    }
 
 # =========================
 # REFRESH TOKEN

@@ -64,6 +64,9 @@ def require_role(role: str):
 
 def require_roles(roles: list[str]):
     def roles_dependency(current_user: Usuario = Depends(get_current_user)):
+        if current_user.rol == "superadmin" and "admin" in roles:
+            return current_user
+
         if current_user.rol not in roles:
             raise HTTPException(
                 status_code=403,

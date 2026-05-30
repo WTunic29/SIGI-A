@@ -511,7 +511,7 @@ function normalizarRol(rol) {
   if (!rol) return "cliente";
   const value = String(rol).trim().toLowerCase();
   if (value === "usuario" || value === "user") return "cliente";
-  if (value === "administrador" || value === "superusuario" || value === "superuser" || value === "super_admin" || value === "super-admin") return "admin";
+  if (value === "administrador" || value === "superusuario" || value === "superadmin" || value === "superuser" || value === "super_admin" || value === "super-admin") return "admin";
   return value;
 }
 
@@ -2513,3 +2513,26 @@ window.addEventListener("focus", () => {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && getToken()) validarSesionActiva({ silencioso: true });
 });
+function irGestionUsuarios() {
+  ocultarSecciones();
+  const section = document.getElementById("gestion-usuarios-admin");
+  if (section) {
+    section.style.display = "block";
+  } else {
+    mostrarToast("Sección de usuarios pendiente por crear.", "info");
+  }
+}
+
+function irAuditoriaSistema() {
+  ocultarSecciones();
+  const section = document.getElementById("auditoria-admin");
+  if (section) {
+    section.style.display = "block";
+  } else {
+    mostrarToast("Sección de auditoría pendiente por crear.", "info");
+  }
+}
+
+function cargarResumenAdmin() {
+  mostrarToast("Resumen administrativo actualizado.", "success");
+}

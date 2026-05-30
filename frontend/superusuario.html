@@ -376,59 +376,104 @@
   </div>
 </section>
 
-<section class="hero dashboard-screen" id="dashboard-admin" style="display:none;">
+<section class="hero dashboard-screen admin-dashboard" id="dashboard-admin" style="display:none;">
   <div class="hero-bg"></div>
-  <div class="dashboard-container">
-    <div class="dashboard-header">
+
+  <div class="dashboard-container admin-panel-pro">
+    <div class="dashboard-header admin-header-pro">
       <div>
-        <p class="section-eyebrow">Panel de administración</p>
+        <p class="section-eyebrow">Panel de superadministración</p>
         <h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1>
-        <p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p>
+        <p class="muted">
+          Control general del sistema, usuarios, auditoría, negocios, servicios, productos y citas.
+        </p>
       </div>
-      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+
+      <div class="admin-header-actions">
+        <button class="btn-secondary clean" onclick="cargarResumenAdmin()">Actualizar</button>
+        <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
     </div>
 
-    <div class="dashboard-grid">
+    <div class="admin-summary-grid">
+      <article class="dash-card admin-summary-card">
+        <span>Usuarios</span>
+        <strong id="totalUsuariosAdmin">—</strong>
+        <p>Cuentas registradas en el sistema.</p>
+      </article>
+
+      <article class="dash-card admin-summary-card">
+        <span>Auditoría</span>
+        <strong id="totalLogsAdmin">—</strong>
+        <p>Últimos movimientos registrados.</p>
+      </article>
+
+      <article class="dash-card admin-summary-card">
+        <span>Seguridad</span>
+        <strong>SUPERADMIN</strong>
+        <p>Rol con control total del sistema.</p>
+      </article>
+    </div>
+
+    <div class="dashboard-grid admin-module-grid">
+      <article class="dash-card featured-admin-card">
+        <span>Control de acceso</span>
+        <strong>Usuarios</strong>
+        <p>Lista usuarios, busca por correo, cambia roles y elimina cuentas con regla de seguridad.</p>
+        <button onclick="irGestionUsuarios()">Gestionar usuarios</button>
+      </article>
+
+      <article class="dash-card featured-admin-card">
+        <span>Seguridad</span>
+        <strong>Auditoría</strong>
+        <p>Consulta acciones realizadas, usuarios involucrados, módulos, resultados y niveles de riesgo.</p>
+        <button onclick="irAuditoriaSistema()">Ver auditoría</button>
+      </article>
+
       <article class="dash-card">
         <span>Negocios</span>
         <strong>Directorio</strong>
         <p>Consulta los negocios registrados en la plataforma.</p>
         <button onclick="irVerNegocios()">Ver negocios</button>
       </article>
+
       <article class="dash-card">
         <span>Equipo</span>
         <strong>Empleados</strong>
         <p>Consulta y administra empleados cuando el backend lo permita.</p>
         <button onclick="irGestionEmpleados()">Gestionar empleados</button>
       </article>
+
       <article class="dash-card">
         <span>Catálogo</span>
         <strong>Servicios</strong>
         <p>Consulta servicios publicados por los negocios.</p>
         <button onclick="irGestionServicios()">Gestionar servicios</button>
       </article>
+
       <article class="dash-card">
         <span>Inventario</span>
         <strong>Productos</strong>
         <p>Consulta productos disponibles y controla el inventario.</p>
         <button onclick="irGestionProductos()">Gestionar productos</button>
       </article>
+
       <article class="dash-card">
         <span>Agenda</span>
         <strong>Citas</strong>
         <p>Consulta las citas registradas en el sistema.</p>
         <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
+
       <article class="dash-card">
-        <span>Seguridad</span>
+        <span>Cuenta</span>
         <strong>Mi perfil</strong>
-        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
+        <p>Consulta tus datos y valida la seguridad MFA de tu cuenta.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
     </div>
   </div>
 </section>
-
 <section class="hero" id="registrar-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="auth-card wide">

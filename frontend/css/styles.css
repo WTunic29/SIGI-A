@@ -1810,3 +1810,138 @@ button:disabled {
   .ui-modal-actions .btn-secondary,
   .ui-modal-actions .btn-primary { width: 100%; }
 }
+/* =========================
+   SUPERADMIN DASHBOARD PRO
+========================= */
+
+.admin-panel-pro {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.12), transparent 35%),
+    rgba(12, 12, 10, 0.82);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+}
+
+.admin-header-pro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 34px;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.admin-summary-card {
+  min-height: 130px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+}
+
+.admin-summary-card strong {
+  font-size: 2rem;
+  color: #d4af37;
+}
+
+.admin-module-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-module-grid .dash-card {
+  min-height: 210px;
+  padding: 24px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 22px;
+  background: rgba(18, 18, 16, 0.82);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.admin-module-grid .dash-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.55);
+  background: rgba(25, 24, 20, 0.95);
+}
+
+.admin-module-grid .dash-card span,
+.admin-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #d4af37;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.admin-module-grid .dash-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.35rem;
+  color: #ffffff;
+}
+
+.admin-module-grid .dash-card p,
+.admin-summary-card p {
+  color: rgba(255,255,255,0.72);
+  line-height: 1.5;
+}
+
+.admin-module-grid .dash-card button {
+  margin-top: 18px;
+  padding: 10px 16px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+.admin-module-grid .dash-card button:hover {
+  background: #d4af37;
+  color: #111;
+}
+
+.featured-admin-card {
+  grid-column: span 2;
+}
+
+@media (max-width: 1000px) {
+  .admin-summary-grid,
+  .admin-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .featured-admin-card {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 650px) {
+  .admin-panel-pro {
+    padding: 28px 18px;
+  }
+
+  .admin-header-pro {
+    flex-direction: column;
+  }
+
+  .admin-summary-grid,
+  .admin-module-grid {
+    grid-template-columns: 1fr;
+  }
+}

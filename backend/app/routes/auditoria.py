@@ -66,14 +66,50 @@ def crear_log(
 
 @router.get("/", response_model=list[AuditoriaResponse])
 def listar_logs(
+    correo_usuario: str | None = None,
+    accion: str | None = None,
+    modulo: str | None = None,
+    resultado: str | None = None,
+    nivel: str | None = None,
+    limite: int = 50,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["admin"])
     )
 ):
+    query = db.query(Auditoria)
 
-    return db.query(Auditoria).all()
+    if correo_usuario:
+        query = query.filter(
+            Auditoria.correo_usuario.ilike(f"%{correo_usuario}%")
+        )
 
+    if accion:
+        query = query.filter(
+            Auditoria.accion.ilike(f"%{accion}%")
+        )
+
+    if modulo:
+        query = query.filter(
+            Auditoria.modulo.ilike(f"%{modulo}%")
+        )
+
+    if resultado:
+        query = query.filter(
+            Auditoria.resultado == resultado
+        )
+
+    if nivel:
+        query = query.filter(
+            Auditoria.nivel == nivel
+        )
+
+    return (
+        query
+        .order_by(Auditoria.id_auditoria.desc())
+        .limit(limite)
+        .all()
+    )
 
 # =========================
 # OBTENER LOG
