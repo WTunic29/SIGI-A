@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGI-E | Sistema de Gestión para Barberías</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+<div id="uiModalRoot" class="ui-modal-backdrop" style="display:none;" aria-hidden="true"></div>
+
+<nav id="navbar">
+  <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
+
+  <div class="nav-buttons" id="navGuest">
+    <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
+    <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  </div>
+
+  <div class="nav-user" id="navUser" style="display:none;">
+    <button class="user-menu-btn" type="button" onclick="toggleUserMenu()">
+      <span id="navUserName">Usuario</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="user-dropdown" id="userDropdown">
+      <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
+      <a href="#" onclick="irMiPerfil()">Mi perfil</a>
+      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
+      <a href="#" onclick="irVerNegocios()">Ver negocios</a>
+      <a href="#" class="menu-cliente" onclick="irCarrito()">Carrito <span id="navCarritoBadge" class="nav-badge" style="display:none;">0</span></a>
+      <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
+      <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
+      <a href="#" class="menu-cliente" onclick="irMisPedidos()">Mis pedidos</a>
+      <a href="#" class="menu-cliente" onclick="irMisCalificaciones()">Calificaciones</a>
+      <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
+      <a href="#" class="menu-negocio" onclick="irGestionEmpleados()">Empleados</a>
+      <a href="#" class="menu-negocio" onclick="irGestionServicios()">Servicios</a>
+      <a href="#" class="menu-negocio" onclick="irGestionProductos()">Productos / Inventario</a>
+      <a href="#" class="menu-negocio" onclick="irGestionCitas()">Citas</a>
+      <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+</nav>
+
+<section class="hero landing-hero" id="inicio">
+  <div class="hero-bg landing-bg"></div>
+  <div class="landing-orb orb-one"></div>
+  <div class="landing-orb orb-two"></div>
+
+  <div class="landing-wrap">
+    <div class="hero-content landing-copy">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Plataforma inteligente para barberías modernas
+      </div>
+
+      <h1 class="landing-title">
+        Agenda, descubre y gestiona barberías con <span>SIGI-E</span>
+      </h1>
+
+      <p class="landing-desc">
+        Una experiencia visual, rápida y profesional para conectar usuarios con negocios disponibles, administrar barberías y centralizar la operación desde un solo lugar.
+      </p>
+
+      <div class="landing-actions">
+        <a class="btn-primary big" href="#" onclick="mostrarRegistro('cliente')">Entrar como usuario</a>
+        <a class="btn-glass" href="#" onclick="mostrarRegistro('negocio')">Registrar mi negocio</a>
+      </div>
+
+      <div class="landing-metrics">
+        <div>
+          <strong>24/7</strong>
+          <span>Consulta disponible</span>
+        </div>
+        <div>
+          <strong>2FA</strong>
+          <span>Inicio seguro</span>
+        </div>
+        <div>
+          <strong>100%</strong>
+          <span>Web responsive</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-showcase" aria-hidden="true">
+      <div class="phone-card">
+        <div class="phone-top">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="phone-header">
+          <div>
+            <p>Directorio</p>
+            <h3>Negocios disponibles</h3>
+          </div>
+          <div class="mini-avatar">B</div>
+        </div>
+
+        <div class="search-pill">Buscar barbería, zona o servicio...</div>
+
+        <div class="business-preview active">
+          <div class="business-icon">✂</div>
+          <div>
+            <strong>Barbería Élite</strong>
+            <p>Agenda, cortes y perfil del negocio</p>
+          </div>
+          <span>4.9</span>
+        </div>
+        <div class="business-preview">
+          <div class="business-icon">★</div>
+          <div>
+            <strong>Urban Style</strong>
+            <p>Servicios disponibles en tiempo real</p>
+          </div>
+          <span>4.8</span>
+        </div>
+        <div class="business-preview">
+          <div class="business-icon">⌁</div>
+          <div>
+            <strong>Studio Premium</strong>
+            <p>Experiencia moderna para clientes</p>
+          </div>
+          <span>4.7</span>
+        </div>
+
+        <div class="phone-footer-card">
+          <p>Tu próxima cita</p>
+          <strong>Gestionada desde SIGI-E</strong>
+        </div>
+      </div>
+
+      <div class="floating-card card-a">
+        <span>Rol</span>
+        <strong>Usuario / Negocio</strong>
+      </div>
+      <div class="floating-card card-b">
+        <span>Seguridad</span>
+        <strong>Login + 2FA</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<section class="landing-features" id="cta">
+  <div class="section-header">
+    <p class="section-eyebrow">Una plataforma, dos experiencias</p>
+    <h2 class="section-title">Diseñada para usuarios y negocios</h2>
+    <p class="section-desc">El usuario encuentra negocios disponibles. El negocio administra su presencia, acceso y operación desde un panel moderno.</p>
+  </div>
+
+  <div class="feature-grid">
+    <article class="feature-card">
+      <div class="feature-icon">01</div>
+      <h3>Explora negocios</h3>
+      <p>Los usuarios ven barberías disponibles en tarjetas limpias, con información clara y buscador.</p>
+    </article>
+    <article class="feature-card featured">
+      <div class="feature-icon">02</div>
+      <h3>Panel inteligente</h3>
+      <p>Al iniciar sesión, cada rol ve solo lo que necesita: usuario, negocio, empleado o administrador.</p>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon">03</div>
+      <h3>Acceso seguro</h3>
+      <p>Autenticación con token y verificación 2FA para proteger la información del sistema.</p>
+    </article>
+  </div>
+
+  <div class="cta-banner">
+    <div>
+      <p class="section-eyebrow">Comienza ahora</p>
+      <h3>Convierte la gestión de barberías en una experiencia premium.</h3>
+    </div>
+    <div class="cta-actions">
+      <a class="btn-primary" href="#" onclick="mostrarRegistro('negocio')">Registrar negocio</a>
+      <a class="btn-secondary" href="#" onclick="mostrarRegistro('cliente')">Crear usuario</a>
+    </div>
+  </div>
+</section>
+
+<section class="hero" id="login" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Bienvenido de nuevo</p>
+    <h1 class="form-title">Iniciar <span>Sesión</span></h1>
+    <form id="loginForm">
+      <input type="email" id="loginCorreo" placeholder="Correo" required />
+      <div class="password-field">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <button class="btn-primary full" type="submit">Entrar</button>
+    </form>
+    <span id="loginMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarRecuperarPassword()">¿Olvidaste tu contraseña?</a></p>
+    <p class="form-link">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
+  </div>
+</section>
+
+<section class="hero" id="recuperar-password" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Recuperación de acceso</p>
+    <h1 class="form-title">Olvidé mi <span>Contraseña</span></h1>
+    <p class="muted">Ingresa el correo asociado a tu cuenta. Si está registrado, te enviaremos un enlace para restablecer tu contraseña.</p>
+    <form id="forgotPasswordForm">
+      <input type="email" id="forgotCorreo" placeholder="Correo electrónico" autocomplete="email" required />
+      <button class="btn-primary full" id="forgotPasswordBtn" type="submit">Enviar enlace</button>
+    </form>
+    <span id="forgotPasswordMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
+  </div>
+</section>
+
+<section class="hero" id="verify2fa" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Seguridad de la cuenta</p>
+    <h1 class="form-title" id="verify2faTitle">Verificar <span>Código</span></h1>
+    <p class="muted" id="verify2faText">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
+    <form id="verify2faForm">
+      <input type="text" id="codigo2fa" placeholder="Código de 6 dígitos" maxlength="6" pattern="\d{6}" inputmode="numeric" autocomplete="one-time-code" required />
+      <button class="btn-primary full" id="verify2faBtn" type="submit">Verificar</button>
+    </form>
+    <span id="verify2faMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
+  </div>
+</section>
+
+<section class="hero" id="registro" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Nueva cuenta</p>
+    <h1 class="form-title">Crear <span>Cuenta</span></h1>
+    <form id="registroForm">
+      <div class="role-selector">
+        <label class="role-option">
+          <input type="radio" name="rolRegistro" value="cliente" checked />
+          <span>Usuario</span>
+          <small>Explorar negocios disponibles</small>
+        </label>
+        <label class="role-option">
+          <input type="radio" name="rolRegistro" value="negocio" />
+          <span>Negocio</span>
+          <small>Administrar mi barbería</small>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <input type="text" id="nombre" placeholder="Nombre" required />
+        <input type="text" id="apellido" placeholder="Apellido" required />
+        <input type="email" id="correo" placeholder="Correo" required />
+        <input type="email" id="confirmarCorreo" placeholder="Confirmar correo" required />
+        <input type="text" id="telefono" placeholder="Teléfono" required />
+      </div>
+      <div class="password-field">
+        <input type="password" id="password" placeholder="Contraseña" required minlength="8" autocomplete="new-password" />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <small class="password-help">Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
+      <button class="btn-primary full" type="submit">Registrarse</button>
+    </form>
+    <span id="registroMsg" class="form-msg"></span>
+    <p class="form-link">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="dashboard-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de negocio</p>
+        <h1 class="dashboard-title">Hola, <span id="dashNombreUsuario">—</span></h1>
+        <p class="muted">Negocio asociado: <strong id="dashNombreNegocio">—</strong></p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div class="module-grid">
+      <article class="module-card">
+        <span>Mi barbería</span>
+        <h3>Negocio</h3>
+        <p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p>
+        <button onclick="irRegistrarNegocio()">Registrar negocio</button>
+      </article>
+      <article class="module-card">
+        <span>Agenda</span>
+        <h3>Citas</h3>
+        <p>Consulta y administra las citas asociadas a tu negocio.</p>
+        <button onclick="irGestionCitas()">Gestionar citas</button>
+      </article>
+      <article class="module-card">
+        <span>Equipo</span>
+        <h3>Empleados</h3>
+        <p>Crea empleados, consulta el listado y desactiva empleados cuando sea necesario.</p>
+        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
+      </article>
+      <article class="module-card">
+        <span>Catálogo</span>
+        <h3>Servicios</h3>
+        <p>Crea servicios, define duración, precio y administra el catálogo del negocio.</p>
+        <button onclick="irGestionServicios()">Gestionar servicios</button>
+      </article>
+      <article class="module-card">
+        <span>Inventario</span>
+        <h3>Productos</h3>
+        <p>Carga productos, controla stock y registra movimientos de entrada o salida.</p>
+        <button onclick="irGestionProductos()">Gestionar inventario</button>
+      </article>
+      <article class="module-card">
+        <span>Cuenta</span>
+        <h3>Perfil</h3>
+        <p>Consulta tus datos de usuario y valida el acceso como negocio.</p>
+        <button onclick="irMiPerfil()">Mi perfil</button>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen user-home" id="dashboard-usuario" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="user-dashboard-shell">
+    <aside class="user-side-panel">
+      <div class="side-brand-mini side-menu-title">
+        <p class="section-eyebrow">Menú</p>
+        <p>Gestiona tu cuenta.</p>
+      </div>
+
+      <nav class="user-quick-menu" aria-label="Opciones de usuario">
+        <button type="button" onclick="irCarrito()">
+          <span>Compras</span>
+          <strong>Carrito</strong>
+        </button>
+        <button type="button" onclick="irMisCitas()">
+          <span>Agenda</span>
+          <strong>Mis citas</strong>
+        </button>
+        <button type="button" onclick="irTiendaUsuario()">
+          <span>Tienda</span>
+          <strong>Productos</strong>
+        </button>
+        <button type="button" onclick="irMisPedidos()">
+          <span>Compras</span>
+          <strong>Mis pedidos</strong>
+        </button>
+        <button type="button" onclick="irMisCalificaciones()">
+          <span>Opiniones</span>
+          <strong>Calificaciones</strong>
+        </button>
+      </nav>
+
+      <button class="btn-secondary clean side-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+    </aside>
+
+    <main class="user-business-main">
+      <div class="business-main-header">
+        <div>
+          <p class="section-eyebrow">Panel de usuario</p>
+          <h1 class="dashboard-title user-welcome-title">Hola, <span id="userDashNombre">—</span></h1>
+          <h2 class="business-subtitle">Negocios <span class="gold">disponibles</span></h2>
+          <p class="muted">Elige una barbería para ver trabajadores, servicios y agendar tu cita.</p>
+        </div>
+        <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
+      </div>
+
+      <div class="toolbar user-business-toolbar">
+        <input type="search" id="buscarNegocio" placeholder="Buscar por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
+      </div>
+
+      <div id="listaNegociosUsuario" class="business-grid user-business-grid"></div>
+      <span id="usuarioNegociosMsg" class="form-msg"></span>
+    </main>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="dashboard-admin" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de administración</p>
+        <h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1>
+        <p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <article class="dash-card">
+        <span>Negocios</span>
+        <strong>Directorio</strong>
+        <p>Consulta los negocios registrados en la plataforma.</p>
+        <button onclick="irVerNegocios()">Ver negocios</button>
+      </article>
+      <article class="dash-card">
+        <span>Equipo</span>
+        <strong>Empleados</strong>
+        <p>Consulta y administra empleados cuando el backend lo permita.</p>
+        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
+      </article>
+      <article class="dash-card">
+        <span>Catálogo</span>
+        <strong>Servicios</strong>
+        <p>Consulta servicios publicados por los negocios.</p>
+        <button onclick="irGestionServicios()">Gestionar servicios</button>
+      </article>
+      <article class="dash-card">
+        <span>Inventario</span>
+        <strong>Productos</strong>
+        <p>Consulta productos disponibles y controla el inventario.</p>
+        <button onclick="irGestionProductos()">Gestionar productos</button>
+      </article>
+      <article class="dash-card">
+        <span>Agenda</span>
+        <strong>Citas</strong>
+        <p>Consulta las citas registradas en el sistema.</p>
+        <button onclick="irGestionCitas()">Gestionar citas</button>
+      </article>
+      <article class="dash-card">
+        <span>Seguridad</span>
+        <strong>Mi perfil</strong>
+        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
+        <button onclick="irMiPerfil()">Mi perfil</button>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="hero" id="registrar-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Administración</p>
+    <h1 class="form-title">Registrar <span>Negocio</span></h1>
+    <form id="negocioForm">
+      <input type="text" id="negNombre" placeholder="Nombre del negocio" required />
+      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)" />
+      <div class="form-grid">
+        <input type="text" id="negDireccion" placeholder="Dirección (opcional)" />
+        <input type="text" id="negTelefono" placeholder="Teléfono (opcional)" />
+      </div>
+      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)" />
+      <button class="btn-primary full" type="submit">Guardar negocio</button>
+    </form>
+    <span id="negocioMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero" id="mi-perfil" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Cuenta</p>
+    <h1 class="form-title">Mi <span>Perfil</span></h1>
+    <div id="perfilInfo" class="profile-card">
+      <p><span>Nombre</span><strong id="perfilNombre"></strong></p>
+      <p><span>Apellido</span><strong id="perfilApellido"></strong></p>
+      <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
+      <p><span>Rol</span><strong id="perfilRol"></strong></p>
+    </div>
+    <div class="security-panel">
+      <div>
+        <p class="section-eyebrow">Seguridad adicional</p>
+        <h3>App autenticadora</h3>
+        <p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p>
+      </div>
+      <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
+      <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
+        <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
+        <img id="mfaQrImage" class="mfa-qr" alt="Código QR para activar MFA" />
+        <small id="mfaSecret" class="mfa-secret"></small>
+        <form id="mfaConfirmForm">
+          <input type="text" id="mfaConfirmCodigo" placeholder="Código de la app autenticadora" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
+          <button class="btn-primary full" type="submit">Confirmar activación</button>
+        </form>
+      </div>
+    </div>
+    <span id="perfilMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="ver-negocios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Directorio</p>
+        <h1 class="dashboard-title">Negocios <span>Disponibles</span></h1>
+        <p class="muted">Listado general de barberías y centros registrados.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div id="listaNegocios" class="business-grid"></div>
+    <span id="verNegociosMsg" class="form-msg"></span>
+  </div>
+</section>
+
+
+<section class="hero dashboard-screen" id="detalle-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Agendamiento</p>
+        <h1 class="dashboard-title" id="detalleNegocioNombre">Negocio</h1>
+        <p class="muted" id="detalleNegocioDescripcion">Selecciona trabajador, servicio y fecha para ver horarios disponibles.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irVerNegocios()">Volver</button>
+    </div>
+
+    <div class="business-detail-layout">
+      <aside class="detail-card">
+        <h3>Información</h3>
+        <p><span>Dirección</span><strong id="detalleNegocioDireccion">—</strong></p>
+        <p><span>Teléfono</span><strong id="detalleNegocioTelefono">—</strong></p>
+        <p><span>Correo</span><strong id="detalleNegocioCorreo">—</strong></p>
+      </aside>
+
+      <form id="agendarCitaForm" class="manager-form booking-form">
+        <h3>Agendar cita</h3>
+        <select id="citaEmpleado" required>
+          <option value="">Selecciona un trabajador</option>
+        </select>
+        <select id="citaServicio" required>
+          <option value="">Selecciona un servicio</option>
+        </select>
+        <div class="form-grid">
+          <input id="citaFecha" type="date" required>
+          <select id="citaHora" required disabled>
+            <option value="">Selecciona trabajador, servicio y fecha</option>
+          </select>
+        </div>
+        <small id="citaHorarioInfo" class="helper-text booking-helper">Selecciona trabajador, servicio y fecha para cargar horarios disponibles.</small>
+        <textarea id="citaObservaciones" rows="3" placeholder="Observaciones opcionales"></textarea>
+        <button class="btn-primary full" type="submit">Agregar al carrito</button>
+        <span id="agendarCitaMsg" class="form-msg"></span>
+      </form>
+    </div>
+
+    <div class="detail-columns">
+      <div>
+        <div class="list-header"><h3>Trabajadores disponibles</h3></div>
+        <div id="detalleEmpleadosNegocio" class="mini-grid"></div>
+      </div>
+      <div>
+        <div class="list-header"><h3>Servicios disponibles</h3></div>
+        <div id="detalleServiciosNegocio" class="mini-grid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero" id="validar-acceso" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Permisos</p>
+    <h1 class="form-title">Acceso <span>Negocio</span></h1>
+    <div id="validarInfo" class="profile-card"></div>
+    <span id="validarMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-empleados" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Equipo</p><h1 class="dashboard-title">Gestionar <span>Empleados</span></h1><p class="muted">Crea, consulta, edita o desactiva empleados de tu negocio.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <div class="manager-stack">
+        <form id="empleadoForm" class="manager-form">
+          <h3 id="empleadoFormTitle">Crear empleado</h3>
+          <input id="empId" type="hidden">
+          <div class="form-grid"><input id="empNombre" placeholder="Nombre" required><input id="empApellido" placeholder="Apellido" required></div>
+          <div class="form-grid"><input id="empTelefono" placeholder="Teléfono"><input id="empEmail" type="email" placeholder="Email"></div>
+          <input id="empEspecialidad" placeholder="Especialidad">
+          <input id="empFoto" placeholder="Foto URL opcional">
+          <button id="empleadoSubmitBtn" class="btn-primary full" type="submit">Guardar empleado</button>
+          <button id="empleadoCancelEditBtn" class="btn-secondary clean full-link" type="button" style="display:none;" onclick="cancelarEdicionEmpleado()">Cancelar edición</button>
+          <span id="empleadoMsg" class="form-msg"></span>
+        </form>
+
+        <form id="horarioEmpleadoForm" class="manager-form">
+          <h3>Asignar horario</h3>
+          <select id="horarioEmpleadoSelect" required>
+            <option value="">Selecciona empleado</option>
+          </select>
+          <div class="day-picker" id="horarioDias">
+            <label><input type="checkbox" name="horarioDias" value="1"> Lun</label>
+            <label><input type="checkbox" name="horarioDias" value="2"> Mar</label>
+            <label><input type="checkbox" name="horarioDias" value="3"> Mié</label>
+            <label><input type="checkbox" name="horarioDias" value="4"> Jue</label>
+            <label><input type="checkbox" name="horarioDias" value="5"> Vie</label>
+            <label><input type="checkbox" name="horarioDias" value="6"> Sáb</label>
+            <label><input type="checkbox" name="horarioDias" value="7"> Dom</label>
+          </div>
+          <p class="field-help">Puedes marcar varios días para guardar el mismo horario de una vez.</p>
+          <div class="form-grid"><input id="horarioInicio" type="time" required><input id="horarioFin" type="time" required></div>
+          <label class="check-row"><input id="horarioDisponible" type="checkbox" checked> Disponible</label>
+          <button class="btn-primary full" type="submit">Guardar horario</button>
+          <span id="horarioMsg" class="form-msg"></span>
+        </form>
+      </div>
+      <div>
+        <div class="list-header"><h3>Empleados registrados</h3><button class="btn-primary small" onclick="cargarEmpleados()">Actualizar</button></div>
+        <div id="listaEmpleados" class="admin-list"></div>
+        <div class="list-header spacing-top"><h3>Horarios del empleado</h3><button class="btn-primary small" onclick="cargarHorariosEmpleadoSeleccionado()">Ver horarios</button></div>
+        <div id="listaHorariosEmpleado" class="admin-list"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-servicios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Catálogo</p><h1 class="dashboard-title">Gestionar <span>Servicios</span></h1><p class="muted">Crea servicios, ajusta precios, duración y estado.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="servicioForm" class="manager-form">
+        <h3>Crear servicio</h3>
+        <input id="serNombre" placeholder="Nombre del servicio" required>
+        <input id="serDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="serDuracion" type="number" min="1" placeholder="Duración minutos" required><input id="serPrecio" type="number" min="0" step="0.01" placeholder="Precio" required></div>
+        <input id="serImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar servicio</button>
+        <span id="servicioMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Servicios registrados</h3><button class="btn-primary small" onclick="cargarServicios()">Actualizar</button></div><div id="listaServicios" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-productos" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Inventario</p><h1 class="dashboard-title">Gestionar <span>Productos</span></h1><p class="muted">Carga productos, controla stock y registra entradas o salidas.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="productoForm" class="manager-form">
+        <h3>Cargar producto</h3>
+        <input id="proNombre" placeholder="Nombre del producto" required>
+        <input id="proDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="proPrecio" type="number" min="0" step="0.01" placeholder="Precio" required><input id="proStock" type="number" min="0" placeholder="Stock inicial" required></div>
+        <input id="proImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar producto</button>
+        <span id="productoMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Productos registrados</h3><button class="btn-primary small" onclick="cargarProductos()">Actualizar</button></div><div id="listaProductos" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-citas" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Agenda</p><h1 class="dashboard-title">Gestionar <span>Citas</span></h1><p class="muted">Consulta las citas de tu negocio y cancela las que corresponda.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="list-header"><h3>Citas del negocio</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
+    <div id="listaCitas" class="admin-list"></div>
+    <span id="citasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-citas-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Agenda personal</p><h1 class="dashboard-title">Mis <span>Citas</span></h1><p class="muted">Consulta tus citas y califica cuando ya hayan pasado.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCitas()">Actualizar</button><button class="btn-secondary clean" onclick="irVerNegocios()">Agendar nueva cita</button></div>
+    <div id="listaMisCitas" class="admin-list"></div><span id="misCitasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-calificaciones-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Opiniones</p><h1 class="dashboard-title">Mis <span>Calificaciones</span></h1><p class="muted">Historial de calificaciones realizadas.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCalificaciones()">Actualizar</button></div>
+    <div id="listaMisCalificaciones" class="admin-list"></div><span id="misCalificacionesMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="tienda-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Productos</p><h1 class="dashboard-title">Tienda <span>SIGI-E</span></h1><p class="muted">Productos activos publicados por los negocios.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><input type="search" id="buscarProductoUsuario" placeholder="Buscar producto..." oninput="filtrarProductosUsuario()" /><button class="btn-primary" onclick="cargarProductosUsuario()">Actualizar</button></div>
+    <div id="listaProductosUsuario" class="business-grid"></div><span id="tiendaUsuarioMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="carrito-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Checkout</p><h1 class="dashboard-title">Mi <span>Carrito</span></h1><p class="muted">Productos y citas agendadas listos para pagar.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarCarrito()">Actualizar</button><button class="btn-secondary clean" onclick="irTiendaUsuario()">Agregar productos</button><button class="btn-secondary clean" onclick="irVerNegocios()">Agendar servicio</button></div>
+    <div id="listaCarrito" class="admin-list"></div>
+    <div class="carrito-footer"><p>Total: <strong id="carritoTotal">$0</strong></p><button class="btn-primary" type="button" onclick="pagarCarrito()">Pagar e imprimir factura</button></div>
+    <span id="carritoMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="factura-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container factura-screen">
+    <div class="dashboard-header no-print"><div><p class="section-eyebrow">Facturación</p><h1 class="dashboard-title">Comprobante <span>de pago</span></h1></div><button class="btn-secondary clean" onclick="irMisPedidos()">Mis pedidos</button></div>
+    <div id="facturaContenido" class="factura-panel"></div>
+    <div class="toolbar no-print"><button class="btn-primary" type="button" onclick="imprimirFacturaActual()">Imprimir factura</button><button class="btn-secondary clean" type="button" onclick="irCarrito()">Volver al carrito</button></div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-pedidos-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Compras</p><h1 class="dashboard-title">Mis <span>Pedidos</span></h1><p class="muted">Consulta pedidos y registra pagos.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisPedidos()">Actualizar</button><button class="btn-secondary clean" onclick="irCarrito()">Ir al carrito</button></div>
+    <div id="listaMisPedidos" class="admin-list"></div><span id="misPedidosMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-bottom">
+    <span class="footer-copy">SIGI-E © 2026</span>
+    <span class="footer-course">Sistema de Gestión Inteligente</span>
+  </div>
+</footer>
+
+<script>
+  // En AWS/Linux: opcional antes de main.js, ej. window.SIGIA_API_BASE = "https://tu-dominio.com";
+</script>
+<script src="js/main.js"></script>
+</body>
+</html>

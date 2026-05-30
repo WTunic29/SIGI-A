@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGI-E | Restablecer contraseña</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<section class="hero" id="restablecer-password">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Recuperación de acceso</p>
+    <h1 class="form-title">Restablecer <span>Contraseña</span></h1>
+    <p class="muted" id="resetIntro">Crea una nueva contraseña segura para volver a ingresar a SIGI-E.</p>
+
+    <form id="resetPasswordForm">
+      <div class="password-field">
+        <input type="password" id="nuevaPassword" placeholder="Nueva contraseña" required minlength="8" autocomplete="new-password" />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('nuevaPassword', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <small class="password-help">Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
+
+      <div class="password-field">
+        <input type="password" id="confirmarNuevaPassword" placeholder="Confirmar contraseña" required minlength="8" autocomplete="new-password" />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirmarNuevaPassword', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+
+      <button class="btn-primary full" id="resetPasswordBtn" type="submit">Restablecer contraseña</button>
+    </form>
+
+    <span id="resetPasswordMsg" class="form-msg"></span>
+    <p class="form-link"><a href="index.html#login">← Volver al login</a></p>
+  </div>
+</section>
+
+<script>
+const API_BASE = "http://3.15.197.152:10000";
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function mostrarMensaje(containerId, texto, esError = true) {
+  const msg = document.getElementById(containerId);
+  if (!msg) return;
+  msg.textContent = texto;
+  msg.className = `form-msg ${esError ? "error" : "success"}`;
+  msg.style.display = texto ? "block" : "none";
+}
+
+function showToast(message, type = "info", duration = 4200) {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  const icon = type === "success" ? "✓" : type === "error" ? "!" : "i";
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><p>${escapeHtml(message)}</p><button type="button" aria-label="Cerrar">×</button>`;
+  container.appendChild(toast);
+  const close = () => {
+    toast.classList.add("hide");
+    setTimeout(() => toast.remove(), 220);
+  };
+  toast.querySelector("button")?.addEventListener("click", close);
+  setTimeout(close, duration);
+}
+
+function setButtonLoading(button, loading, textLoading = "Procesando...") {
+  if (!button) return;
+  if (loading) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = textLoading;
+    button.disabled = true;
+  } else {
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const visible = input.type === "text";
+  input.type = visible ? "password" : "text";
+  if (btn) {
+    btn.textContent = visible ? "Ver" : "Ocultar";
+    btn.setAttribute("aria-label", visible ? "Mostrar contraseña" : "Ocultar contraseña");
+  }
+}
+
+function validarPasswordFuerte(password) {
+  const pass = String(password || "");
+  return pass.length >= 8 &&
+    /[A-ZÁÉÍÓÚÑ]/.test(pass) &&
+    /[a-záéíóúñ]/.test(pass) &&
+    /[0-9]/.test(pass) &&
+    /[^A-Za-zÁÉÍÓÚÑáéíóúñ0-9]/.test(pass);
+}
+
+function mensajePoliticaPassword() {
+  return "La contraseña no cumple los requisitos. Usa mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.";
+}
+
+function normalizarTextoError(input) {
+  if (!input) return "";
+  if (typeof input === "string") return input === "[object Object]" ? "" : input;
+  if (input instanceof Error) return input.message === "[object Object]" ? "" : input.message;
+  const detail = input.detail ?? input.message ?? input.error ?? input.errors ?? input;
+  if (typeof detail === "string") return detail === "[object Object]" ? "" : detail;
+  if (Array.isArray(detail)) {
+    return detail.map((err) => {
+      const campo = Array.isArray(err?.loc) ? String(err.loc[err.loc.length - 1]) : String(err?.field || "campo");
+      const mensaje = err?.msg || err?.message || err?.type || JSON.stringify(err);
+      return `${campo}: ${mensaje}`;
+    }).join(" | ");
+  }
+  if (typeof detail === "object") {
+    const posible = detail.msg || detail.message || detail.detail || detail.error;
+    if (posible) return normalizarTextoError(posible);
+    try { return JSON.stringify(detail); } catch { return ""; }
+  }
+  return String(detail || "");
+}
+
+function friendlyError(input) {
+  const raw = normalizarTextoError(input);
+  const msg = String(raw || "").toLowerCase();
+  if (msg.includes("password") || msg.includes("contraseña") || msg.includes("contrasena") || msg.includes("too short") || msg.includes("min_length") || msg.includes("uppercase") || msg.includes("lowercase") || msg.includes("special") || msg.includes("digit") || msg.includes("number")) {
+    return mensajePoliticaPassword();
+  }
+  if (msg.includes("token") && (msg.includes("expir") || msg.includes("venc"))) {
+    return "El enlace para restablecer la contraseña venció. Solicita uno nuevo desde Olvidé mi contraseña.";
+  }
+  if (msg.includes("token") && (msg.includes("invalid") || msg.includes("invál") || msg.includes("inval"))) {
+    return "El enlace para restablecer la contraseña no es válido. Solicita uno nuevo desde Olvidé mi contraseña.";
+  }
+  return raw || "No pudimos restablecer la contraseña. Intenta nuevamente.";
+}
+
+function obtenerTokenReset() {
+  return new URLSearchParams(window.location.search).get("token") || "";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const token = obtenerTokenReset();
+  const form = document.getElementById("resetPasswordForm");
+
+  if (!token) {
+    const msg = "El enlace de restablecimiento no contiene un token válido. Solicita uno nuevo desde Olvidé mi contraseña.";
+    mostrarMensaje("resetPasswordMsg", msg);
+    showToast(msg, "error", 6500);
+    if (form) form.style.display = "none";
+    return;
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nuevaPassword = document.getElementById("nuevaPassword")?.value || "";
+    const confirmar = document.getElementById("confirmarNuevaPassword")?.value || "";
+    const btn = document.getElementById("resetPasswordBtn");
+
+    if (nuevaPassword !== confirmar) {
+      const msg = "Las contraseñas no coinciden. Revisa la confirmación antes de continuar.";
+      mostrarMensaje("resetPasswordMsg", msg);
+      showToast(msg, "error");
+      return;
+    }
+
+    if (!validarPasswordFuerte(nuevaPassword)) {
+      const msg = mensajePoliticaPassword();
+      mostrarMensaje("resetPasswordMsg", msg);
+      showToast(msg, "error");
+      return;
+    }
+
+    try {
+      setButtonLoading(btn, true, "Restableciendo...");
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, nueva_password: nuevaPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        const msg = "Contraseña restablecida correctamente. Ya puedes iniciar sesión.";
+        mostrarMensaje("resetPasswordMsg", msg, false);
+        showToast(msg, "success", 5000);
+        form.reset();
+        setTimeout(() => { window.location.href = "index.html#login"; }, 2200);
+      } else {
+        const msg = friendlyError(data);
+        mostrarMensaje("resetPasswordMsg", msg);
+        showToast(msg, "error");
+      }
+    } catch (error) {
+      const msg = "No se pudo conectar con el servidor. Espera unos segundos e intenta nuevamente.";
+      mostrarMensaje("resetPasswordMsg", msg);
+      showToast(msg, "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
+});
+</script>
+</body>
+</html>

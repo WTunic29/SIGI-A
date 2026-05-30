@@ -1,0 +1,33 @@
+$kind: http-request
+name: Crear Favorito
+description: >-
+  POST /favoritos/ — cliente. Body incluye id_usuario (debe coincidir con el token) e id_negocio.
+method: POST
+url: '{{base_url}}/favoritos/'
+order: 1300
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_usuario": {{id_usuario}},
+      "id_negocio": {{id_negocio}}
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Favorito creado", () => pm.response.to.have.status(200));
+      const f = pm.response.json();
+      pm.test("FavoritoResponse", () => {
+        pm.expect(f).to.have.property("id_favorito");
+        pm.expect(f).to.have.property("id_negocio");
+        pm.expect(f).to.have.property("id_usuario");
+      });
+      if (pm.response.code === 200 && f.id_favorito) {
+        pm.environment.set("id_favorito", String(f.id_favorito));
+      }

@@ -1,0 +1,38 @@
+$kind: collection
+name: SIGI-A API
+description: >-
+  Metadatos y variables por defecto de la colección (Postman Workspace).
+  Mantener alineadas con environments/SIGI-A-*.env.yaml para que validate_postman_workspace pase.
+variables:
+  - key: base_url
+    value: 'http://localhost:8000'
+  - key: token
+    value: ''
+  - key: correo_login
+    value: 'juan@example.com'
+  - key: password_demo
+    value: '123456'
+  - key: correo_2fa
+    value: ''
+  - key: codigo_2fa
+    value: ''
+  - key: rol_default
+    value: 'negocio'
+  - key: id_usuario
+    value: ''
+  - key: id_negocio
+    value: ''
+  - key: id_empleado
+    value: ''
+  - key: id_servicio
+    value: ''
+  - key: id_cita
+    value: '1'
+  - key: id_producto
+    value: ''
+  - key: id_pedido
+    value: ''
+  - key: id_pago
+    value: ''
+  - key: id_notificacion
+    value: ''

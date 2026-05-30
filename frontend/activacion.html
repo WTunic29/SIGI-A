@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cuenta activada | SIGI-A</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <section class="hero" style="min-height:100vh;">
+    <div class="hero-bg"></div>
+    <div class="auth-card">
+      <p class="section-eyebrow">Activación completada</p>
+      <h1 class="form-title">Cuenta <span>Activa</span></h1>
+      <p class="muted" style="margin-bottom:22px;">Tu cuenta ya fue activada correctamente. Ahora puedes iniciar sesión y continuar usando SIGI-A.</p>
+      <a class="btn-primary full" href="index.html#login" onclick="localStorage.removeItem('usuario')">Iniciar sesión</a>
+      <p class="form-link"><a href="index.html">Volver al inicio</a></p>
+    </div>
+  </section>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const estado = params.get('estado');
+    if (estado === 'error') {
+      document.querySelector('.section-eyebrow').textContent = 'No se pudo activar';
+      document.querySelector('.form-title').innerHTML = 'Revisa el <span>Enlace</span>';
+      document.querySelector('.muted').textContent = 'El enlace de activación no es válido o ya fue utilizado. Intenta iniciar sesión o solicita un nuevo registro.';
+    }
+  </script>
+</body>
+</html>

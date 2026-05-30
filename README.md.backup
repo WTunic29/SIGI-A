@@ -8,12 +8,6 @@ Sistema inteligente de gestión para centros de estética (barberías, peluquer�
 
 SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimizar la gestión de negocios del sector de estética y belleza. Conecta barberías, peluquerías, salones de tatuajes y centros de belleza en un ecosistema unificado.
 
-## Carrito unificado (productos + citas → pago → factura)
-
-Flujo implementado para que el cliente agregue **productos** y **servicios agendados** al mismo carrito, pague en un solo checkout y reciba **factura imprimible**.
-
-Documentación completa (arquitectura, diagramas, API, despliegue Linux/AWS): **[docs/CARRITO_UNIFICADO.md](docs/CARRITO_UNIFICADO.md)**
-
 ## 🏗️ **Arquitectura Técnica**
 
 ### **Backend (FastAPI + PostgreSQL)**
@@ -65,42 +59,45 @@ SIGI-A/
 │
 ├── backend/                 # API FastAPI + PostgreSQL
 │   ├── app/                # Aplicación principal
-│   │   ├── models/         # Modelos SQLAlchemy
-│   │   ├── schemas/        # Schemas Pydantic
-│   │   ├── routes/         # Endpoints FastAPI
-│   │   ├── services/       # Lógica de negocio (checkout, etc.)
+│   │   ├── models/         # 22 modelos SQLAlchemy
+│   │   ├── schemas/        # 20 schemas Pydantic
+│   │   ├── routes/         # 21 endpoints FastAPI
 │   │   ├── core/           # Configuración central
 │   │   ├── utils/          # Seguridad y utilidades
 │   │   ├── middleware/     # Middleware personalizado
 │   │   ├── database.py     # Configuración BD
 │   │   └── main.py         # Aplicación FastAPI
 │   │
-│   ├── alembic/            # Migraciones de base de datos
-│   ├── tests/              # Suite testing del backend
+│   ├── tests/              # Suite testing profesional
+│   │   ├── test_models/    # Tests de persistencia
+│   │   ├── test_schemas/   # Tests de validación
+│   │   ├── test_routes/    # Tests de API
+│   │   ├── conftest.py     # Configuración pytest
+│   │   └── pytest.ini     # Configuración testing
+│   │
 │   ├── requirements.txt    # Dependencias Python
 │   ├── Dockerfile         # Contenedor backend
 │   ├── .env.example       # Variables de entorno
 │   └── README.md          # Documentación backend
 │
 ├── frontend/              # Interfaz web (HTML/CSS/JS)
-│   ├── css/               # Estilos responsivos
-│   ├── js/                # Lógica del frontend
+│   ├── CSS/               # Estilos responsivos
+│   ├── JS/                # Lógica del frontend
+│   ├── SIGI-E/            # Componentes UI
 │   └── index.html         # Página principal
 │
-├── QA/                    # Testing con Postman y pytest
+├── QA/                    # Testing con Postman
 │   ├── postman/           # Collections automatizadas
-│   ├── tests/             # Suite pytest (importa ../backend)
+│   ├── .postman/          # Configuración Postman
 │   └── README.md          # Documentación QA
 │
 ├── database/              # Scripts base de datos
-│   ├── schema.sql         # Dump PostgreSQL (schema core)
-│   └── seeds.sql          # Datos iniciales
+│   ├── schema_actual.sql  # Estructura actual
+│   └── seeds_actual.sql   # Datos iniciales
 │
-├── docs/                  # Documentación adicional
-│   └── CARRITO_UNIFICADO.md
-│
+├── scripts/               # Scripts mantenimiento
 ├── docker-compose.yml     # Orquestación contenedores
-├── docker-compose.dev.yml # Configuración desarrollo
+├── .env.example          # Variables entorno generales
 ├── .gitignore
 ├── requirements.txt       # Dependencias Python
 └── README.md             # Documentación general
@@ -149,14 +146,6 @@ uvicorn app.main:app --reload
 
 El backend estará disponible en `http://127.0.0.1:8000`.
 
-### 6. Migración carrito/checkout (Linux/AWS)
-
-```bash
-cd backend
-chmod +x scripts/apply_checkout_migration.sh
-./scripts/apply_checkout_migration.sh
-```
-
 ---
 
 ## Frontend
@@ -168,14 +157,6 @@ Abrir `frontend/index.html` en el navegador o servir la carpeta `frontend/` desd
 ## QA / Postman
 
 Importar la colección desde `QA/postman/collections/` y el entorno desde `QA/postman/environments/`.
-
-Suite automatizada desde `QA/`:
-
-```bash
-cd QA
-./qa.sh check    # Linux/macOS
-# o: .\qa.ps1 check   # Windows
-```
 
 ---
 
@@ -350,3 +331,4 @@ SIGI-A transforma la gestión tradicional de centros de estética en una **exper
 - **Crecimiento**: Herramientas analíticas para tomar decisiones
 
 **El proyecto está listo para producción con un backend enterprise-ready, testing completo y arquitectura escalable.** 🚀
+

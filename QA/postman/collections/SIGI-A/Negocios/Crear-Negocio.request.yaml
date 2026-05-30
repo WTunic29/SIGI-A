@@ -1,0 +1,37 @@
+$kind: http-request
+name: Crear Negocio
+description: >-
+  Crea un negocio para el usuario autenticado (rol negocio o admin).
+  La API devuelve un NegocioResponse (JSON plano), no un objeto { message, negocio }.
+method: POST
+url: '{{base_url}}/negocios/'
+order: 310
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Salon Bella",
+      "descripcion": "Centro de estetica y belleza",
+      "direccion": "Calle 123 # 45-67",
+      "telefono": "3009876543",
+      "correo": "salon@bella.com"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 201 - Negocio creado", () => pm.response.to.have.status(201));
+      const j = pm.response.json();
+      pm.test("Respuesta es NegocioResponse", () => {
+        pm.expect(j).to.have.property("id_negocio");
+        pm.expect(j).to.have.property("nombre_negocio");
+        pm.expect(j).to.have.property("id_usuario_propietario");
+      });
+      if (pm.response.code === 201) {
+        pm.environment.set("id_negocio", String(j.id_negocio));
+      }

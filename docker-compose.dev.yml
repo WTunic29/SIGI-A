@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: sigia_backend_dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - /app/venv  # Evita montar venv del container
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://sigi_user:sigi_pass@postgres:5432/sigi
+      - DEBUG=True
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigia_postgres_dev
+    environment:
+      POSTGRES_DB: sigi
+      POSTGRES_USER: sigi_user
+      POSTGRES_PASSWORD: sigi_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - sigi_pgdata_dev:/var/lib/postgresql/data
+      - ./database/schema_actual.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seeds_actual.sql:/docker-entrypoint-initdb.d/02_seeds.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigi_user -d sigi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  sigi_pgdata_dev:
+    driver: local

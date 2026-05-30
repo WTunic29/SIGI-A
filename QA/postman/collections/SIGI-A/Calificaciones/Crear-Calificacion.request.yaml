@@ -1,0 +1,34 @@
+$kind: http-request
+name: Crear Calificacion
+description: >-
+  POST /calificaciones/ — requiere rol cliente (id_cliente se toma del token).
+  id_cita debe existir. Respuesta plana CalificacionResponse (status 200 por defecto).
+method: POST
+url: '{{base_url}}/calificaciones/'
+order: 1010
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_negocio": {{id_negocio}},
+      "id_cita": {{id_cita}},
+      "puntuacion": 5,
+      "comentario": "Excelente servicio, muy profesionales."
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Calificacion creada", () => pm.response.to.have.status(200));
+      const cal = pm.response.json();
+      pm.test("Tiene id_negocio", () => pm.expect(cal).to.have.property("id_negocio"));
+      pm.test("Tiene id_cliente", () => pm.expect(cal).to.have.property("id_cliente"));
+      pm.test("puntuacion entre 1 y 5", () => {
+        pm.expect(cal.puntuacion).to.be.at.least(1);
+        pm.expect(cal.puntuacion).to.be.at.most(5);
+      });

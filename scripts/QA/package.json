@@ -1,0 +1,13 @@
+{
+  "name": "sigi-a-qa",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "description": "Herramientas opcionales de QA (Newman vía pnpm). La suite principal es pytest + Postman Workspace YAML.",
+  "scripts": {
+    "postman:newman:smoke": "newman run postman/newman/smoke.collection.json -e postman/newman/smoke.postman_environment.json --timeout-request 20000 --color on",
+    "postman:newman:auth-partial": "newman run postman/newman/auth-partial.collection.json -e postman/newman/smoke.postman_environment.json --timeout-request 20000 --color on"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1"
+  }
+}

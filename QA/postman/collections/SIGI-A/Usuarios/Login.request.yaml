@@ -1,0 +1,29 @@
+$kind: http-request
+name: Login Usuario
+description: >-
+  Alias de /auth/login — flujo 2FA (misma respuesta que Auth/Login).
+  Tras ejecutar, usar Verify-2FA con correo_2fa y codigo_2fa para obtener token.
+method: POST
+url: '{{base_url}}/auth/login'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "correo": "{{correo_login}}",
+      "password": "123456"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Login iniciado", () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.expect(json).to.have.property("requieres_2fa", true);
+      pm.expect(json).to.have.property("correo");
+      if (pm.response.code === 200) {
+        pm.environment.set("correo_2fa", json.correo);
+      }

@@ -1,0 +1,31 @@
+$kind: http-request
+name: Listar Negocios
+description: >-
+  Lista negocios según el rol del JWT (cliente ve todos; negocio solo los suyos).
+  Requiere Authorization Bearer {{token}} (flujo Register → Login → Verify-2FA).
+method: GET
+url: '{{base_url}}/negocios/'
+order: 320
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Lista obtenida", () => pm.response.to.have.status(200));
+      pm.test("Respuesta es un array", () => pm.expect(pm.response.json()).to.be.an("array"));
+      const negocios = pm.response.json();
+      if (negocios.length > 0) {
+        const prev = pm.environment.get("id_negocio");
+        if (!prev || String(prev).trim() === "") {
+          pm.environment.set("id_negocio", String(negocios[0].id_negocio));
+        }
+        const n = negocios[0];
+        pm.test("Negocio tiene id_negocio", () => pm.expect(n).to.have.property("id_negocio"));
+        pm.test("Negocio tiene nombre_negocio", () => pm.expect(n).to.have.property("nombre_negocio"));
+        pm.test("Negocio tiene descripcion", () => pm.expect(n).to.have.property("descripcion"));
+        pm.test("Negocio tiene direccion", () => pm.expect(n).to.have.property("direccion"));
+        pm.test("Negocio tiene telefono", () => pm.expect(n).to.have.property("telefono"));
+        pm.test("Negocio tiene email_negocio", () => pm.expect(n).to.have.property("email_negocio"));
+      }

@@ -1,0 +1,20 @@
+$kind: http-request
+name: Marcar Notificacion como Leida
+description: PUT /notificaciones/{id}/leer — respuesta plana NotificacionResponse.
+method: PUT
+url: '{{base_url}}/notificaciones/{{id_notificacion}}/leer'
+order: 1120
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Notificacion marcada como leida", () => pm.response.to.have.status(200));
+      const n = pm.response.json();
+      pm.test("Respuesta plana", () => {
+        pm.expect(n).to.have.property("id_notificacion");
+        pm.expect(n).to.have.property("leida");
+      });
+      pm.test("leida es true", () => pm.expect(n.leida).to.be.true);

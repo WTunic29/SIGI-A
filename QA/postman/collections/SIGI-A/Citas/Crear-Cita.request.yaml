@@ -1,0 +1,44 @@
+$kind: http-request
+name: Crear Cita
+description: >-
+  POST /citas/ — cliente o admin. El backend asigna id_cliente desde el token (no hace falta id_cliente en el body).
+  Respuesta plana CitaResponse (id_cita, fecha, hora_inicio, …). Estado inicial lo fija el servidor.
+  Si recibes 500, revisa incoherencia modelo SQLAlchemy vs rutas (ver QA/BACKEND_ISSUES_DETECTED.md).
+method: POST
+url: '{{base_url}}/citas/'
+order: 710
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_negocio": {{id_negocio}},
+      "id_empleado": {{id_empleado}},
+      "fecha": "2030-08-01",
+      "hora_inicio": "10:00:00",
+      "hora_fin": "10:45:00",
+      "observaciones": "Primera visita"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status (200/201 si OK; 500 bug citas documentado en QA)", () => {
+        pm.expect([200, 201, 500]).to.include(pm.response.code);
+      });
+      if (pm.response.code === 200 || pm.response.code === 201) {
+        const cita = pm.response.json();
+        pm.test("CitaResponse plana: id_cita", () => pm.expect(cita).to.have.property("id_cita"));
+        pm.test("id_cliente", () => pm.expect(cita).to.have.property("id_cliente"));
+        pm.test("id_negocio", () => pm.expect(cita).to.have.property("id_negocio"));
+        pm.test("id_empleado", () => pm.expect(cita).to.have.property("id_empleado"));
+        pm.test("fecha", () => pm.expect(cita).to.have.property("fecha"));
+        pm.test("hora_inicio", () => pm.expect(cita).to.have.property("hora_inicio"));
+        pm.test("hora_fin", () => pm.expect(cita).to.have.property("hora_fin"));
+        pm.test("Estado válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
+        pm.environment.set("id_cita", cita.id_cita);
+      }

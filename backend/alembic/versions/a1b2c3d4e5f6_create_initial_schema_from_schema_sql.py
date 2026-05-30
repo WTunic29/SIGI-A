@@ -1,8 +1,28 @@
+"""create_initial_schema_from_schema_sql
+
+Revision ID: a1b2c3d4e5f6
+Revises: 7bb54feb31ab
+Create Date: 2026-05-15
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+
+
+revision: str = "a1b2c3d4e5f6"
+down_revision: Union[str, Sequence[str], None] = "7bb54feb31ab"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    connection = op.get_bind()
+    connection.exec_driver_sql(r"""
 --
 -- PostgreSQL database dump
 --
 
-\restrict 9c7ARbRhz1xTncnQpwTkdTiavdv1NPATrqpBN5I3CUctrhDGfdr7eM3OT5iYCL0
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -10,10 +30,8 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -23,10 +41,9 @@ SET row_security = off;
 -- Name: core; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
-CREATE SCHEMA core;
+CREATE SCHEMA IF NOT EXISTS core;
 
 
-ALTER SCHEMA core OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -47,7 +64,6 @@ CREATE TABLE core.auditoria (
 );
 
 
-ALTER TABLE core.auditoria OWNER TO postgres;
 
 --
 -- Name: auditoria_id_auditoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -79,7 +95,6 @@ CREATE TABLE core.calificaciones (
 );
 
 
-ALTER TABLE core.calificaciones OWNER TO postgres;
 
 --
 -- Name: calificaciones_id_calificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -114,7 +129,6 @@ CREATE TABLE core.carrito_detalle (
 );
 
 
-ALTER TABLE core.carrito_detalle OWNER TO postgres;
 
 --
 -- Name: carrito_detalle_id_carrito_detalle_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -143,7 +157,6 @@ CREATE TABLE core.carritos (
 );
 
 
-ALTER TABLE core.carritos OWNER TO postgres;
 
 --
 -- Name: carritos_id_carrito_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -170,7 +183,6 @@ CREATE TABLE core.categorias_negocio (
 );
 
 
-ALTER TABLE core.categorias_negocio OWNER TO postgres;
 
 --
 -- Name: categorias_negocio_id_categoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -206,7 +218,6 @@ CREATE TABLE core.citas (
 );
 
 
-ALTER TABLE core.citas OWNER TO postgres;
 
 --
 -- Name: citas_id_cita_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -236,7 +247,6 @@ CREATE TABLE core.codigos_2fa (
 );
 
 
-ALTER TABLE core.codigos_2fa OWNER TO postgres;
 
 --
 -- Name: codigos_2fa_id_codigo_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -251,7 +261,6 @@ CREATE SEQUENCE core.codigos_2fa_id_codigo_seq
     CACHE 1;
 
 
-ALTER SEQUENCE core.codigos_2fa_id_codigo_seq OWNER TO postgres;
 
 --
 -- Name: codigos_2fa_id_codigo_seq; Type: SEQUENCE OWNED BY; Schema: core; Owner: postgres
@@ -275,7 +284,6 @@ CREATE TABLE core.detalle_cita (
 );
 
 
-ALTER TABLE core.detalle_cita OWNER TO postgres;
 
 --
 -- Name: detalle_cita_id_detalle_cita_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -302,7 +310,6 @@ CREATE TABLE core.empleado_servicio (
 );
 
 
-ALTER TABLE core.empleado_servicio OWNER TO postgres;
 
 --
 -- Name: empleado_servicio_id_empleado_servicio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -336,7 +343,6 @@ CREATE TABLE core.empleados (
 );
 
 
-ALTER TABLE core.empleados OWNER TO postgres;
 
 --
 -- Name: empleados_id_empleado_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -364,7 +370,6 @@ CREATE TABLE core.favoritos (
 );
 
 
-ALTER TABLE core.favoritos OWNER TO postgres;
 
 --
 -- Name: favoritos_id_favorito_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -396,7 +401,6 @@ CREATE TABLE core.horarios_empleado (
 );
 
 
-ALTER TABLE core.horarios_empleado OWNER TO postgres;
 
 --
 -- Name: horarios_empleado_id_horario_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -425,7 +429,6 @@ CREATE TABLE core.imagenes_negocio (
 );
 
 
-ALTER TABLE core.imagenes_negocio OWNER TO postgres;
 
 --
 -- Name: imagenes_negocio_id_imagen_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -457,7 +460,6 @@ CREATE TABLE core.inventario_movimientos (
 );
 
 
-ALTER TABLE core.inventario_movimientos OWNER TO postgres;
 
 --
 -- Name: inventario_movimientos_id_movimiento_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -484,7 +486,6 @@ CREATE TABLE core.negocio_categoria (
 );
 
 
-ALTER TABLE core.negocio_categoria OWNER TO postgres;
 
 --
 -- Name: negocio_categoria_id_negocio_categoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -525,7 +526,6 @@ CREATE TABLE core.negocios (
 );
 
 
-ALTER TABLE core.negocios OWNER TO postgres;
 
 --
 -- Name: negocios_id_negocio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -557,7 +557,6 @@ CREATE TABLE core.notificaciones (
 );
 
 
-ALTER TABLE core.notificaciones OWNER TO postgres;
 
 --
 -- Name: notificaciones_id_notificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -592,7 +591,6 @@ CREATE TABLE core.pagos (
 );
 
 
-ALTER TABLE core.pagos OWNER TO postgres;
 
 --
 -- Name: pagos_id_pago_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -629,7 +627,6 @@ CREATE TABLE core.pedido_detalle (
 );
 
 
-ALTER TABLE core.pedido_detalle OWNER TO postgres;
 
 --
 -- Name: pedido_detalle_id_pedido_detalle_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -661,7 +658,6 @@ CREATE TABLE core.pedidos (
 );
 
 
-ALTER TABLE core.pedidos OWNER TO postgres;
 
 --
 -- Name: pedidos_id_pedido_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -697,7 +693,6 @@ CREATE TABLE core.productos (
 );
 
 
-ALTER TABLE core.productos OWNER TO postgres;
 
 --
 -- Name: productos_id_producto_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -724,7 +719,6 @@ CREATE TABLE core.roles (
 );
 
 
-ALTER TABLE core.roles OWNER TO postgres;
 
 --
 -- Name: roles_id_rol_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -759,7 +753,6 @@ CREATE TABLE core.servicios (
 );
 
 
-ALTER TABLE core.servicios OWNER TO postgres;
 
 --
 -- Name: servicios_id_servicio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -791,7 +784,6 @@ CREATE TABLE core.sesiones (
 );
 
 
-ALTER TABLE core.sesiones OWNER TO postgres;
 
 --
 -- Name: sesiones_id_sesion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -821,7 +813,6 @@ CREATE TABLE core.tokens_recuperacion (
 );
 
 
-ALTER TABLE core.tokens_recuperacion OWNER TO postgres;
 
 --
 -- Name: tokens_recuperacion_id_token_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -848,7 +839,6 @@ CREATE TABLE core.usuario_rol (
 );
 
 
-ALTER TABLE core.usuario_rol OWNER TO postgres;
 
 --
 -- Name: usuario_rol_id_usuario_rol_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -883,7 +873,6 @@ CREATE TABLE core.usuarios (
 );
 
 
-ALTER TABLE core.usuarios OWNER TO postgres;
 
 --
 -- Name: usuarios_id_usuario_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -915,7 +904,6 @@ CREATE TABLE core.verificacion_2fa (
 );
 
 
-ALTER TABLE core.verificacion_2fa OWNER TO postgres;
 
 --
 -- Name: verificacion_2fa_id_verificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -1634,5 +1622,9 @@ ALTER TABLE ONLY core.verificacion_2fa
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9c7ARbRhz1xTncnQpwTkdTiavdv1NPATrqpBN5I3CUctrhDGfdr7eM3OT5iYCL0
 
+    """)
+
+
+def downgrade() -> None:
+    op.execute("DROP SCHEMA IF EXISTS core CASCADE")

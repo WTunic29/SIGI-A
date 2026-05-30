@@ -1,0 +1,75 @@
+{
+  "info": {
+    "_postman_id": "sigia-qa-smoke-cli",
+    "name": "SIGI-A Smoke (Newman CLI)",
+    "description": "Pruebas mínimas sin auth: `/`, `/test-db`, `/openapi.json`. Ejecutar con la API levantada (ver QA/postman/newman/README.md).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health — GET /",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('message incluye SIGI-A', () => pm.expect(j.message).to.include('SIGI-A'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/"
+      }
+    },
+    {
+      "name": "Health — GET /test-db",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('database conectada', () => pm.expect(j.database).to.eql('conectada'));",
+              "pm.test('resultado 1', () => pm.expect(j.resultado).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/test-db"
+      }
+    },
+    {
+      "name": "OpenAPI — GET /openapi.json",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const spec = pm.response.json();",
+              "pm.test('OpenAPI tiene openapi campo', () => pm.expect(spec).to.have.property('openapi'));",
+              "pm.test('paths presente', () => pm.expect(spec).to.have.property('paths'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/openapi.json"
+      }
+    }
+  ]
+}

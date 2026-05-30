@@ -1,0 +1,37 @@
+$kind: http-request
+name: Crear Producto
+description: >-
+  POST /productos/ — crea producto (rol negocio usa su negocio; admin puede indicar id_negocio).
+  Respuesta plana ProductoCreate → ProductoResponse (status 200 por defecto en FastAPI).
+method: POST
+url: '{{base_url}}/productos/'
+order: 610
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "id_negocio": {{id_negocio}},
+      "nombre": "Shampoo Profesional",
+      "descripcion": "Shampoo para cabello dañado 500ml",
+      "precio": 28000.00,
+      "stock": 50
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Producto creado", () => pm.response.to.have.status(200));
+      const producto = pm.response.json();
+      pm.test("Respuesta plana ProductoResponse", () => {
+        pm.expect(producto).to.have.property("id_producto");
+        pm.expect(producto).to.have.property("nombre");
+        pm.expect(producto).to.have.property("id_negocio");
+      });
+      if (pm.response.code === 200 && producto.id_producto) {
+        pm.environment.set("id_producto", String(producto.id_producto));
+      }

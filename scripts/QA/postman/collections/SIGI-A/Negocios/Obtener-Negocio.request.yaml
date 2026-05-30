@@ -1,0 +1,15 @@
+$kind: http-request
+name: Obtener Negocio
+description: Obtiene un negocio por id_negocio (respuesta plana NegocioResponse).
+method: GET
+url: '{{base_url}}/negocios/{{id_negocio}}'
+order: 330
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Negocio encontrado", () => pm.response.to.have.status(200));
+      const negocio = pm.response.json();
+      pm.test("Tiene id_negocio", () => pm.expect(negocio).to.have.property("id_negocio"));
+      pm.test("Tiene nombre_negocio", () => pm.expect(negocio).to.have.property("nombre_negocio"));
+      pm.test("Tiene id_usuario_propietario", () => pm.expect(negocio).to.have.property("id_usuario_propietario"));

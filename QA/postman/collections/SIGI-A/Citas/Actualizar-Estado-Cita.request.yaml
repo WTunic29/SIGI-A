@@ -1,0 +1,27 @@
+$kind: http-request
+name: Actualizar Estado de Cita
+description: >-
+  PUT /citas/{id_cita} con body CitaUpdate (p. ej. solo estado). No existe PUT /citas/:id/estado en el backend.
+  Rol negocio o admin. Respuesta plana CitaResponse.
+method: PUT
+url: '{{base_url}}/citas/{{id_cita}}'
+order: 740
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{token}}'
+body:
+  type: json
+  content: |-
+    {
+      "estado": "confirmada"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200 - Estado actualizado", () => pm.response.to.have.status(200));
+      const cita = pm.response.json();
+      pm.test("CitaResponse plana: id_cita", () => pm.expect(cita).to.have.property("id_cita"));
+      pm.test("Estado es válido", () => pm.expect(cita.estado).to.be.oneOf(["pendiente", "confirmada", "cancelada", "completada", "no_asistio"]));
