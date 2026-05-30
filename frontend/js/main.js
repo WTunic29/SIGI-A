@@ -143,12 +143,12 @@ function configurarPantallaVerificacion(tipo = "email") {
   } else {
     if (title) title.innerHTML = "Verificar <span>Código</span>";
     if (text) text.textContent = "Ingresa el código de 6 dígitos que enviamos a tu correo.";
-    if (input) input.placeholder = "Código 2FA";
+    if (input) input.placeholder = "Código MFA";
     if (btn) btn.textContent = "Verificar";
   }
 }
 
-function mostrarVerify2FA(tipo = "email") {
+function mostrarVerifyMFA(tipo = "email") {
   configurarPantallaVerificacion(tipo);
   setVisible(["verify2fa"]);
   setTimeout(() => document.getElementById("codigo2fa")?.focus(), 150);
@@ -162,11 +162,37 @@ function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
 function mostrarRegistrarNegocio() { setVisible(["registrar-negocio"]); }
 function mostrarDetalleNegocio() { setVisible(["detalle-negocio"]); }
 
+function paginaActual() {
+  return (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+}
+
+function rutaDashboardPorRol(rol) {
+  const normalizado = normalizarRol(rol);
+  if (normalizado === "admin") return "superusuario.html";
+  if (normalizado === "negocio") return "negocio.html";
+  return "usuario.html";
+}
+
+function esPaginaDashboardRol(pagina = paginaActual()) {
+  return ["usuario.html", "negocio.html", "superusuario.html"].includes(pagina);
+}
+
 function irDashboardPorRol() {
   const usuario = getUsuario();
-  if (!usuario) return mostrarInicio();
+  if (!usuario) {
+    window.location.href = "login.html";
+    return;
+  }
 
   const rol = normalizarRol(usuario.rol);
+  const destino = rutaDashboardPorRol(rol);
+  const pagina = paginaActual();
+
+  if (!esPaginaDashboardRol(pagina) || pagina !== destino) {
+    window.location.href = destino;
+    return;
+  }
+
   if (rol === "admin") {
     mostrarDashboardAdmin();
     cargarDatosDashboardAdmin(usuario);
@@ -866,15 +892,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.ok && (data.requiere_mfa || data.requiere_mfa === true || data.metodo === "totp")) {
         sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
         sessionStorage.setItem("mfa_mode", "totp");
-        mostrarVerify2FA("totp");
-        mostrarMensaje("verify2faMsg", "Ingresa el código de tu aplicación autenticadora.", false);
         showToast("Verificación con app autenticadora requerida.", "info");
+        window.location.href = "verificar-mfa.html";
+        return;
       } else if (res.ok && data.requieres_2fa) {
         sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
         sessionStorage.setItem("mfa_mode", "email");
-        mostrarVerify2FA("email");
-        mostrarMensaje("verify2faMsg", "Código enviado a tu correo.", false);
         showToast("Te enviamos un código de seguridad al correo.", "success");
+        window.location.href = "verificar-mfa.html";
+        return;
       } else if (res.ok && data.requiere_configurar_mfa === true) {
         guardarSesion(data);
         sessionStorage.setItem("mfa_config_pendiente", "true");
@@ -1055,25 +1081,52 @@ async function validarSesionActiva({ silencioso = false } = {}) {
 
 async function checkSession() {
   const usuario = getUsuario();
+  const token = getToken();
   const hash = window.location.hash;
+  const pagina = paginaActual();
 
-  if (hash === "#login") {
-    mostrarLogin();
-    return;
-  }
-
-  if (hash === "#recuperar-password") {
-    mostrarRecuperarPassword();
-    return;
-  }
-
-  if (!getToken() || !usuario) {
+  if (!token || !usuario) {
     actualizarNavbar();
+
+    if (pagina === "login.html" || hash === "#login") {
+      mostrarLogin();
+      return;
+    }
+
+    if (pagina === "registro.html") {
+      mostrarRegistro();
+      return;
+    }
+
+    if (pagina === "verificar-mfa.html") {
+      mostrarVerifyMFA(sessionStorage.getItem("mfa_mode") || "totp");
+      return;
+    }
+
+    if (pagina === "restablecer.html" || pagina === "activacion.html" || pagina === "mfa.html") {
+      return;
+    }
+
+    if (esPaginaDashboardRol(pagina)) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    setVisible(["inicio", "cta"]);
     return;
   }
 
   const sesionOk = await validarSesionActiva();
-  if (sesionOk) irDashboardPorRol();
+  if (!sesionOk) return;
+
+  if (pagina === "login.html" || pagina === "registro.html" || pagina === "index.html" || esPaginaDashboardRol(pagina)) {
+    irDashboardPorRol();
+    return;
+  }
+
+  if (hash === "#login") {
+    irDashboardPorRol();
+  }
 }
 
 // ─────────────────────────────────────────────
