@@ -879,7 +879,9 @@ CREATE TABLE core.usuarios (
     fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     ultimo_login timestamp without time zone,
     rol character varying(20) DEFAULT 'cliente'::character varying NOT NULL,
-    CONSTRAINT usuarios_estado_check CHECK (((estado)::text = ANY ((ARRAY['activo'::character varying, 'inactivo'::character varying, 'bloqueado'::character varying])::text[])))
+    mfa_totp_enabled boolean DEFAULT false NOT NULL,
+    mfa_totp_secret character varying(255),
+    CONSTRAINT usuarios_estado_check CHECK (((estado)::text = ANY ((ARRAY['activo'::character varying, 'inactivo'::character varying, 'bloqueado'::character varying, 'pendiente'::character varying])::text[])))
 );
 
 
@@ -897,6 +899,23 @@ ALTER TABLE core.usuarios ALTER COLUMN id_usuario ADD GENERATED ALWAYS AS IDENTI
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- Name: tokens_activacion; Type: TABLE; Schema: core; Owner: postgres
+--
+
+CREATE TABLE core.tokens_activacion (
+    id_token bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    id_usuario bigint NOT NULL,
+    token character varying(255) NOT NULL,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_expiracion timestamp without time zone NOT NULL,
+    usado boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE core.tokens_activacion OWNER TO postgres;
 
 
 --
@@ -1176,6 +1195,22 @@ ALTER TABLE ONLY core.sesiones
 
 ALTER TABLE ONLY core.sesiones
     ADD CONSTRAINT sesiones_token_key UNIQUE (token);
+
+
+--
+-- Name: tokens_activacion tokens_activacion_pkey; Type: CONSTRAINT; Schema: core; Owner: postgres
+--
+
+ALTER TABLE ONLY core.tokens_activacion
+    ADD CONSTRAINT tokens_activacion_pkey PRIMARY KEY (id_token);
+
+
+--
+-- Name: tokens_activacion tokens_activacion_token_key; Type: CONSTRAINT; Schema: core; Owner: postgres
+--
+
+ALTER TABLE ONLY core.tokens_activacion
+    ADD CONSTRAINT tokens_activacion_token_key UNIQUE (token);
 
 
 --
@@ -1604,6 +1639,14 @@ ALTER TABLE ONLY core.sesiones
 
 ALTER TABLE ONLY core.tokens_recuperacion
     ADD CONSTRAINT fk_tokens_usuario FOREIGN KEY (id_usuario) REFERENCES core.usuarios(id_usuario) ON DELETE CASCADE;
+
+
+--
+-- Name: tokens_activacion fk_tokens_activacion_usuario; Type: FK CONSTRAINT; Schema: core; Owner: postgres
+--
+
+ALTER TABLE ONLY core.tokens_activacion
+    ADD CONSTRAINT fk_tokens_activacion_usuario FOREIGN KEY (id_usuario) REFERENCES core.usuarios(id_usuario) ON DELETE CASCADE;
 
 
 --
