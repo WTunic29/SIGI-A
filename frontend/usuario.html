@@ -5,9 +5,151 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel usuario | SIGI-A</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── LAYOUT DASHBOARD USUARIO CON MAPA ── */
+    .user-business-main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    /* Contenedor dividido: negocios izq | mapa der */
+    .user-content-split {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: start;
+      padding: 0 0 24px;
+    }
+
+    /* Panel izquierdo: negocios */
+    .user-negocios-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Panel derecho: mapa mini */
+    .user-mapa-panel {
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .user-mapa-titulo {
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #c9a84c;
+      font-weight: 700;
+    }
+    #mapaUsuarioDash {
+      width: 100%;
+      height: 340px;
+      border-radius: 18px;
+      border: 1px solid rgba(201,168,76,0.22);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      background: #1a1a1a;
+      overflow: hidden;
+    }
+    .leaflet-container { border-radius: 18px; font-family: 'Montserrat', sans-serif; }
+    .user-mapa-btn {
+      padding: 9px 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(201,168,76,0.32);
+      background: rgba(201,168,76,0.09);
+      color: #c9a84c;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .user-mapa-btn:hover { background: #c9a84c; color: #111; }
+    .user-mapa-status {
+      font-size: 0.67rem;
+      color: rgba(201,168,76,0.4);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    /* Punto GPS azul */
+    .punto-gps {
+      width: 16px; height: 16px;
+      background: #4285f4;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 5px rgba(66,133,244,0.25);
+      animation: gps-pulso 2s ease-in-out infinite;
+    }
+    @keyframes gps-pulso {
+      0%,100% { box-shadow: 0 0 0 4px rgba(66,133,244,0.25); }
+      50%      { box-shadow: 0 0 0 10px rgba(66,133,244,0.08); }
+    }
+    /* Popup mapa */
+    .leaflet-popup-content-wrapper {
+      background: rgba(14,14,14,0.97);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 14px;
+      color: #f5f0e8;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: rgba(14,14,14,0.97); }
+    .leaflet-popup-content { margin: 12px 16px; font-size: 0.82rem; line-height: 1.7; }
+    .leaflet-popup-content strong { color: #c9a84c; display: block; margin-bottom: 2px; }
+    .leaflet-popup-content .pm-dir { color: rgba(232,224,208,0.75); display:block; font-size:0.76rem; }
+    .pm-ruta {
+      display: inline-block; margin-top: 8px;
+      padding: 6px 12px; background: #c9a84c; color: #111;
+      border-radius: 9px; font-size: 0.68rem; font-weight: 800;
+      text-decoration: none; letter-spacing: 0.5px;
+    }
+    .pm-ruta:hover { background: #e8c97a; }
+    .leaflet-popup-close-button { color: #c9a84c !important; }
+
+    /* ── MAPA DETALLE NEGOCIO ── */
+    .detalle-mapa-wrap {
+      margin-top: 20px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(201,168,76,0.2);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+    .detalle-mapa-header {
+      padding: 10px 16px;
+      background: rgba(201,168,76,0.07);
+      border-bottom: 1px solid rgba(201,168,76,0.12);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c9a84c;
+    }
+    #mapaDetalleNegocio {
+      width: 100%;
+      height: 220px;
+      background: #1a1a1a;
+    }
+
+    @media (max-width: 900px) {
+      .user-content-split {
+        grid-template-columns: 1fr;
+      }
+      .user-mapa-panel { position: static; }
+      #mapaUsuarioDash { height: 260px; }
+    }
+  </style>
 </head>
-<body><body class="dashboard-loading">
+<body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
   <div class="app-loader-card">
     <div class="app-loader-spinner"></div>
@@ -20,12 +162,10 @@
 
 <nav id="navbar">
   <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
-
   <div class="nav-buttons" id="navGuest">
     <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
     <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
   </div>
-
   <div class="nav-user" id="navUser" style="display:none;">
     <button class="user-menu-btn" type="button" onclick="toggleUserMenu()">
       <span id="navUserName">Usuario</span>
@@ -50,108 +190,44 @@
   </div>
 </nav>
 
+<!-- ══ SECCIONES QUE NO CAMBIAN ══ -->
 <section class="hero landing-hero" id="inicio">
   <div class="hero-bg landing-bg"></div>
   <div class="landing-orb orb-one"></div>
   <div class="landing-orb orb-two"></div>
-
   <div class="landing-wrap">
     <div class="hero-content landing-copy">
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        Plataforma inteligente para barberías modernas
-      </div>
-
-      <h1 class="landing-title">
-        Agenda, descubre y gestiona barberías con <span>SIGI-E</span>
-      </h1>
-
-      <p class="landing-desc">
-        Una experiencia visual, rápida y profesional para conectar usuarios con negocios disponibles, administrar barberías y centralizar la operación desde un solo lugar.
-      </p>
-
+      <div class="hero-badge"><span class="badge-dot"></span>Plataforma inteligente para barberías modernas</div>
+      <h1 class="landing-title">Agenda, descubre y gestiona barberías con <span>SIGI-E</span></h1>
+      <p class="landing-desc">Una experiencia visual, rápida y profesional para conectar usuarios con negocios disponibles, administrar barberías y centralizar la operación desde un solo lugar.</p>
       <div class="landing-actions">
         <a class="btn-primary big" href="#" onclick="mostrarRegistro('cliente')">Entrar como usuario</a>
         <a class="btn-glass" href="#" onclick="mostrarRegistro('negocio')">Registrar mi negocio</a>
       </div>
-
       <div class="landing-metrics">
-        <div>
-          <strong>24/7</strong>
-          <span>Consulta disponible</span>
-        </div>
-        <div>
-          <strong>MFA</strong>
-          <span>Inicio seguro</span>
-        </div>
-        <div>
-          <strong>100%</strong>
-          <span>Web responsive</span>
-        </div>
+        <div><strong>24/7</strong><span>Consulta disponible</span></div>
+        <div><strong>MFA</strong><span>Inicio seguro</span></div>
+        <div><strong>100%</strong><span>Web responsive</span></div>
       </div>
     </div>
-
     <div class="landing-showcase" aria-hidden="true">
       <div class="phone-card">
-        <div class="phone-top">
-          <span></span><span></span><span></span>
-        </div>
+        <div class="phone-top"><span></span><span></span><span></span></div>
         <div class="phone-header">
-          <div>
-            <p>Directorio</p>
-            <h3>Negocios disponibles</h3>
-          </div>
+          <div><p>Directorio</p><h3>Negocios disponibles</h3></div>
           <div class="mini-avatar">B</div>
         </div>
-
         <div class="search-pill">Buscar barbería, zona o servicio...</div>
-
-        <div class="business-preview active">
-          <div class="business-icon">✂</div>
-          <div>
-            <strong>Barbería Élite</strong>
-            <p>Agenda, cortes y perfil del negocio</p>
-          </div>
-          <span>4.9</span>
-        </div>
-        <div class="business-preview">
-          <div class="business-icon">★</div>
-          <div>
-            <strong>Urban Style</strong>
-            <p>Servicios disponibles en tiempo real</p>
-          </div>
-          <span>4.8</span>
-        </div>
-        <div class="business-preview">
-          <div class="business-icon">⌁</div>
-          <div>
-            <strong>Studio Premium</strong>
-            <p>Experiencia moderna para clientes</p>
-          </div>
-          <span>4.7</span>
-        </div>
-
-        <div class="phone-footer-card">
-          <p>Tu próxima cita</p>
-          <strong>Gestionada desde SIGI-E</strong>
-        </div>
+        <div class="business-preview active"><div class="business-icon">✂</div><div><strong>Barbería Élite</strong><p>Agenda, cortes y perfil del negocio</p></div><span>4.9</span></div>
+        <div class="business-preview"><div class="business-icon">★</div><div><strong>Urban Style</strong><p>Servicios disponibles en tiempo real</p></div><span>4.8</span></div>
+        <div class="business-preview"><div class="business-icon">⌁</div><div><strong>Studio Premium</strong><p>Experiencia moderna para clientes</p></div><span>4.7</span></div>
+        <div class="phone-footer-card"><p>Tu próxima cita</p><strong>Gestionada desde SIGI-E</strong></div>
       </div>
-
-      <div class="floating-card card-a">
-        <span>Rol</span>
-        <strong>Usuario / Negocio</strong>
-      </div>
-      <div class="floating-card card-b">
-        <span>Seguridad</span>
-        <strong>Login + MFA</strong>
-      </div>
+      <div class="floating-card card-a"><span>Rol</span><strong>Usuario / Negocio</strong></div>
+      <div class="floating-card card-b"><span>Seguridad</span><strong>Login + MFA</strong></div>
     </div>
   </div>
-
-  <div class="scroll-hint">
-    <div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div>
-    <span>Scroll</span>
-  </div>
+  <div class="scroll-hint"><div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div><span>Scroll</span></div>
 </section>
 
 <section class="landing-features" id="cta">
@@ -160,30 +236,13 @@
     <h2 class="section-title">Diseñada para usuarios y negocios</h2>
     <p class="section-desc">El usuario encuentra negocios disponibles. El negocio administra su presencia, acceso y operación desde un panel moderno.</p>
   </div>
-
   <div class="feature-grid">
-    <article class="feature-card">
-      <div class="feature-icon">01</div>
-      <h3>Explora negocios</h3>
-      <p>Los usuarios ven barberías disponibles en tarjetas limpias, con información clara y buscador.</p>
-    </article>
-    <article class="feature-card featured">
-      <div class="feature-icon">02</div>
-      <h3>Panel inteligente</h3>
-      <p>Al iniciar sesión, cada rol ve solo lo que necesita: usuario, negocio, empleado o administrador.</p>
-    </article>
-    <article class="feature-card">
-      <div class="feature-icon">03</div>
-      <h3>Acceso seguro</h3>
-      <p>Autenticación con token y verificación MFA para proteger la información del sistema.</p>
-    </article>
+    <article class="feature-card"><div class="feature-icon">01</div><h3>Explora negocios</h3><p>Los usuarios ven barberías disponibles en tarjetas limpias, con información clara y buscador.</p></article>
+    <article class="feature-card featured"><div class="feature-icon">02</div><h3>Panel inteligente</h3><p>Al iniciar sesión, cada rol ve solo lo que necesita: usuario, negocio, empleado o administrador.</p></article>
+    <article class="feature-card"><div class="feature-icon">03</div><h3>Acceso seguro</h3><p>Autenticación con token y verificación MFA para proteger la información del sistema.</p></article>
   </div>
-
   <div class="cta-banner">
-    <div>
-      <p class="section-eyebrow">Comienza ahora</p>
-      <h3>Convierte la gestión de barberías en una experiencia premium.</h3>
-    </div>
+    <div><p class="section-eyebrow">Comienza ahora</p><h3>Convierte la gestión de barberías en una experiencia premium.</h3></div>
     <div class="cta-actions">
       <a class="btn-primary" href="#" onclick="mostrarRegistro('negocio')">Registrar negocio</a>
       <a class="btn-secondary" href="#" onclick="mostrarRegistro('cliente')">Crear usuario</a>
@@ -247,18 +306,9 @@
     <h1 class="form-title">Crear <span>Cuenta</span></h1>
     <form id="registroForm">
       <div class="role-selector">
-        <label class="role-option">
-          <input type="radio" name="rolRegistro" value="cliente" checked />
-          <span>Usuario</span>
-          <small>Explorar negocios disponibles</small>
-        </label>
-        <label class="role-option">
-          <input type="radio" name="rolRegistro" value="negocio" />
-          <span>Negocio</span>
-          <small>Administrar mi barbería</small>
-        </label>
+        <label class="role-option"><input type="radio" name="rolRegistro" value="cliente" checked /><span>Usuario</span><small>Explorar negocios disponibles</small></label>
+        <label class="role-option"><input type="radio" name="rolRegistro" value="negocio" /><span>Negocio</span><small>Administrar mi barbería</small></label>
       </div>
-
       <div class="form-grid">
         <input type="text" id="nombre" placeholder="Nombre" required />
         <input type="text" id="apellido" placeholder="Apellido" required />
@@ -289,80 +339,39 @@
       </div>
       <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
-
     <div class="module-grid">
-      <article class="module-card">
-        <span>Mi barbería</span>
-        <h3>Negocio</h3>
-        <p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p>
-        <button onclick="irRegistrarNegocio()">Registrar negocio</button>
-      </article>
-      <article class="module-card">
-        <span>Agenda</span>
-        <h3>Citas</h3>
-        <p>Consulta y administra las citas asociadas a tu negocio.</p>
-        <button onclick="irGestionCitas()">Gestionar citas</button>
-      </article>
-      <article class="module-card">
-        <span>Equipo</span>
-        <h3>Empleados</h3>
-        <p>Crea empleados, consulta el listado y desactiva empleados cuando sea necesario.</p>
-        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
-      </article>
-      <article class="module-card">
-        <span>Catálogo</span>
-        <h3>Servicios</h3>
-        <p>Crea servicios, define duración, precio y administra el catálogo del negocio.</p>
-        <button onclick="irGestionServicios()">Gestionar servicios</button>
-      </article>
-      <article class="module-card">
-        <span>Inventario</span>
-        <h3>Productos</h3>
-        <p>Carga productos, controla stock y registra movimientos de entrada o salida.</p>
-        <button onclick="irGestionProductos()">Gestionar inventario</button>
-      </article>
-      <article class="module-card">
-        <span>Cuenta</span>
-        <h3>Perfil</h3>
-        <p>Consulta tus datos de usuario y valida el acceso como negocio.</p>
-        <button onclick="irMiPerfil()">Mi perfil</button>
-      </article>
+      <article class="module-card"><span>Mi barbería</span><h3>Negocio</h3><p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p><button onclick="irRegistrarNegocio()">Registrar negocio</button></article>
+      <article class="module-card"><span>Agenda</span><h3>Citas</h3><p>Consulta y administra las citas asociadas a tu negocio.</p><button onclick="irGestionCitas()">Gestionar citas</button></article>
+      <article class="module-card"><span>Equipo</span><h3>Empleados</h3><p>Crea empleados, consulta el listado y desactiva empleados cuando sea necesario.</p><button onclick="irGestionEmpleados()">Gestionar empleados</button></article>
+      <article class="module-card"><span>Catálogo</span><h3>Servicios</h3><p>Crea servicios, define duración, precio y administra el catálogo del negocio.</p><button onclick="irGestionServicios()">Gestionar servicios</button></article>
+      <article class="module-card"><span>Inventario</span><h3>Productos</h3><p>Carga productos, controla stock y registra movimientos de entrada o salida.</p><button onclick="irGestionProductos()">Gestionar inventario</button></article>
+      <article class="module-card"><span>Cuenta</span><h3>Perfil</h3><p>Consulta tus datos de usuario y valida el acceso como negocio.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
     </div>
   </div>
 </section>
 
+<!-- ══ DASHBOARD USUARIO: NEGOCIOS IZQ + MAPA DER ══ -->
 <section class="hero dashboard-screen user-home" id="dashboard-usuario" style="display:none;">
   <div class="hero-bg"></div>
   <div class="user-dashboard-shell">
+    <!-- Menú lateral izquierdo — sin cambios -->
     <aside class="user-side-panel">
       <div class="side-brand-mini side-menu-title">
         <p class="section-eyebrow">Menú</p>
         <p>Gestiona tu cuenta.</p>
       </div>
-
       <nav class="user-quick-menu" aria-label="Opciones de usuario">
-        <button type="button" onclick="irMisCitas()">
-          <span>Agenda</span>
-          <strong>Mis citas</strong>
-        </button>
-        <button type="button" onclick="irTiendaUsuario()">
-          <span>Tienda</span>
-          <strong>Productos</strong>
-        </button>
-        <button type="button" onclick="irMisPedidos()">
-          <span>Compras</span>
-          <strong>Mis pedidos</strong>
-        </button>
-        <button type="button" onclick="irMisCalificaciones()">
-          <span>Opiniones</span>
-          <strong>Calificaciones</strong>
-        </button>
+        <button type="button" onclick="irMisCitas()"><span>Agenda</span><strong>Mis citas</strong></button>
+        <button type="button" onclick="irTiendaUsuario()"><span>Tienda</span><strong>Productos</strong></button>
+        <button type="button" onclick="irMisPedidos()"><span>Compras</span><strong>Mis pedidos</strong></button>
+        <button type="button" onclick="irMisCalificaciones()"><span>Opiniones</span><strong>Calificaciones</strong></button>
       </nav>
-
       <button class="btn-secondary clean side-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     </aside>
 
+    <!-- Contenido principal -->
     <main class="user-business-main">
+      <!-- Header igual que antes -->
       <div class="business-main-header">
         <div>
           <p class="section-eyebrow">Panel de usuario</p>
@@ -373,12 +382,31 @@
         <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
       </div>
 
+      <!-- Buscador -->
       <div class="toolbar user-business-toolbar">
         <input type="search" id="buscarNegocio" placeholder="Buscar por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
       </div>
 
-      <div id="listaNegociosUsuario" class="business-grid user-business-grid"></div>
-      <span id="usuarioNegociosMsg" class="form-msg"></span>
+      <!-- Dividido: tarjetas izquierda | mapa derecha -->
+      <div class="user-content-split">
+
+        <!-- Izquierda: tarjetas de negocios -->
+        <div class="user-negocios-panel">
+          <div id="listaNegociosUsuario" class="business-grid user-business-grid"></div>
+          <span id="usuarioNegociosMsg" class="form-msg"></span>
+        </div>
+
+        <!-- Derecha: mapa mini con ubicación usuario -->
+        <div class="user-mapa-panel">
+          <span class="user-mapa-titulo">📍 Barberías cerca de ti</span>
+          <div id="mapaUsuarioDash"></div>
+          <button class="user-mapa-btn" id="btnUbicacionDash" onclick="centrarUbicacionDash()">
+            📍 Ver mi ubicación
+          </button>
+          <p class="user-mapa-status" id="mapaStatusDash">Cargando barberías...</p>
+        </div>
+
+      </div>
     </main>
   </div>
 </section>
@@ -387,51 +415,16 @@
   <div class="hero-bg"></div>
   <div class="dashboard-container">
     <div class="dashboard-header">
-      <div>
-        <p class="section-eyebrow">Panel de administración</p>
-        <h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1>
-        <p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p>
-      </div>
+      <div><p class="section-eyebrow">Panel de administración</p><h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1><p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p></div>
       <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
-
     <div class="dashboard-grid">
-      <article class="dash-card">
-        <span>Negocios</span>
-        <strong>Directorio</strong>
-        <p>Consulta los negocios registrados en la plataforma.</p>
-        <button onclick="irVerNegocios()">Ver negocios</button>
-      </article>
-      <article class="dash-card">
-        <span>Equipo</span>
-        <strong>Empleados</strong>
-        <p>Consulta y administra empleados cuando el backend lo permita.</p>
-        <button onclick="irGestionEmpleados()">Gestionar empleados</button>
-      </article>
-      <article class="dash-card">
-        <span>Catálogo</span>
-        <strong>Servicios</strong>
-        <p>Consulta servicios publicados por los negocios.</p>
-        <button onclick="irGestionServicios()">Gestionar servicios</button>
-      </article>
-      <article class="dash-card">
-        <span>Inventario</span>
-        <strong>Productos</strong>
-        <p>Consulta productos disponibles y controla el inventario.</p>
-        <button onclick="irGestionProductos()">Gestionar productos</button>
-      </article>
-      <article class="dash-card">
-        <span>Agenda</span>
-        <strong>Citas</strong>
-        <p>Consulta las citas registradas en el sistema.</p>
-        <button onclick="irGestionCitas()">Gestionar citas</button>
-      </article>
-      <article class="dash-card">
-        <span>Seguridad</span>
-        <strong>Mi perfil</strong>
-        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
-        <button onclick="irMiPerfil()">Mi perfil</button>
-      </article>
+      <article class="dash-card"><span>Negocios</span><strong>Directorio</strong><p>Consulta los negocios registrados en la plataforma.</p><button onclick="irVerNegocios()">Ver negocios</button></article>
+      <article class="dash-card"><span>Equipo</span><strong>Empleados</strong><p>Consulta y administra empleados cuando el backend lo permita.</p><button onclick="irGestionEmpleados()">Gestionar empleados</button></article>
+      <article class="dash-card"><span>Catálogo</span><strong>Servicios</strong><p>Consulta servicios publicados por los negocios.</p><button onclick="irGestionServicios()">Gestionar servicios</button></article>
+      <article class="dash-card"><span>Inventario</span><strong>Productos</strong><p>Consulta productos disponibles y controla el inventario.</p><button onclick="irGestionProductos()">Gestionar productos</button></article>
+      <article class="dash-card"><span>Agenda</span><strong>Citas</strong><p>Consulta las citas registradas en el sistema.</p><button onclick="irGestionCitas()">Gestionar citas</button></article>
+      <article class="dash-card"><span>Seguridad</span><strong>Mi perfil</strong><p>Consulta tus datos y activa MFA con app autenticadora.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
     </div>
   </div>
 </section>
@@ -468,11 +461,7 @@
       <p><span>Rol</span><strong id="perfilRol"></strong></p>
     </div>
     <div class="security-panel">
-      <div>
-        <p class="section-eyebrow">Seguridad adicional</p>
-        <h3>App autenticadora</h3>
-        <p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p>
-      </div>
+      <div><p class="section-eyebrow">Seguridad adicional</p><h3>App autenticadora</h3><p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p></div>
       <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
       <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
         <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
@@ -493,11 +482,7 @@
   <div class="hero-bg"></div>
   <div class="dashboard-container">
     <div class="dashboard-header">
-      <div>
-        <p class="section-eyebrow">Directorio</p>
-        <h1 class="dashboard-title">Negocios <span>Disponibles</span></h1>
-        <p class="muted">Listado general de barberías y centros registrados.</p>
-      </div>
+      <div><p class="section-eyebrow">Directorio</p><h1 class="dashboard-title">Negocios <span>Disponibles</span></h1><p class="muted">Listado general de barberías y centros registrados.</p></div>
       <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
     </div>
     <div id="listaNegocios" class="business-grid"></div>
@@ -505,7 +490,7 @@
   </div>
 </section>
 
-
+<!-- ══ DETALLE NEGOCIO: con mapa pequeño de ubicación ══ -->
 <section class="hero dashboard-screen" id="detalle-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="dashboard-container">
@@ -524,21 +509,20 @@
         <p><span>Dirección</span><strong id="detalleNegocioDireccion">—</strong></p>
         <p><span>Teléfono</span><strong id="detalleNegocioTelefono">—</strong></p>
         <p><span>Correo</span><strong id="detalleNegocioCorreo">—</strong></p>
+        <!-- Mapa pequeño de ubicación de este negocio -->
+        <div class="detalle-mapa-wrap">
+          <div class="detalle-mapa-header">📍 Ubicación del negocio</div>
+          <div id="mapaDetalleNegocio"></div>
+        </div>
       </aside>
 
       <form id="agendarCitaForm" class="manager-form booking-form">
         <h3>Agendar cita</h3>
-        <select id="citaEmpleado" required>
-          <option value="">Selecciona un trabajador</option>
-        </select>
-        <select id="citaServicio" required>
-          <option value="">Selecciona un servicio</option>
-        </select>
+        <select id="citaEmpleado" required><option value="">Selecciona un trabajador</option></select>
+        <select id="citaServicio" required><option value="">Selecciona un servicio</option></select>
         <div class="form-grid">
           <input id="citaFecha" type="date" required>
-          <select id="citaHora" required disabled>
-            <option value="">Selecciona trabajador, servicio y fecha</option>
-          </select>
+          <select id="citaHora" required disabled><option value="">Selecciona trabajador, servicio y fecha</option></select>
         </div>
         <small id="citaHorarioInfo" class="helper-text booking-helper">Selecciona trabajador, servicio y fecha para cargar horarios disponibles.</small>
         <textarea id="citaObservaciones" rows="3" placeholder="Observaciones opcionales"></textarea>
@@ -548,14 +532,8 @@
     </div>
 
     <div class="detail-columns">
-      <div>
-        <div class="list-header"><h3>Trabajadores disponibles</h3></div>
-        <div id="detalleEmpleadosNegocio" class="mini-grid"></div>
-      </div>
-      <div>
-        <div class="list-header"><h3>Servicios disponibles</h3></div>
-        <div id="detalleServiciosNegocio" class="mini-grid"></div>
-      </div>
+      <div><div class="list-header"><h3>Trabajadores disponibles</h3></div><div id="detalleEmpleadosNegocio" class="mini-grid"></div></div>
+      <div><div class="list-header"><h3>Servicios disponibles</h3></div><div id="detalleServiciosNegocio" class="mini-grid"></div></div>
     </div>
   </div>
 </section>
@@ -591,12 +569,9 @@
           <button id="empleadoCancelEditBtn" class="btn-secondary clean full-link" type="button" style="display:none;" onclick="cancelarEdicionEmpleado()">Cancelar edición</button>
           <span id="empleadoMsg" class="form-msg"></span>
         </form>
-
         <form id="horarioEmpleadoForm" class="manager-form">
           <h3>Asignar horario</h3>
-          <select id="horarioEmpleadoSelect" required>
-            <option value="">Selecciona empleado</option>
-          </select>
+          <select id="horarioEmpleadoSelect" required><option value="">Selecciona empleado</option></select>
           <div class="day-picker" id="horarioDias">
             <label><input type="checkbox" name="horarioDias" value="1"> Lun</label>
             <label><input type="checkbox" name="horarioDias" value="2"> Mar</label>
@@ -720,5 +695,234 @@
 </footer>
 
 <script src="js/main.js?v=20260530-mfa-roles"></script>
+
+<!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
+<script>
+const API_MAPA_U = "http://3.15.197.152:10000";
+const TILE_DARK_U  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_OPTS_U  = { subdomains:"abcd", maxZoom:19, attribution:'© <a href="https://carto.com/">CARTO</a>' };
+
+/* ── Estado global mapas ── */
+let mapaDash       = null;
+let mapaDashListo  = false;
+let marcadorDashU  = null;
+
+let mapaDetalle      = null;
+let mapaDetalleListo = false;
+
+/* ── Iconos ── */
+function iconoBarberiaU() {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:30px;height:30px;background:linear-gradient(135deg,#c9a84c,#7a5c14);
+      border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.3);
+      box-shadow:0 3px 10px rgba(201,168,76,0.5);">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+        transform:rotate(45deg);font-size:12px;">✂</div></div>`,
+    iconSize:[30,30], iconAnchor:[15,30], popupAnchor:[0,-33]
+  });
+}
+function iconoGPS() {
+  return L.divIcon({
+    className:'',
+    html:'<div class="punto-gps"></div>',
+    iconSize:[16,16], iconAnchor:[8,8]
+  });
+}
+
+/* ── Geocodificar ── */
+async function geocodificarU(q) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=co`,
+      { headers:{"Accept-Language":"es"} });
+    const d = await r.json();
+    if (d && d[0]) return { lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+/* ══════════════════════════════════════════
+   MAPA PEQUEÑO — DASHBOARD USUARIO
+══════════════════════════════════════════ */
+async function inicializarMapaDash() {
+  if (mapaDashListo) return;
+  if (!document.getElementById("mapaUsuarioDash")) return;
+
+  mapaDash = L.map("mapaUsuarioDash", { center:[4.6097,-74.0817], zoom:12, zoomControl:true });
+  L.tileLayer(TILE_DARK_U, TILE_OPTS_U).addTo(mapaDash);
+  mapaDashListo = true;
+
+  await cargarNegociosEnMapaDash();
+  pedirUbicacionDashSilenciosa();
+}
+
+async function cargarNegociosEnMapaDash() {
+  const status = document.getElementById("mapaStatusDash");
+  try {
+    const res     = await fetch(`${API_MAPA_U}/negocios/`);
+    const lista   = await res.json().catch(()=>[]);
+    const negocios = Array.isArray(lista) ? lista : [];
+    if (!negocios.length) {
+      if (status) status.textContent = "Sin barberías registradas aún.";
+      return;
+    }
+    if (status) status.textContent = `Ubicando ${negocios.length} barbería(s)...`;
+    const ic = iconoBarberiaU();
+    let colocados = 0;
+    const bounds = [];
+
+    for (const n of negocios) {
+      let lat = Number(n.latitud||n.lat||0);
+      let lng = Number(n.longitud||n.lng||n.lon||0);
+      if ((lat===0||lng===0) && n.direccion) {
+        const c = await geocodificarU(n.direccion + ", Colombia");
+        if (c) { lat=c.lat; lng=c.lng; }
+        await new Promise(r=>setTimeout(r,700));
+      }
+      if (lat!==0 && lng!==0) {
+        colocados++;
+        bounds.push([lat,lng]);
+        const nombre  = n.nombre_negocio||n.nombre||"Negocio";
+        const dir     = n.direccion||"Sin dirección";
+        const gmaps   = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        L.marker([lat,lng],{icon:ic}).addTo(mapaDash)
+          .bindPopup(`<strong>${nombre}</strong>
+            <span class="pm-dir">📍 ${dir}</span>
+            <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`);
+      }
+    }
+    if (bounds.length) mapaDash.fitBounds(bounds, {padding:[30,30], maxZoom:14});
+    if (status) status.textContent = colocados ? `${colocados} barbería(s) en el mapa.` : "Sin ubicaciones disponibles.";
+  } catch(e) {
+    if (status) status.textContent = "No se pudieron cargar las barberías.";
+  }
+}
+
+function pedirUbicacionDashSilenciosa() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const {latitude:lat, longitude:lng} = pos.coords;
+    ponerPuntoGPS(lat, lng);
+  }, ()=>{}, {enableHighAccuracy:false, timeout:8000});
+}
+
+function ponerPuntoGPS(lat, lng) {
+  if (!mapaDashListo) return;
+  if (marcadorDashU) marcadorDashU.remove();
+  marcadorDashU = L.marker([lat,lng],{icon:iconoGPS(), zIndexOffset:1000})
+    .addTo(mapaDash)
+    .bindPopup('<strong style="color:#4285f4">📍 Tu ubicación</strong>');
+}
+
+function centrarUbicacionDash() {
+  if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); return; }
+  const btn = document.getElementById("btnUbicacionDash");
+  if (btn) { btn.textContent="⏳ Buscando..."; btn.disabled=true; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const {latitude:lat, longitude:lng} = pos.coords;
+      mapaDash.setView([lat,lng],15);
+      ponerPuntoGPS(lat,lng);
+      marcadorDashU.openPopup();
+      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+    },
+    () => {
+      alert("No se pudo obtener tu ubicación.");
+      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+    },
+    {enableHighAccuracy:true, timeout:12000}
+  );
+}
+
+/* ══════════════════════════════════════════
+   MAPA PEQUEÑO — DETALLE NEGOCIO
+══════════════════════════════════════════ */
+async function mostrarMapaDetalleNegocio(negocio) {
+  const contenedor = document.getElementById("mapaDetalleNegocio");
+  if (!contenedor) return;
+
+  // Destruir mapa previo si existe
+  if (mapaDetalle) {
+    mapaDetalle.remove();
+    mapaDetalle = null;
+    mapaDetalleListo = false;
+  }
+
+  const nombre  = negocio.nombre_negocio || negocio.nombre || "Negocio";
+  const dir     = negocio.direccion || "";
+  let lat = Number(negocio.latitud||negocio.lat||0);
+  let lng = Number(negocio.longitud||negocio.lng||negocio.lon||0);
+
+  // Si no tiene coords, geocodificar por dirección
+  if ((lat===0||lng===0) && dir) {
+    const c = await geocodificarU(dir + ", Colombia");
+    if (c) { lat=c.lat; lng=c.lng; }
+  }
+
+  // Si no se encontró ubicación, ocultar el mapa
+  if (lat===0 || lng===0) {
+    const wrap = contenedor.closest(".detalle-mapa-wrap");
+    if (wrap) wrap.style.display = "none";
+    return;
+  }
+
+  const wrap = contenedor.closest(".detalle-mapa-wrap");
+  if (wrap) wrap.style.display = "block";
+
+  // Esperar un tick para que el contenedor sea visible
+  await new Promise(r => setTimeout(r, 80));
+
+  mapaDetalle = L.map("mapaDetalleNegocio", {
+    center:[lat,lng], zoom:15,
+    zoomControl:false,
+    dragging:false, // mapa fijo para no interferir con el scroll
+    scrollWheelZoom:false,
+    doubleClickZoom:false,
+  });
+  L.tileLayer(TILE_DARK_U, TILE_OPTS_U).addTo(mapaDetalle);
+  mapaDetalleListo = true;
+
+  const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  L.marker([lat,lng],{icon:iconoBarberiaU()})
+    .addTo(mapaDetalle)
+    .bindPopup(`<strong>${nombre}</strong>
+      <span class="pm-dir">📍 ${dir||"Sin dirección"}</span>
+      <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`)
+    .openPopup();
+}
+
+/* ── Inicializar mapa dash cuando el usuario entra al dashboard ── */
+// Interceptar cargarDatosDashboardUsuario para iniciar el mapa
+const _origCargarDash = typeof cargarDatosDashboardUsuario === "function"
+  ? cargarDatosDashboardUsuario : null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Arrancar mapa dash con pequeño delay para que la sección sea visible
+  const observer = new MutationObserver(() => {
+    const dash = document.getElementById("dashboard-usuario");
+    if (dash && dash.style.display !== "none" && !mapaDashListo) {
+      setTimeout(inicializarMapaDash, 300);
+    }
+  });
+  observer.observe(document.body, { subtree:true, attributes:true, attributeFilter:["style"] });
+});
+
+/* ── Exponer para que main.js llame al mapa de detalle ──
+   main.js llama a abrirNegocioCliente() → que llama mostrarDetalleNegocio()
+   Sobreescribimos abrirNegocioCliente para inyectar el mapa del detalle ── */
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof window.abrirNegocioCliente === "function") {
+    const orig = window.abrirNegocioCliente.bind(window);
+    window.abrirNegocioCliente = async function(idNegocio) {
+      await orig(idNegocio);
+      // Buscar negocio en cache y mostrar su mapa
+      if (typeof negociosCache !== "undefined") {
+        const n = negociosCache.find(x => Number(x.id_negocio||x.id||x.negocio_id) === Number(idNegocio));
+        if (n) mostrarMapaDetalleNegocio(n);
+      }
+    };
+  }
+});
+</script>
 </body>
 </html>
