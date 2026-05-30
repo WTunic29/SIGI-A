@@ -21,6 +21,31 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sigi_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "10000:10000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sigi_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
 volumes:
   sigi_pgdata:
     driver: local

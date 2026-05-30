@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const API_BASE = "https://sigi-a.onrender.com";
+const API_BASE = "http://3.15.197.152:10000";
 const ROLES = {
   negocio: "Negocio",
   cliente: "Usuario",
