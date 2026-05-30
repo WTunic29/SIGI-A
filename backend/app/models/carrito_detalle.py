@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, Numeric, String
+from sqlalchemy import Column, BigInteger, Integer, Numeric, String, Date, Time, Text
 from app.database import Base
 
 
@@ -12,9 +12,21 @@ class CarritoDetalle(Base):
 
     tipo_item = Column(String(20), nullable=False)
 
+    id_negocio = Column(BigInteger)
+
     id_producto = Column(BigInteger)
 
     id_servicio = Column(BigInteger)
+
+    id_empleado = Column(BigInteger)
+
+    fecha_cita = Column(Date)
+
+    hora_inicio = Column(Time)
+
+    hora_fin = Column(Time)
+
+    observaciones = Column(Text)
 
     cantidad = Column(Integer, nullable=False)
 

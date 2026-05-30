@@ -1,0 +1,10 @@
+# Artefactos locales de QA / pytest (el .gitignore raíz ya ignora parte de esto).
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+logs/
+node_modules/
+package-lock.json
+reports/

@@ -24,4 +24,4 @@ Varias rutas devuelven el modelo Pydantic directamente (`response_model=FooRespo
 
 ---
 
-Última verificación automática (pytest en `QA/`): **51 passed**, **1 xfailed** (cita), salvo cambios posteriores en el repositorio.
+Última verificación automática (pytest en `QA/`): **56 passed**, **1 xfailed** (cita), salvo cambios posteriores en el repositorio. (29/05/2026)

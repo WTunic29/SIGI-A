@@ -31,6 +31,16 @@ sqlalchemy.create_engine = _test_create_engine
 
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+# JWT: `app.utils.security` hace int(os.getenv(...)) sin fallback; CI y máquinas
+# sin .env deben tener valores antes de importar la app (no pisar vars ya definidas).
+for _k, _v in (
+    ("SECRET_KEY", "pytest-secret-key-not-for-production"),
+    ("ALGORITHM", "HS256"),
+    ("ACCESS_TOKEN_EXPIRE_MINUTES", "30"),
+    ("REFRESH_TOKEN_EXPIRE_DAYS", "7"),
+):
+    if not os.environ.get(_k):
+        os.environ[_k] = _v
 
 import itertools
 import sqlite3
@@ -114,6 +124,7 @@ _ROUTE_MODULES_WITH_LOCAL_GET_DB = (
     "app.routes.pago",
     "app.routes.carrito",
     "app.routes.carrito_detalle",
+    "app.routes.factura",
     "app.routes.favorito",
     "app.routes.token_recuperacion",
     "app.routes.pedido_detalle",

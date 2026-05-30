@@ -18,6 +18,7 @@ from app.routes.pedido import router as pedido_router
 from app.routes import pedido_detalle
 from app.routes import carrito
 from app.routes import carrito_detalle
+from app.routes import factura
 from app.routes import favorito
 from app.routes import token_recuperacion
 from app.routes import sesion
@@ -107,6 +108,7 @@ app.include_router(pedido_router)
 app.include_router(pedido_detalle.router)
 app.include_router(carrito.router)
 app.include_router(carrito_detalle.router)
+app.include_router(factura.router)
 app.include_router(favorito.router)
 app.include_router(token_recuperacion.router)
 app.include_router(sesion.router)

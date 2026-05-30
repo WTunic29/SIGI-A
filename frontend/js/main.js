@@ -1,7 +1,23 @@
 // ─────────────────────────────────────────────
-// CONFIG
+// CONFIG (compatible Linux / AWS: definir window.SIGIA_API_BASE en HTML si hace falta)
 // ─────────────────────────────────────────────
-const API_BASE = "http://3.15.197.152:10000";
+function resolveApiBase() {
+  if (typeof window !== "undefined" && window.SIGIA_API_BASE) {
+    return String(window.SIGIA_API_BASE).replace(/\/$/, "");
+  }
+  const { protocol, hostname, port } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return `${protocol}//${hostname}:8000`;
+  }
+  if (port === "10000") {
+    return `${protocol}//${hostname}:${port}`;
+  }
+  if (!port || port === "80" || port === "443") {
+    return `${protocol}//${hostname}`;
+  }
+  return `${protocol}//${hostname}:10000`;
+}
+const API_BASE = resolveApiBase();
 const ROLES = {
   negocio: "Negocio",
   cliente: "Usuario",
@@ -65,6 +81,7 @@ function actualizarNavbar() {
   if (menuValidarAcceso) menuValidarAcceso.style.display = esNegocio ? "block" : "none";
   menuNegocioItems.forEach(item => item.style.display = esNegocio ? "block" : "none");
   menuClienteItems.forEach(item => item.style.display = esCliente ? "block" : "none");
+  if (esCliente && getToken()) actualizarBadgeCarrito();
 }
 
 // ─────────────────────────────────────────────
@@ -75,7 +92,8 @@ const TODAS = [
   "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
-  "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario"
+  "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario",
+  "carrito-usuario", "factura-usuario"
 ];
 
 function setVisible(show, hide = TODAS) {
@@ -494,6 +512,7 @@ function guardarSesion(data) {
   if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
   if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
   actualizarNavbar();
+  actualizarBadgeCarrito();
 }
 
 function limpiarSesionLocal() {
@@ -1215,6 +1234,10 @@ const API_PATHS = {
   pedidos: "/pedidos/",
   pagos: "/pagos/",
   pedidoDetalle: "/pedido-detalle/",
+  carritos: "/carritos/",
+  carritoDetalle: "/carrito-detalle/",
+  carritoActivo: "/carritos/activo/me",
+  facturas: "/facturas/",
 };
 
 
@@ -1697,30 +1720,36 @@ async function agendarCitaCliente(e) {
     return;
   }
 
+  const servicio = serviciosNegocioSeleccionado.find(s => Number(s.id_servicio) === idServicio);
+  const precio = Number(servicio?.precio || 0);
+
   try {
-    const citaPayload = {
-      id_negocio: idNegocio,
-      id_empleado: idEmpleado,
-      id_servicio: idServicio,
-      fecha,
-      hora_inicio: horaInicio,
-      observaciones,
-    };
-
-    console.log("Payload cita enviado:", citaPayload);
-
-    await apiFetchConRutas(RUTAS_CITAS, {
+    const carrito = await obtenerOCrearCarritoActivo();
+    await apiFetch(API_PATHS.carritoDetalle, {
       method: "POST",
-      body: JSON.stringify(citaPayload),
+      body: JSON.stringify({
+        id_carrito: carrito.carrito.id_carrito,
+        tipo_item: "servicio",
+        id_negocio: idNegocio,
+        id_servicio: idServicio,
+        id_empleado: idEmpleado,
+        fecha_cita: fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFinSeleccionada || null,
+        observaciones,
+        cantidad: 1,
+        precio_unitario: precio,
+      }),
     });
 
     e.target.reset();
     limpiarHorasDisponibles();
     const rango = horaFinSeleccionada ? ` de ${formatearHoraVisible(horaInicio)} a ${formatearHoraVisible(horaFinSeleccionada)}` : ` a las ${formatearHoraVisible(horaInicio)}`;
-    mostrarMensaje("agendarCitaMsg", `Cita agendada correctamente${rango}.`, false);
-    showToast("Cita agendada correctamente.", "success");
+    mostrarMensaje("agendarCitaMsg", `Cita agregada al carrito${rango}.`, false);
+    showToast("Servicio agendado agregado al carrito.", "success");
+    await actualizarBadgeCarrito();
   } catch (error) {
-    mostrarMensaje("agendarCitaMsg", error.message || "No se pudo agendar la cita.");
+    mostrarMensaje("agendarCitaMsg", error.message || "No se pudo agregar la cita al carrito.");
   }
 }
 
@@ -1857,6 +1886,8 @@ let misCalificacionesCache = [];
 let productosUsuarioCache = [];
 let misPedidosCache = [];
 let misPagosCache = [];
+let carritoActivoCache = null;
+let ultimaFacturaCache = null;
 
 function obtenerIdUsuarioActual() {
   const usuario = getUsuario();
@@ -2007,11 +2038,12 @@ async function calificarCita(idCita, idNegocio) {
 function pagarCitaInfo(idCita) {
   openUiModal({
     eyebrow: "Pagos",
-    title: "Pago de cita no disponible aún",
-    text: `La cita #${idCita} ya se puede listar y calificar. Para pagar citas directamente falta que el backend acepte pagos asociados a id_cita o que exista una ruta específica de pagos de citas.`,
-    confirmText: "Entendido",
-    showCancel: false
-  });
+    title: "Pago vía carrito",
+    text: `La cita #${idCita} se paga al hacer checkout desde el carrito (productos + servicios agendados). Ve a Carrito → Pagar e imprimir factura.`,
+    confirmText: "Ir al carrito",
+    showCancel: true,
+    cancelText: "Cerrar"
+  }).then((ok) => { if (ok) irCarrito(); });
 }
 
 async function irMisCalificaciones() {
@@ -2087,12 +2119,12 @@ function renderProductosUsuario(productos) {
       <h3>${escapeHtml(p.nombre || "Producto")}</h3>
       <p>${escapeHtml(p.descripcion || "Sin descripción")}</p>
       <div class="business-meta"><span>${escapeHtml(negocioNombrePorId(p.id_negocio))}</span><span>Stock: ${escapeHtml(p.stock ?? 0)}</span><span>$${Number(p.precio || 0).toLocaleString("es-CO")}</span></div>
-      <button class="btn-primary tiny" type="button" onclick="crearPedidoProducto(${p.id_producto})">Crear pedido</button>
+      <button class="btn-primary tiny" type="button" onclick="agregarProductoAlCarrito(${p.id_producto})">Agregar al carrito</button>
     </div>
   </article>`).join("");
 }
 
-async function crearPedidoProducto(idProducto) {
+async function agregarProductoAlCarrito(idProducto) {
   const producto = productosUsuarioCache.find(p => Number(p.id_producto) === Number(idProducto));
   if (!producto) {
     showToast("Producto no encontrado. Actualiza la tienda e intenta de nuevo.", "error");
@@ -2100,25 +2132,27 @@ async function crearPedidoProducto(idProducto) {
   }
   const cantidad = await pedirCantidadProducto(producto);
   if (!cantidad) return;
-  const total = Number(producto.precio || 0) * cantidad;
   try {
-    const pedido = await apiFetch(API_PATHS.pedidos, {
-      method: "POST",
-      body: JSON.stringify({ id_negocio: Number(producto.id_negocio), total, estado: "pendiente" })
-    });
-    await apiFetch(API_PATHS.pedidoDetalle, {
+    const carrito = await obtenerOCrearCarritoActivo();
+    await apiFetch(API_PATHS.carritoDetalle, {
       method: "POST",
       body: JSON.stringify({
-        id_pedido: pedido.id_pedido,
+        id_carrito: carrito.carrito.id_carrito,
+        tipo_item: "producto",
+        id_negocio: Number(producto.id_negocio),
         id_producto: Number(idProducto),
         cantidad,
         precio_unitario: Number(producto.precio || 0),
-        subtotal: total
-      })
-    }).catch(() => null);
-    showToast(`Pedido #${pedido.id_pedido} creado por $${total.toLocaleString("es-CO")}.`, "success", 6200);
-    await irMisPedidos();
+      }),
+    });
+    showToast(`${producto.nombre} agregado al carrito (x${cantidad}).`, "success", 6200);
+    await actualizarBadgeCarrito();
   } catch (e) { showToast(friendlyError(e), "error"); }
+}
+
+/** @deprecated usar agregarProductoAlCarrito */
+async function crearPedidoProducto(idProducto) {
+  return agregarProductoAlCarrito(idProducto);
 }
 
 async function irMisPedidos() {
@@ -2162,7 +2196,7 @@ function renderMisPedidos() {
         <span class="status-pill ${pagado ? 'done' : 'pending'}">${pagado ? 'Pago registrado' : 'Pago pendiente'}</span>
       </div>
       <div class="row-actions">
-        ${pagado ? "" : `<button onclick="pagarPedido(${p.id_pedido})">Pagar pedido</button>`}
+        ${pagado ? `<button onclick="verFacturaPedido(${p.id_pedido})">Ver factura</button>` : `<button onclick="pagarPedido(${p.id_pedido})">Pagar pedido</button>`}
       </div>
     </article>`;
   }).join("");
@@ -2206,6 +2240,195 @@ async function pagarPedido(idPedido) {
     showToast("Pago registrado correctamente.", "success");
     await cargarMisPedidos();
   } catch (e) { showToast(friendlyError(e), "error"); }
+}
+
+// ─────────────────────────────────────────────
+// CARRITO Y CHECKOUT
+// ─────────────────────────────────────────────
+
+async function obtenerOCrearCarritoActivo() {
+  const data = await apiFetch(API_PATHS.carritoActivo);
+  carritoActivoCache = data;
+  return data;
+}
+
+async function actualizarBadgeCarrito() {
+  try {
+    const data = await obtenerOCrearCarritoActivo();
+    const badge = document.getElementById("navCarritoBadge");
+    if (badge) {
+      const n = data.cantidad_items || 0;
+      badge.textContent = String(n);
+      badge.style.display = n > 0 ? "inline-flex" : "none";
+    }
+  } catch {
+    /* sin sesión o error de red */
+  }
+}
+
+async function irCarrito() {
+  const usuario = getUsuario();
+  if (!usuario || !getToken()) return mostrarLogin();
+  mostrarModuloCliente("carrito-usuario");
+  await cargarCarrito();
+}
+
+async function cargarCarrito() {
+  const cont = document.getElementById("listaCarrito");
+  try {
+    const data = await obtenerOCrearCarritoActivo();
+    renderCarrito(data);
+    mostrarMensaje("carritoMsg", "", false);
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderCarrito(data) {
+  const cont = document.getElementById("listaCarrito");
+  const totalEl = document.getElementById("carritoTotal");
+  if (!cont) return;
+
+  const detalles = data.detalles || [];
+  if (!detalles.length) {
+    cont.innerHTML = `<div class="empty-state">Tu carrito está vacío. Agrega productos o agenda un servicio.</div>`;
+    if (totalEl) totalEl.textContent = "$0";
+    return;
+  }
+
+  cont.innerHTML = detalles.map(d => {
+    const subtotal = Number(d.precio_unitario || 0) * Number(d.cantidad || 1);
+    const esServicio = d.tipo_item === "servicio";
+    const extra = esServicio
+      ? `<p class="muted">${escapeHtml(d.nombre_empleado || "Trabajador")} · ${escapeHtml(d.fecha_cita || "")} ${escapeHtml(formatearHoraVisible(d.hora_inicio || ""))}</p>`
+      : `<p class="muted">Cantidad: ${escapeHtml(d.cantidad)}</p>`;
+    return `<article class="admin-item">
+      <div>
+        <h4>${escapeHtml(d.nombre_item || (esServicio ? "Servicio" : "Producto"))}</h4>
+        <p>${escapeHtml(d.nombre_negocio || "Negocio")} · ${esServicio ? "Cita" : "Producto"}</p>
+        ${extra}
+        <strong>$${subtotal.toLocaleString("es-CO")}</strong>
+      </div>
+      <div class="row-actions">
+        <button type="button" onclick="eliminarItemCarrito(${d.id_carrito_detalle})">Quitar</button>
+      </div>
+    </article>`;
+  }).join("");
+
+  if (totalEl) totalEl.textContent = `$${Number(data.total || 0).toLocaleString("es-CO")}`;
+}
+
+async function eliminarItemCarrito(idDetalle) {
+  const ok = await pedirConfirmacion({
+    title: "Quitar del carrito",
+    text: "¿Deseas eliminar este ítem del carrito?",
+    confirmText: "Quitar",
+  });
+  if (!ok) return;
+  try {
+    await apiFetch(`${API_PATHS.carritoDetalle}${idDetalle}`, { method: "DELETE" });
+    showToast("Ítem eliminado del carrito.", "success");
+    await cargarCarrito();
+    await actualizarBadgeCarrito();
+  } catch (e) { showToast(friendlyError(e), "error"); }
+}
+
+async function pagarCarrito() {
+  const data = carritoActivoCache || await obtenerOCrearCarritoActivo();
+  if (!data.detalles?.length) {
+    showToast("El carrito está vacío.", "error");
+    return;
+  }
+
+  const result = await openUiModal({
+    eyebrow: "Checkout",
+    title: "Pagar carrito",
+    text: `Total a pagar: $${Number(data.total || 0).toLocaleString("es-CO")}. Se crearán pedidos, citas confirmadas y factura(s).`,
+    confirmText: "Pagar e imprimir factura",
+    fields: [
+      { id: "metodo", label: "Método de pago", type: "select", value: "efectivo", options: [
+        { value: "efectivo", label: "Efectivo" },
+        { value: "transferencia", label: "Transferencia" },
+        { value: "tarjeta", label: "Tarjeta" },
+        { value: "payu", label: "PayU" },
+      ]},
+      { id: "referencia", label: "Referencia opcional", type: "text", value: `CHK-${Date.now()}`, required: false },
+    ],
+  });
+  if (!result) return;
+
+  try {
+    const checkout = await apiFetch(
+      `${API_PATHS.carritos}${data.carrito.id_carrito}/checkout`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          metodo_pago: result.metodo || "efectivo",
+          referencia_externa: result.referencia || null,
+        }),
+      }
+    );
+    carritoActivoCache = null;
+    await actualizarBadgeCarrito();
+    showToast("Pago registrado. Generando factura…", "success");
+    if (checkout.facturas?.length) {
+      mostrarFactura(checkout.facturas[0]);
+    } else {
+      await irMisPedidos();
+    }
+  } catch (e) { showToast(friendlyError(e), "error"); }
+}
+
+async function verFacturaPedido(idPedido) {
+  try {
+    const factura = await apiFetch(`${API_PATHS.facturas}pedido/${idPedido}`);
+    mostrarFactura(factura);
+  } catch (e) { showToast(friendlyError(e), "error"); }
+}
+
+function mostrarFactura(factura) {
+  ultimaFacturaCache = factura;
+  const cont = document.getElementById("facturaContenido");
+  if (!cont) return;
+  cont.innerHTML = renderFacturaHtml(factura);
+  mostrarModuloCliente("factura-usuario");
+}
+
+function renderFacturaHtml(f) {
+  const lineas = (f.lineas || []).map(l => {
+    const agenda = l.tipo_item === "servicio" && l.fecha_cita
+      ? `<br><small>${escapeHtml(l.fecha_cita)} ${escapeHtml(formatearHoraVisible(l.hora_inicio || ""))}</small>`
+      : "";
+    return `<tr>
+      <td>${escapeHtml(l.descripcion)}${agenda}</td>
+      <td>${escapeHtml(l.tipo_item)}</td>
+      <td>${escapeHtml(l.cantidad)}</td>
+      <td>$${Number(l.precio_unitario || 0).toLocaleString("es-CO")}</td>
+      <td>$${Number(l.subtotal || 0).toLocaleString("es-CO")}</td>
+    </tr>`;
+  }).join("");
+
+  return `
+    <div class="factura-print">
+      <header class="factura-header">
+        <p class="section-eyebrow">Comprobante de pago</p>
+        <h2>Factura ${escapeHtml(f.numero_factura || "")}</h2>
+        <p>${escapeHtml(f.nombre_negocio || "Negocio SIGI-A")}</p>
+        <p class="muted">Pedido #${escapeHtml(f.id_pedido)} · ${escapeHtml(f.fecha_emision || "")}</p>
+      </header>
+      <table class="factura-table">
+        <thead><tr><th>Descripción</th><th>Tipo</th><th>Cant.</th><th>P. unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>${lineas || "<tr><td colspan='5'>Sin líneas</td></tr>"}</tbody>
+        <tfoot>
+          <tr><td colspan="4"><strong>Total</strong></td><td><strong>$${Number(f.total || 0).toLocaleString("es-CO")}</strong></td></tr>
+        </tfoot>
+      </table>
+      <p class="factura-pago">Método: ${escapeHtml(f.metodo_pago || "—")} · Ref: ${escapeHtml(f.referencia_externa || "—")}</p>
+    </div>`;
+}
+
+function imprimirFacturaActual() {
+  window.print();
 }
 
 

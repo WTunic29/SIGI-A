@@ -29,6 +29,7 @@
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
       <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
+      <a href="#" class="menu-cliente" onclick="irCarrito()">Carrito <span id="navCarritoBadge" class="nav-badge" style="display:none;">0</span></a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
       <a href="#" class="menu-cliente" onclick="irMisPedidos()">Mis pedidos</a>
@@ -334,6 +335,10 @@
       </div>
 
       <nav class="user-quick-menu" aria-label="Opciones de usuario">
+        <button type="button" onclick="irCarrito()">
+          <span>Compras</span>
+          <strong>Carrito</strong>
+        </button>
         <button type="button" onclick="irMisCitas()">
           <span>Agenda</span>
           <strong>Mis citas</strong>
@@ -535,7 +540,7 @@
         </div>
         <small id="citaHorarioInfo" class="helper-text booking-helper">Selecciona trabajador, servicio y fecha para cargar horarios disponibles.</small>
         <textarea id="citaObservaciones" rows="3" placeholder="Observaciones opcionales"></textarea>
-        <button class="btn-primary full" type="submit">Confirmar cita</button>
+        <button class="btn-primary full" type="submit">Agregar al carrito</button>
         <span id="agendarCitaMsg" class="form-msg"></span>
       </form>
     </div>
@@ -697,10 +702,28 @@
   </div>
 </section>
 
+<section class="hero dashboard-screen" id="carrito-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Checkout</p><h1 class="dashboard-title">Mi <span>Carrito</span></h1><p class="muted">Productos y citas agendadas listos para pagar.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarCarrito()">Actualizar</button><button class="btn-secondary clean" onclick="irTiendaUsuario()">Agregar productos</button><button class="btn-secondary clean" onclick="irVerNegocios()">Agendar servicio</button></div>
+    <div id="listaCarrito" class="admin-list"></div>
+    <div class="carrito-footer"><p>Total: <strong id="carritoTotal">$0</strong></p><button class="btn-primary" type="button" onclick="pagarCarrito()">Pagar e imprimir factura</button></div>
+    <span id="carritoMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="factura-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container factura-screen">
+    <div class="dashboard-header no-print"><div><p class="section-eyebrow">Facturación</p><h1 class="dashboard-title">Comprobante <span>de pago</span></h1></div><button class="btn-secondary clean" onclick="irMisPedidos()">Mis pedidos</button></div>
+    <div id="facturaContenido" class="factura-panel"></div>
+    <div class="toolbar no-print"><button class="btn-primary" type="button" onclick="imprimirFacturaActual()">Imprimir factura</button><button class="btn-secondary clean" type="button" onclick="irCarrito()">Volver al carrito</button></div>
+  </div>
+</section>
+
 <section class="hero dashboard-screen" id="mis-pedidos-usuario" style="display:none;">
   <div class="hero-bg"></div><div class="dashboard-container">
     <div class="dashboard-header"><div><p class="section-eyebrow">Compras</p><h1 class="dashboard-title">Mis <span>Pedidos</span></h1><p class="muted">Consulta pedidos y registra pagos.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
-    <div class="toolbar"><button class="btn-primary" onclick="cargarMisPedidos()">Actualizar</button><button class="btn-secondary clean" onclick="irTiendaUsuario()">Crear pedido</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisPedidos()">Actualizar</button><button class="btn-secondary clean" onclick="irCarrito()">Ir al carrito</button></div>
     <div id="listaMisPedidos" class="admin-list"></div><span id="misPedidosMsg" class="form-msg"></span>
   </div>
 </section>
@@ -712,6 +735,9 @@
   </div>
 </footer>
 
+<script>
+  // En AWS/Linux: opcional antes de main.js, ej. window.SIGIA_API_BASE = "https://tu-dominio.com";
+</script>
 <script src="js/main.js"></script>
 </body>
 </html>

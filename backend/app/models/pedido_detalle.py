@@ -16,6 +16,8 @@ class PedidoDetalle(Base):
 
     id_servicio = Column(BigInteger)
 
+    id_cita = Column(BigInteger)
+
     cantidad = Column(Integer, nullable=False)
 
     precio_unitario = Column(Numeric(12, 2), nullable=False)

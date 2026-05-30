@@ -17,6 +17,10 @@ from app.schemas.carrito_detalle import (
     CarritoDetalleUpdate,
     CarritoDetalleResponse
 )
+from app.utils.carrito_helpers import (
+    validar_y_normalizar_detalle,
+    enriquecer_detalle_response,
+)
 
 router = APIRouter(
     prefix="/carrito-detalle",
@@ -94,13 +98,13 @@ def crear_detalle(
                 detail="No autorizado"
             )
 
-    nuevo = CarritoDetalle(**detalle.model_dump())
+    nuevo = CarritoDetalle(**validar_y_normalizar_detalle(db, detalle))
 
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
 
-    return nuevo
+    return enriquecer_detalle_response(db, nuevo)
 
 
 # =========================

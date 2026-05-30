@@ -1,0 +1,15 @@
+$kind: http-request
+name: Listar Favoritos
+description: GET /favoritos/ — favoritos del cliente (o todos si admin).
+method: GET
+url: '{{base_url}}/favoritos/'
+order: 1310
+headers:
+  - key: Authorization
+    value: 'Bearer {{token}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status 200", () => pm.response.to.have.status(200));
+      pm.test("Array", () => pm.expect(pm.response.json()).to.be.an("array"));

@@ -8,6 +8,12 @@ Sistema inteligente de gestión para centros de estética (barberías, peluquer�
 
 SIGI-A es una **plataforma SaaS integral** diseñada para digitalizar y optimizar la gestión de negocios del sector de estética y belleza. Conecta barberías, peluquerías, salones de tatuajes y centros de belleza en un ecosistema unificado.
 
+## Carrito unificado (productos + citas → pago → factura)
+
+Flujo implementado para que el cliente agregue **productos** y **servicios agendados** al mismo carrito, pague en un solo checkout y reciba **factura imprimible**.
+
+Documentación completa (arquitectura, diagramas, API, despliegue Linux/AWS): **[docs/CARRITO_UNIFICADO.md](docs/CARRITO_UNIFICADO.md)**
+
 ## 🏗️ **Arquitectura Técnica**
 
 ### **Backend (FastAPI + PostgreSQL)**
