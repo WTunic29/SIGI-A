@@ -1,4 +1,4 @@
-const API_BASE = window.SIGIA_API_BASE || "http://3.15.197.152:10000";
+const API_BASE = window.SIGIA_API_BASE;
 
     const token = localStorage.getItem("access_token");
     const usuarioRaw = localStorage.getItem("usuario");

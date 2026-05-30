@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const API_BASE = "http://3.15.197.152:10000";
+const API_BASE = window.SIGIA_API_BASE;
 const ROLES = {
   negocio: "Negocio",
   cliente: "Usuario",

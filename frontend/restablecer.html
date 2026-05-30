@@ -37,8 +37,9 @@
   </div>
 </section>
 
+<script src="js/config.js?v=20260530-config"></script>
 <script>
-const API_BASE = "http://3.15.197.152:10000";
+const API_BASE = window.SIGIA_API_BASE;
 
 function escapeHtml(value) {
   return String(value ?? "")
