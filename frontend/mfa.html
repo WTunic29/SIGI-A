@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurar MFA | SIGI-A</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: #0b0b0b;
+      color: #f5f1e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+    }
+
+    .mfa-card {
+      width: min(520px, 92vw);
+      border: 1px solid rgba(210, 180, 70, 0.35);
+      border-radius: 24px;
+      padding: 36px;
+      background: linear-gradient(145deg, #111, #1c1b16);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    .mfa-kicker {
+      color: #d7b84f;
+      letter-spacing: 0.35em;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 44px;
+      line-height: 0.95;
+      margin: 0 0 18px;
+    }
+
+    h1 span {
+      color: #d7b84f;
+    }
+
+    p {
+      color: #cfc8b8;
+      line-height: 1.5;
+    }
+
+    .qr-box {
+      display: flex;
+      justify-content: center;
+      margin: 24px 0;
+      padding: 20px;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .qr-box img {
+      width: 220px;
+      height: 220px;
+    }
+
+    .secret-box {
+      word-break: break-all;
+      background: #0d0d0d;
+      border: 1px solid rgba(210, 180, 70, 0.35);
+      padding: 12px;
+      border-radius: 12px;
+      color: #d7b84f;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(210, 180, 70, 0.45);
+      background: #111;
+      color: #fff;
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 0.25em;
+      margin-bottom: 16px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 16px;
+      background: #d7b84f;
+      color: #0b0b0b;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .msg {
+      margin-top: 16px;
+      text-align: center;
+      color: #ff7a7a;
+      min-height: 22px;
+    }
+
+    .success {
+      color: #80ffb0;
+    }
+  </style>
+</head>
+<body>
+  <main class="mfa-card">
+    <div class="mfa-kicker">Seguridad</div>
+    <h1>Configura tu <span>MFA</span></h1>
+
+    <p>
+      Escanea el código QR con Google Authenticator, Microsoft Authenticator
+      o una app compatible. Luego escribe el código de 6 dígitos.
+    </p>
+
+    <div id="qrBox" class="qr-box">
+      <p style="color:#111;">Cargando QR...</p>
+    </div>
+
+    <p>Clave manual:</p>
+    <div id="secretBox" class="secret-box">Cargando...</div>
+
+    <form id="mfaForm">
+      <input
+        id="codigo"
+        type="text"
+        maxlength="6"
+        placeholder="000000"
+        autocomplete="one-time-code"
+        required
+      />
+      <button type="submit">Confirmar MFA</button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+  </main>
+
+  <script>
+    const API_BASE = "http://3.15.197.152:10000";
+
+    const token = localStorage.getItem("access_token");
+    const usuarioRaw = localStorage.getItem("usuario");
+
+    const msg = document.getElementById("msg");
+    const qrBox = document.getElementById("qrBox");
+    const secretBox = document.getElementById("secretBox");
+
+    function mostrarMensaje(texto, ok = false) {
+      msg.textContent = texto;
+      msg.className = ok ? "msg success" : "msg";
+    }
+
+    function irDashboardPorRol() {
+      let usuario = {};
+      try {
+        usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+      } catch {}
+
+      const rol = usuario.rol;
+
+      if (rol === "negocio") {
+        window.location.href = "negocio.html";
+      } else if (rol === "superusuario" || rol === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "usuario.html";
+      }
+    }
+
+    async function cargarQR() {
+      if (!token) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/mfa/setup`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          mostrarMensaje(data.detail || "No se pudo generar el QR.");
+          return;
+        }
+
+        qrBox.innerHTML = `<img src="${data.qr_base64}" alt="Código QR MFA">`;
+        secretBox.textContent = data.secret;
+      } catch (error) {
+        mostrarMensaje("Error conectando con el backend.");
+      }
+    }
+
+    document.getElementById("mfaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const codigo = document.getElementById("codigo").value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/mfa/confirm`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ codigo })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          mostrarMensaje(data.detail || "Código inválido o expirado.");
+          return;
+        }
+
+        const usuario = JSON.parse(usuarioRaw || "{}");
+        usuario.mfa_totp_enabled = true;
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+        sessionStorage.removeItem("mfa_config_pendiente");
+
+        mostrarMensaje("MFA configurado correctamente. Redirigiendo...", true);
+
+        setTimeout(() => {
+          irDashboardPorRol();
+        }, 1000);
+      } catch (error) {
+        mostrarMensaje("Error confirmando el código MFA.");
+      }
+    });
+
+    cargarQR();
+  </script>
+</body>
+</html>

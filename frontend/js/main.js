@@ -875,6 +875,11 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarVerify2FA("email");
         mostrarMensaje("verify2faMsg", "Código enviado a tu correo.", false);
         showToast("Te enviamos un código de seguridad al correo.", "success");
+      } else if (res.ok && data.requiere_configurar_mfa === true) {
+        guardarSesion(data);
+        sessionStorage.setItem("mfa_config_pendiente", "true");
+        showToast("Debes configurar MFA con tu aplicación autenticadora.", "info");
+        window.location.href = "mfa.html";
       } else if (res.ok && data.access_token) {
         guardarSesion(data);
         showToast("Inicio de sesión exitoso.", "success");

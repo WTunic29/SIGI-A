@@ -1,4 +1,3 @@
-itimedelta(hours=24)mport random
 import secrets
 from datetime import datetime, timedelta
 import base64
@@ -604,45 +603,64 @@ def login_user(
                 "correo": usuario.correo
             }
 
-        codigos_anteriores = db.query(Codigo2FA).filter(
-            Codigo2FA.id_usuario == usuario.id_usuario,
-            Codigo2FA.usado == False
-        ).all()
-
-        for codigo_anterior in codigos_anteriores:
-            codigo_anterior.usado = True
-
-        codigo = str(random.randint(100000, 999999))
-        codigo_hash = hash_password(codigo)
-
-        nuevo_codigo = Codigo2FA(
-            id_usuario=usuario.id_usuario,
-            codigo=codigo_hash,
-            fecha_expiracion=datetime.utcnow() + timedelta(minutes=5),
-            usado=False,
-            intentos=0
+        access_token = create_access_token(
+            data={
+                "sub": usuario.correo,
+                "id_usuario": usuario.id_usuario,
+                "rol": usuario.rol
+            }
         )
 
-        db.add(nuevo_codigo)
+        refresh_token = create_refresh_token(
+            data={
+                "sub": usuario.correo,
+                "id_usuario": usuario.id_usuario
+            }
+        )
+
+        nueva_sesion = Sesion(
+            id_usuario=usuario.id_usuario,
+            token=access_token,
+            fecha_inicio=datetime.utcnow(),
+            fecha_expiracion=datetime.utcnow() + timedelta(
+                days=REFRESH_TOKEN_EXPIRE_DAYS
+            ),
+            ip=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            activa=True
+        )
+
+        db.add(nueva_sesion)
         db.commit()
 
-        enviar_codigo_email(usuario.correo, codigo)
         registrar_auditoria(
             db=db,
             request=request,
             usuario=usuario,
-            accion="OTP_ENVIADO",
+            accion="LOGIN_SIN_MFA_TOTP_REQUIERE_CONFIGURACION",
             modulo="auth",
-            tabla_afectada="core.codigos_2fa",
-            id_registro=nuevo_codigo.id_codigo,
-            detalle=f"Se envió código OTP/2FA al correo {usuario.correo}",
+            tabla_afectada="core.usuarios",
+            id_registro=usuario.id_usuario,
+            detalle=f"Usuario {usuario.correo} inició sesión y debe configurar MFA con aplicación autenticadora.",
             nivel="INFO",
-            resultado="OK"
+            resultado="PENDIENTE"
         )
+
         return {
-            "message": "Código 2FA enviado al correo",
-            "requieres_2fa": True,
-            "correo": usuario.correo
+            "message": "Login correcto. Debes configurar MFA con aplicación autenticadora.",
+            "requiere_configurar_mfa": True,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "usuario": {
+                "id": usuario.id_usuario,
+                "nombre": usuario.nombre,
+                "apellido": usuario.apellido,
+                "correo": usuario.correo,
+                "rol": usuario.rol,
+                "estado": usuario.estado,
+                "mfa_totp_enabled": usuario.mfa_totp_enabled
+            }
         }
 
     except HTTPException:
