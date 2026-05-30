@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sigi_user
+      POSTGRES_PASSWORD: sigi_pass
+      POSTGRES_DB: sigi
+    ports:
+      - "5432:5432"
+    volumes:
+      - sigi_pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigi_user -d sigi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sigi_pgdata:
+    driver: local
