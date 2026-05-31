@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -11,6 +11,7 @@ class PagoBase(BaseModel):
     estado_pago: Optional[str] = "pendiente"
     valor: Decimal
     respuesta_pasarela: Optional[str] = None
+    correo_factura: Optional[EmailStr] = None
 
 
 class PagoCreate(PagoBase):

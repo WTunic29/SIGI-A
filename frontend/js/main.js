@@ -2473,10 +2473,95 @@ function renderMisPedidos() {
         <span class="status-pill ${pagado ? 'done' : 'pending'}">${pagado ? 'Pago registrado' : 'Pago pendiente'}</span>
       </div>
       <div class="row-actions">
-        ${pagado ? "" : `<button onclick="pagarPedido(${p.id_pedido})">Pagar pedido</button>`}
+        ${pagado ? `
+          <button onclick="descargarFacturaPedido(${p.id_pedido})">Descargar factura</button>
+          <button onclick="imprimirFacturaPedido(${p.id_pedido})">Imprimir factura</button>
+        ` : `<button onclick="pagarPedido(${p.id_pedido})">Pagar pedido</button>`}
       </div>
     </article>`;
   }).join("");
+}
+
+async function obtenerFacturaPorPedido(idPedido) {
+  const facturas = await apiFetch("/facturas/");
+  const factura = Array.isArray(facturas)
+    ? facturas.find(f => Number(f.id_pedido) === Number(idPedido))
+    : null;
+
+  if (!factura) {
+    throw new Error("No se encontró factura para este pedido.");
+  }
+
+  return factura;
+}
+
+async function descargarFacturaPedido(idPedido) {
+  try {
+    const factura = await obtenerFacturaPorPedido(idPedido);
+    const token = getToken();
+    const url = `${API_BASE}/facturas/${factura.id_factura}/pdf`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("No se pudo descargar la factura.");
+    }
+
+    const blob = await res.blob();
+    const fileUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = factura.nombre_archivo_pdf || `${factura.numero_factura || "factura"}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(fileUrl);
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+async function imprimirFacturaPedido(idPedido) {
+  try {
+    const factura = await obtenerFacturaPorPedido(idPedido);
+    const token = getToken();
+    const url = `${API_BASE}/facturas/${factura.id_factura}/pdf`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("No se pudo abrir la factura para imprimir.");
+    }
+
+    const blob = await res.blob();
+    const fileUrl = URL.createObjectURL(blob);
+
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    iframe.src = fileUrl;
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    };
+
+    setTimeout(() => {
+      URL.revokeObjectURL(fileUrl);
+    }, 60000);
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
 }
 
 async function pagarPedido(idPedido) {
@@ -2495,10 +2580,9 @@ async function pagarPedido(idPedido) {
         { value: "efectivo", label: "Efectivo" },
         { value: "transferencia", label: "Transferencia" },
         { value: "tarjeta", label: "Tarjeta" },
-        { value: "nequi", label: "Nequi" },
-        { value: "daviplata", label: "Daviplata" }
       ]},
-      { id: "referencia", label: "Referencia opcional", type: "text", value: `PED-${idPedido}-${Date.now()}`, required: false }
+      { id: "referencia", label: "Referencia opcional", type: "text", value: `PED-${idPedido}-${Date.now()}`, required: false },
+      { id: "correo_factura", label: "Correo para factura (opcional)", type: "email", value: "", required: false }
     ]
   });
   if (!result) return;
@@ -2511,7 +2595,8 @@ async function pagarPedido(idPedido) {
         referencia_externa: result.referencia || `PED-${idPedido}-${Date.now()}`,
         estado_pago: "aprobado",
         valor: Number(pedido.total || 0),
-        respuesta_pasarela: "Pago registrado desde front"
+        respuesta_pasarela: "Pago registrado desde front",
+        correo_factura: result.correo_factura || null
       })
     });
     showToast("Pago registrado correctamente.", "success");

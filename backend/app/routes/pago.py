@@ -12,6 +12,8 @@ from app.models.pago import Pago
 from app.models.pedido import Pedido
 from app.models.negocio import Negocio
 from app.models.user import Usuario
+from app.models.factura import Factura
+from app.models.pedido_detalle import PedidoDetalle
 
 from app.schemas.pago import (
     PagoCreate,
@@ -24,6 +26,12 @@ router = APIRouter(
     tags=["Pagos"]
 )
 
+from app.routes.factura import (
+    generar_numero_factura,
+    generar_pdf_factura_archivo
+)
+
+from app.utils.email import enviar_email_con_adjunto
 
 # =========================
 # DB
@@ -150,11 +158,88 @@ def crear_pago(
     )
 
     db.add(nuevo_pago)
+
+    if pago.estado_pago == "aprobado":
+        pedido.estado = "pagado"
+
+        factura = db.query(Factura).filter(
+            Factura.id_pedido == pedido.id_pedido
+        ).first()
+
+        if not factura:
+            detalles = db.query(PedidoDetalle).filter(
+                PedidoDetalle.id_pedido == pedido.id_pedido
+            ).all()
+
+            if detalles:
+                subtotal = sum([
+                    detalle.subtotal or 0
+                    for detalle in detalles
+                ])
+
+                cliente = db.query(Usuario).filter(
+                    Usuario.id_usuario == pedido.id_usuario
+                ).first()
+
+                correo_destino = pago.correo_factura
+
+                if not correo_destino and cliente:
+                    correo_destino = cliente.correo
+
+                factura = Factura(
+                    numero_factura=generar_numero_factura(pedido.id_pedido),
+                    id_pedido=pedido.id_pedido,
+                    id_usuario=pedido.id_usuario,
+                    id_negocio=pedido.id_negocio,
+                    subtotal=subtotal,
+                    impuestos=0,
+                    total=pedido.total,
+                    estado="emitida",
+                    correo_destino=correo_destino
+                )
+
+                db.add(factura)
+                db.flush()
+                db.refresh(factura)
+
+        if factura:
+            try:
+                ruta_pdf = factura.ruta_pdf
+
+                if not ruta_pdf:
+                    ruta_pdf = generar_pdf_factura_archivo(
+                        db,
+                        factura
+                    )
+
+                if factura.correo_destino:
+                    enviar_email_con_adjunto(
+                        destino=factura.correo_destino,
+                        asunto=f"Factura {factura.numero_factura} - SIGI-A",
+                        cuerpo=(
+                            "Hola,\n\n"
+                            "Adjuntamos tu factura generada en SIGI-A.\n\n"
+                            f"Número de factura: {factura.numero_factura}\n"
+                            f"Total: ${float(factura.total):,.0f}\n\n"
+                            "Gracias por usar SIGI-A."
+                        ),
+                        ruta_adjunto=ruta_pdf,
+                        nombre_adjunto=factura.nombre_archivo_pdf or f"{factura.numero_factura}.pdf"
+                    )
+
+                    factura.estado = "enviada"
+                    factura.fecha_envio_correo = datetime.utcnow()
+
+            except Exception as error_email:
+                mensaje_actual = nuevo_pago.respuesta_pasarela or ""
+                nuevo_pago.respuesta_pasarela = (
+                    f"{mensaje_actual} | Factura generada, pero no se pudo enviar por correo: {str(error_email)}"
+                )
+
     db.commit()
     db.refresh(nuevo_pago)
 
     return nuevo_pago
-
 
 # =========================
 # LISTAR PAGOS
