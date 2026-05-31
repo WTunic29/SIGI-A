@@ -192,11 +192,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("usuario");
         const msg = "Contraseña restablecida correctamente. Ya puedes iniciar sesión.";
         mostrarMensaje("resetPasswordMsg", msg, false);
         showToast(msg, "success", 5000);
         form.reset();
-        setTimeout(() => { window.location.href = "index.html#login"; }, 2200);
+
+        setTimeout(() => {
+          window.location.href = "index.html#login";
+        }, 2200);
       } else {
         const msg = friendlyError(data);
         mostrarMensaje("resetPasswordMsg", msg);

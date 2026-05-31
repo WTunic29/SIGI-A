@@ -9,6 +9,7 @@ class UsuarioCreate(BaseModel):
     correo: EmailStr
     telefono: str
     password: str
+    rol: str = "cliente"
 
     @field_validator("password")
     @classmethod

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const API_BASE = window.SIGIA_API_BASE;
+const API_BASE = window.SIGIA_API_BASE || "http://3.15.197.152:10000";
 const ROLES = {
   negocio: "Negocio",
   cliente: "Usuario",
@@ -16,6 +16,62 @@ const ROLES = {
 let negociosCache = [];
 let empleadosCache = [];
 let loginVerificationMode = "email";
+
+function obtenerMensajeError(error) {
+  if (!error) return "Ocurrió un error inesperado.";
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error.detail) {
+    if (Array.isArray(error.detail)) {
+      return error.detail.map(e => e.msg || JSON.stringify(e)).join(" | ");
+    }
+
+    return error.detail;
+  }
+
+  if (error.message) {
+    return error.message;
+  }
+
+  return "Ocurrió un error inesperado.";
+}
+
+async function apiRequest(endpoint, options = {}) {
+  const token = localStorage.getItem("access_token");
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers
+  });
+
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch (e) {
+    data = null;
+  }
+
+  if (!response.ok) {
+    throw data || {
+      detail: `Error HTTP ${response.status}`
+    };
+  }
+
+  return data;
+}
 
 // ─────────────────────────────────────────────
 // NAVBAR
@@ -75,7 +131,7 @@ const TODAS = [
   "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "gestion-usuarios-admin", "auditoria-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
-  "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "mis-pedidos-usuario"
+  "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "carrito-usuario", "mis-pedidos-usuario"
 ];
 
 function setVisible(show, hide = TODAS) {
@@ -561,7 +617,23 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+function formatearFechaCorta(fecha) {
+  if (!fecha) return "sin fecha";
 
+  const date = new Date(fecha);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(fecha);
+  }
+
+  return date.toLocaleString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 function obtenerIdNegocio(n) {
   return Number(campoNegocio(n, "id_negocio", "id", "negocio_id"));
 }
@@ -2151,7 +2223,10 @@ function renderProductosUsuario(productos) {
       <h3>${escapeHtml(p.nombre || "Producto")}</h3>
       <p>${escapeHtml(p.descripcion || "Sin descripción")}</p>
       <div class="business-meta"><span>${escapeHtml(negocioNombrePorId(p.id_negocio))}</span><span>Stock: ${escapeHtml(p.stock ?? 0)}</span><span>$${Number(p.precio || 0).toLocaleString("es-CO")}</span></div>
-      <button class="btn-primary tiny" type="button" onclick="crearPedidoProducto(${p.id_producto})">Crear pedido</button>
+      <div class="row-actions">
+       <button class="btn-primary tiny" type="button" onclick="reservarProductoCarrito(${p.id_producto})">Reservar</button>
+       <button class="btn-secondary tiny" type="button" onclick="crearPedidoProducto(${p.id_producto})">Crear pedido</button>
+      </div>
     </div>
   </article>`).join("");
 }
@@ -2184,7 +2259,100 @@ async function crearPedidoProducto(idProducto) {
     await irMisPedidos();
   } catch (e) { showToast(friendlyError(e), "error"); }
 }
+async function reservarProductoCarrito(idProducto) {
+  const producto = productosUsuarioCache.find(p => Number(p.id_producto) === Number(idProducto));
 
+  if (!producto) {
+    showToast("Producto no encontrado. Actualiza la tienda e intenta de nuevo.", "error");
+    return;
+  }
+
+  const cantidad = await pedirCantidadProducto(producto);
+  if (!cantidad) return;
+
+  try {
+    const carrito = await apiFetch("/carritos/agregar-producto", {
+      method: "POST",
+      body: JSON.stringify({
+        id_producto: Number(idProducto),
+        cantidad: Number(cantidad)
+      })
+    });
+
+    showToast(
+      `Producto reservado en el carrito. Total actual: $${Number(carrito.total_estimado || 0).toLocaleString("es-CO")}`,
+      "success",
+      6500
+    );
+
+    await cargarProductosUsuario();
+
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+async function irCarritoUsuario() {
+  mostrarModuloCliente("carrito-usuario");
+  await cargarCarritoUsuario();
+}
+
+async function cargarCarritoUsuario() {
+  const cont = document.getElementById("listaCarritoUsuario");
+  const totalEl = document.getElementById("carritoTotalUsuario");
+
+  if (cont) {
+    cont.innerHTML = `<div class="empty-state">Cargando carrito...</div>`;
+  }
+
+  try {
+    const data = await apiFetch("/carritos/activo/detalle");
+    renderCarritoUsuario(data);
+  } catch (e) {
+    if (cont) {
+      cont.innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`;
+    }
+
+    if (totalEl) {
+      totalEl.textContent = "$0";
+    }
+  }
+}
+
+function renderCarritoUsuario(data) {
+  const cont = document.getElementById("listaCarritoUsuario");
+  const totalEl = document.getElementById("carritoTotalUsuario");
+
+  if (!cont) return;
+
+  const carrito = data?.carrito;
+  const items = Array.isArray(data?.items) ? data.items : [];
+
+  if (!carrito || !items.length) {
+    cont.innerHTML = `<div class="empty-state">Tu carrito está vacío o las reservas vencieron.</div>`;
+    if (totalEl) totalEl.textContent = "$0";
+    return;
+  }
+
+  if (totalEl) {
+    totalEl.textContent = `$${Number(carrito.total_estimado || 0).toLocaleString("es-CO")}`;
+  }
+
+  cont.innerHTML = items.map(item => `
+    <article class="admin-item">
+      <div>
+        <h4>${escapeHtml(item.nombre || "Producto")}</h4>
+        <p>
+          Cantidad: ${escapeHtml(item.cantidad || 0)}
+          · Precio: $${Number(item.precio_unitario || 0).toLocaleString("es-CO")}
+          · Subtotal: $${Number(item.subtotal || 0).toLocaleString("es-CO")}
+        </p>
+        <span class="status-pill pending">
+          Reserva hasta ${escapeHtml(formatearFechaCorta(item.fecha_expiracion_reserva))}
+        </span>
+      </div>
+    </article>
+  `).join("");
+}
 async function irMisPedidos() {
   mostrarModuloCliente("mis-pedidos-usuario");
   await cargarMisPedidos();

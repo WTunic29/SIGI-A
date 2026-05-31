@@ -283,6 +283,13 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
                 status_code=400,
                 detail="El correo ya está registrado"
             )
+        rol_solicitado = user.rol or "cliente"
+
+        if rol_solicitado not in ["cliente", "negocio"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Rol no permitido para registro público"
+            )
 
         nuevo_usuario = Usuario(
             nombre=user.nombre,
@@ -290,9 +297,10 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
             correo=user.correo,
             telefono=user.telefono,
             password_hash=hash_password(user.password),
-            rol="cliente",
+            rol=rol_solicitado,
             estado="pendiente"
         )
+
 
         db.add(nuevo_usuario)
         db.commit()

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
 
 from app.database import SessionLocal
@@ -11,6 +12,7 @@ from app.core.deps import (
 
 from app.models.carrito import Carrito
 from app.models.carrito_detalle import CarritoDetalle
+from app.models.producto import Producto
 from app.models.user import Usuario
 
 from app.schemas.carrito import (
@@ -18,12 +20,14 @@ from app.schemas.carrito import (
     CarritoUpdate,
     CarritoResponse
 )
+from app.schemas.carrito_detalle import AgregarProductoCarrito
 
 router = APIRouter(
     prefix="/carritos",
     tags=["Carritos"]
 )
 
+from app.utils.auditoria import registrar_auditoria
 
 def get_db():
     db = SessionLocal()
@@ -87,6 +91,44 @@ def recalcular_total_carrito(
     carrito.fecha_actualizacion = datetime.utcnow()
     return total
 
+def liberar_reservas_vencidas(db: Session):
+    ahora = datetime.utcnow()
+
+    detalles_vencidos = db.query(CarritoDetalle).filter(
+        CarritoDetalle.estado_reserva == "RESERVADO",
+        CarritoDetalle.fecha_expiracion_reserva < ahora
+    ).all()
+
+    carritos_afectados = set()
+
+    for detalle in detalles_vencidos:
+        detalle.estado_reserva = "VENCIDO"
+        carritos_afectados.add(detalle.id_carrito)
+
+    for id_carrito in carritos_afectados:
+        carrito = db.query(Carrito).filter(
+            Carrito.id_carrito == id_carrito
+        ).first()
+
+        if carrito:
+            recalcular_total_carrito(db, carrito)
+
+    return len(detalles_vencidos)
+
+def obtener_stock_disponible_producto(
+    db: Session,
+    producto: Producto
+):
+    cantidad_reservada = db.query(
+        func.coalesce(func.sum(CarritoDetalle.cantidad), 0)
+    ).filter(
+        CarritoDetalle.id_producto == producto.id_producto,
+        CarritoDetalle.estado_reserva == "RESERVADO",
+        CarritoDetalle.fecha_expiracion_reserva > datetime.utcnow()
+    ).scalar()
+
+    return producto.stock - cantidad_reservada
+
 # =========================
 # OBTENER CARRITO ACTIVO
 # =========================
@@ -98,6 +140,7 @@ def obtener_carrito_activo(
         require_roles(["cliente", "admin"])
     )
 ):
+    liberar_reservas_vencidas(db)
     carrito = obtener_carrito_activo_usuario(
         db,
         current_user.id_usuario
@@ -105,12 +148,214 @@ def obtener_carrito_activo(
 
     if not carrito:
         return None
-
+    db.flush()
     recalcular_total_carrito(db, carrito)
     db.commit()
     db.refresh(carrito)
 
     return carrito
+
+# =========================
+# OBTENER CARRITO ACTIVO CON DETALLE
+# =========================
+
+@router.get("/activo/detalle")
+def obtener_carrito_activo_detalle(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "admin"])
+    )
+):
+    liberar_reservas_vencidas(db)
+
+    carrito = obtener_carrito_activo_usuario(
+        db,
+        current_user.id_usuario
+    )
+
+    if not carrito:
+        return {
+            "carrito": None,
+            "items": []
+        }
+
+    recalcular_total_carrito(db, carrito)
+    db.commit()
+    db.refresh(carrito)
+
+    detalles = db.query(
+        CarritoDetalle,
+        Producto
+    ).join(
+        Producto,
+        Producto.id_producto == CarritoDetalle.id_producto
+    ).filter(
+        CarritoDetalle.id_carrito == carrito.id_carrito,
+        CarritoDetalle.estado_reserva == "RESERVADO"
+    ).all()
+
+    items = []
+
+    for detalle, producto in detalles:
+        items.append({
+            "id_carrito_detalle": detalle.id_carrito_detalle,
+            "id_carrito": detalle.id_carrito,
+            "tipo_item": detalle.tipo_item,
+            "id_producto": detalle.id_producto,
+            "id_servicio": detalle.id_servicio,
+            "nombre": producto.nombre,
+            "descripcion": producto.descripcion,
+            "imagen_url": producto.imagen_url,
+            "cantidad": detalle.cantidad,
+            "precio_unitario": detalle.precio_unitario,
+            "subtotal": detalle.subtotal,
+            "estado_reserva": detalle.estado_reserva,
+            "fecha_reserva": detalle.fecha_reserva,
+            "fecha_expiracion_reserva": detalle.fecha_expiracion_reserva
+        })
+
+    return {
+        "carrito": carrito,
+        "items": items
+    }
+
+# =========================
+# AGREGAR PRODUCTO AL CARRITO
+# =========================
+
+@router.post("/agregar-producto", response_model=CarritoResponse)
+def agregar_producto_carrito(
+    request: Request,
+    datos: AgregarProductoCarrito,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente"])
+    )
+):
+    liberar_reservas_vencidas(db)
+    if datos.cantidad <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="La cantidad debe ser mayor a cero"
+        )
+
+    producto = db.query(Producto).filter(
+        Producto.id_producto == datos.id_producto,
+        Producto.estado == "activo"
+    ).first()
+
+    if not producto:
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado o inactivo"
+        )
+
+    stock_disponible = obtener_stock_disponible_producto(
+        db,
+        producto
+    )
+
+    if stock_disponible < datos.cantidad:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Stock insuficiente. Disponible actualmente: {stock_disponible}"
+        )  
+
+    ahora = datetime.utcnow()
+    expiracion = ahora + timedelta(minutes=15)
+
+    carrito = obtener_carrito_activo_usuario(
+        db,
+        current_user.id_usuario
+    )
+
+    if not carrito:
+        carrito = Carrito(
+            id_usuario=current_user.id_usuario,
+            id_negocio=producto.id_negocio,
+            estado="activo",
+            fecha_creacion=ahora,
+            fecha_expiracion=expiracion,
+            fecha_actualizacion=ahora,
+            total_estimado=0
+        )
+        db.add(carrito)
+        db.flush()
+    else:
+        if carrito.id_negocio and carrito.id_negocio != producto.id_negocio:
+            raise HTTPException(
+                status_code=400,
+                detail="No puedes mezclar productos de diferentes negocios en el mismo carrito"
+            )
+
+        carrito.id_negocio = producto.id_negocio
+        carrito.fecha_expiracion = expiracion
+        carrito.fecha_actualizacion = ahora
+
+    subtotal = producto.precio * datos.cantidad
+
+    detalle_existente = db.query(CarritoDetalle).filter(
+        CarritoDetalle.id_carrito == carrito.id_carrito,
+        CarritoDetalle.id_producto == producto.id_producto,
+        CarritoDetalle.estado_reserva == "RESERVADO"
+    ).first()
+
+    if detalle_existente:
+        nueva_cantidad = detalle_existente.cantidad + datos.cantidad
+
+        cantidad_actual_en_carrito = detalle_existente.cantidad or 0
+        stock_disponible_real = stock_disponible + cantidad_actual_en_carrito
+
+        if stock_disponible_real < nueva_cantidad:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Stock insuficiente para aumentar la cantidad. Disponible actualmente: {stock_disponible_real}"
+            )
+
+        detalle_existente.cantidad = nueva_cantidad
+        detalle_existente.precio_unitario = producto.precio
+        detalle_existente.subtotal = producto.precio * nueva_cantidad
+        detalle_existente.fecha_reserva = ahora
+        detalle_existente.fecha_expiracion_reserva = expiracion
+    else:
+        detalle = CarritoDetalle(
+            id_carrito=carrito.id_carrito,
+            tipo_item="producto",
+            id_producto=producto.id_producto,
+            id_servicio=None,
+            cantidad=datos.cantidad,
+            precio_unitario=producto.precio,
+            subtotal=subtotal,
+            estado_reserva="RESERVADO",
+            fecha_reserva=ahora,
+            fecha_expiracion_reserva=expiracion
+        )
+        db.add(detalle)
+    db.flush()
+    recalcular_total_carrito(db, carrito)
+
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=current_user,
+        accion="ITEM_AGREGADO_CARRITO",
+        modulo="carritos",
+        tabla_afectada="core.carrito_detalle",
+        id_registro=carrito.id_carrito,
+        detalle=(
+            f"Usuario {current_user.correo} agregó producto ID "
+            f"{producto.id_producto} al carrito por cantidad {datos.cantidad}. "
+            f"Reserva válida hasta {expiracion}."
+        ),
+        nivel="INFO",
+        resultado="OK"
+    )
+
+    db.commit()
+    db.refresh(carrito)
+
+    return carrito
+
 
 # =========================
 # CREAR CARRITO

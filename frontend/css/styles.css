@@ -2443,3 +2443,94 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 }
+/* =========================
+   GESTIÓN USUARIOS ADMIN
+========================= */
+
+#gestion-usuarios-admin .admin-table-card {
+  margin-top: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 22px;
+  background: rgba(10, 10, 10, 0.72);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+#gestion-usuarios-admin .admin-table-header,
+#gestion-usuarios-admin .admin-table-row {
+  display: grid;
+  grid-template-columns: 70px 1.4fr 1.8fr 170px 120px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+}
+
+#gestion-usuarios-admin .admin-table-header {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+  background: rgba(212, 175, 55, 0.08);
+}
+
+#gestion-usuarios-admin .admin-table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+#gestion-usuarios-admin .admin-table-row {
+  color: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#gestion-usuarios-admin .admin-table-row:last-child {
+  border-bottom: none;
+}
+
+#gestion-usuarios-admin .admin-table-row:hover {
+  background: rgba(212, 175, 55, 0.08);
+}
+
+#gestion-usuarios-admin .admin-table-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#gestion-usuarios-admin .admin-table-row select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  color: #151515;
+  font-weight: 600;
+}
+
+#gestion-usuarios-admin .admin-table-row .btn-danger,
+#gestion-usuarios-admin .admin-table-row button {
+  border: none;
+  border-radius: 12px;
+  padding: 9px 12px;
+  cursor: pointer;
+  background: rgba(150, 35, 35, 0.95);
+  color: #fff;
+  font-weight: 700;
+}
+
+#gestion-usuarios-admin .admin-table-row .btn-danger:hover,
+#gestion-usuarios-admin .admin-table-row button:hover {
+  filter: brightness(1.12);
+}
+
+@media (max-width: 900px) {
+  #gestion-usuarios-admin .admin-table-header {
+    display: none;
+  }
+
+  #gestion-usuarios-admin .admin-table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px;
+  }
+}

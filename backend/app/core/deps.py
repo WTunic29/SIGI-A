@@ -53,18 +53,22 @@ def get_current_user(
 
 def require_role(role: str):
     def role_dependency(current_user: Usuario = Depends(get_current_user)):
+        if current_user.rol == "superadmin":
+            return current_user
+
         if current_user.rol != role:
             raise HTTPException(
                 status_code=403,
                 detail=f"Acceso denegado. Se requiere rol: {role}"
             )
-        return current_user
-    return role_dependency
 
+        return current_user
+
+    return role_dependency
 
 def require_roles(roles: list[str]):
     def roles_dependency(current_user: Usuario = Depends(get_current_user)):
-        if current_user.rol == "superadmin" and "admin" in roles:
+        if current_user.rol == "superadmin":
             return current_user
 
         if current_user.rol not in roles:
@@ -72,5 +76,7 @@ def require_roles(roles: list[str]):
                 status_code=403,
                 detail=f"Acceso denegado. Roles permitidos: {roles}"
             )
+
         return current_user
+
     return roles_dependency

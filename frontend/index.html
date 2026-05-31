@@ -31,6 +31,7 @@
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
+      <a href="#" class="menu-cliente" onclick="irCarritoUsuario()">Carrito</a>
       <a href="#" class="menu-cliente" onclick="irMisPedidos()">Mis pedidos</a>
       <a href="#" class="menu-cliente" onclick="irMisCalificaciones()">Calificaciones</a>
       <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
@@ -341,6 +342,10 @@
         <button type="button" onclick="irTiendaUsuario()">
           <span>Tienda</span>
           <strong>Productos</strong>
+        </button>
+        <button type="button" onclick="irCarritoUsuario()">
+          <span>Reserva</span>
+          <strong>Carrito</strong>
         </button>
         <button type="button" onclick="irMisPedidos()">
           <span>Compras</span>
@@ -696,7 +701,35 @@
     <div id="listaProductosUsuario" class="business-grid"></div><span id="tiendaUsuarioMsg" class="form-msg"></span>
   </div>
 </section>
+<section class="hero dashboard-screen" id="carrito-usuario" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Reserva temporal</p>
+        <h1 class="dashboard-title">Mi <span>Carrito</span></h1>
+        <p class="muted">Productos reservados por 15 minutos antes de confirmar la compra.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
 
+    <div class="toolbar">
+      <button class="btn-primary" onclick="cargarCarritoUsuario()">Actualizar carrito</button>
+      <button class="btn-secondary clean" onclick="irTiendaUsuario()">Seguir comprando</button>
+    </div>
+
+    <div id="listaCarritoUsuario" class="admin-list"></div>
+
+    <div class="cart-summary-card">
+      <p>Total estimado</p>
+      <strong id="carritoTotalUsuario">$0</strong>
+      <button class="btn-primary full" type="button" disabled>Continuar a pedido</button>
+      <small class="muted">El pedido y pago se conectarán en el siguiente paso.</small>
+    </div>
+
+    <span id="carritoUsuarioMsg" class="form-msg"></span>
+  </div>
+</section>
 <section class="hero dashboard-screen" id="mis-pedidos-usuario" style="display:none;">
   <div class="hero-bg"></div><div class="dashboard-container">
     <div class="dashboard-header"><div><p class="section-eyebrow">Compras</p><h1 class="dashboard-title">Mis <span>Pedidos</span></h1><p class="muted">Consulta pedidos y registra pagos.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
@@ -711,7 +744,7 @@
     <span class="footer-course">Sistema de Gestión Inteligente</span>
   </div>
 </footer>
-
-<script src="js/main.js?v=20260530-mfa-roles"></script>
+<script src="js/config.js"></script>
+<script src="js/main.js?v=20260530-mfa-roles-6"></script>
 </body>
 </html>
