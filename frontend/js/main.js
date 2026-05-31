@@ -2064,7 +2064,7 @@ async function calificarCita(idCita, idNegocio) {
       body: JSON.stringify({ id_negocio: Number(idNegocio), id_cita: Number(idCita), puntuacion, comentario: result.comentario || "" })
     });
     showToast("Calificación registrada correctamente.", "success");
-    await cargarMisCalificaciones();
+    await cargarMisCalificacionesTab();
   } catch (e) { showToast(friendlyError(e), "error"); }
 }
 
@@ -2116,13 +2116,12 @@ function switchCalificacionesTab(tabName) {
 // TAB 1: TUS CALIFICACIONES
 // ─────────────────────────────────────────────
 
-let misCalificacionesCache = [];
-
 async function cargarMisCalificacionesTab() {
-  const cont = document.getElementById("listaMisCalificacionesTab");
+  let cont = document.getElementById("listaMisCalificacionesTab");
   if (!cont) {
     cont = document.getElementById("listaMisCalificaciones");
   }
+  if (!cont) return;
   try {
     if (!negociosCache.length) negociosCache = await obtenerNegocios();
     
@@ -2132,6 +2131,7 @@ async function cargarMisCalificacionesTab() {
     if (!misCalificacionesCache.length) {
       cont.innerHTML = `<div class="empty-state">Todavía no tienes calificaciones registradas.</div>`;
       mostrarMensaje("misCalsMsg", "", false);
+      actualizarDashboardCalificaciones();
       return;
     }
     
@@ -2153,9 +2153,11 @@ async function cargarMisCalificacionesTab() {
     }).join("");
     
     mostrarMensaje("misCalsMsg", "", false);
+    actualizarDashboardCalificaciones();
   } catch (e) {
     if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
     mostrarMensaje("misCalsMsg", e.message);
+    actualizarDashboardCalificaciones();
   }
 }
 
@@ -2171,6 +2173,7 @@ async function eliminarCalificacion(id) {
     await apiFetch(`${API_PATHS.calificaciones}${id}`, { method: "DELETE" });
     showToast("Calificación eliminada.", "success");
     await cargarMisCalificacionesTab();
+    await cargarRankingTab();
   } catch (e) {
     showToast(friendlyError(e), "error");
   }
@@ -2191,6 +2194,7 @@ async function cargarCitasPendientesTab() {
     if (!citasPendientesCache.length) {
       cont.innerHTML = `<div class="empty-state">No hay citas finalizadas pendientes de calificar.</div>`;
       mostrarMensaje("calificarMsg", "", false);
+      actualizarDashboardCalificaciones();
       return;
     }
     
@@ -2208,9 +2212,11 @@ async function cargarCitasPendientesTab() {
     `).join("");
     
     mostrarMensaje("calificarMsg", "", false);
+    actualizarDashboardCalificaciones();
   } catch (e) {
     if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
     mostrarMensaje("calificarMsg", e.message);
+    actualizarDashboardCalificaciones();
   }
 }
 
@@ -2248,6 +2254,7 @@ async function abrirFormularioCalificacion(idCita, idNegocio, nombreNegocio) {
     showToast("Calificación registrada correctamente.", "success");
     await cargarCitasPendientesTab();
     await cargarMisCalificacionesTab();
+    await cargarRankingTab();
   } catch (e) {
     showToast(friendlyError(e), "error");
   }
@@ -2261,7 +2268,8 @@ let rankingOrdenado = [];
 
 async function cargarRankingTab() {
   const cont = document.getElementById("listaRankingTab");
-  if (!cont) return;
+  const tabla = document.getElementById("tablaRankingBody");
+  if (!cont && !tabla) return;
   
   try {
     const data = await apiFetch("/calificaciones/ranking/all");
@@ -2270,20 +2278,26 @@ async function cargarRankingTab() {
     
     if (!rankingCache.length) {
       cont.innerHTML = `<div class="empty-state">No hay calificaciones registradas aún.</div>`;
+      renderizarRankingTabla([]);
       mostrarMensaje("rankingMsg", "", false);
+      actualizarDashboardCalificaciones();
       return;
     }
     
     renderizarRanking(rankingOrdenado);
     mostrarMensaje("rankingMsg", "", false);
+    actualizarDashboardCalificaciones();
   } catch (e) {
     if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    renderizarRankingTabla([]);
     mostrarMensaje("rankingMsg", e.message);
+    actualizarDashboardCalificaciones();
   }
 }
 
 function renderizarRanking(datos) {
   const cont = document.getElementById("listaRankingTab");
+  renderizarRankingTabla(datos);
   if (!cont) return;
   
   if (!datos.length) {
@@ -2297,7 +2311,7 @@ function renderizarRanking(datos) {
         ${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${item.posicion}°`}
       </div>
       <div class="ranking-content">
-        <h4>${escapeHtml(item.nombre_negocio)}</h4>
+        <h4>${escapeHtml(item.nombre_negocio || "Negocio sin nombre")}</h4>
         <div class="ranking-stats">
           <span class="ranking-rating">
             ${"★".repeat(Math.round(item.promedio))}${"☆".repeat(Math.max(0, 5 - Math.round(item.promedio)))}
@@ -2312,6 +2326,46 @@ function renderizarRanking(datos) {
   `).join("");
 }
 
+function renderizarRankingTabla(datos) {
+  const tbody = document.getElementById("tablaRankingBody");
+  if (!tbody) return;
+  if (!datos.length) {
+    tbody.innerHTML = `<tr><td colspan="4">No hay negocios para mostrar.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = datos.map((item, idx) => {
+    const promedio = Number(item.promedio || 0);
+    const total = Number(item.total_calificaciones || 0);
+    const posicion = item.posicion || idx + 1;
+    return `<tr>
+      <td><strong>#${posicion}</strong></td>
+      <td>${escapeHtml(item.nombre_negocio || "Negocio sin nombre")}</td>
+      <td><span class="rating-stars compact">${"&#9733;".repeat(Math.round(promedio))}${"&#9734;".repeat(Math.max(0, 5 - Math.round(promedio)))}</span> ${promedio.toFixed(1)}</td>
+      <td>${total}</td>
+    </tr>`;
+  }).join("");
+}
+
+function actualizarDashboardCalificaciones() {
+  const totalPropias = document.getElementById("statMisCalificaciones");
+  const promedioPropio = document.getElementById("statPromedioPersonal");
+  const pendientes = document.getElementById("statPendientesCalificar");
+  const mejorNegocio = document.getElementById("statMejorNegocio");
+  if (!totalPropias && !promedioPropio && !pendientes && !mejorNegocio) return;
+
+  const total = misCalificacionesCache.length;
+  const promedio = total
+    ? misCalificacionesCache.reduce((sum, item) => sum + Number(item.puntuacion || 0), 0) / total
+    : 0;
+  const top = rankingCache.find(item => Number(item.total_calificaciones || 0) > 0) || rankingCache[0];
+
+  if (totalPropias) totalPropias.textContent = String(total);
+  if (promedioPropio) promedioPropio.textContent = promedio ? promedio.toFixed(1) : "0.0";
+  if (pendientes) pendientes.textContent = String(citasPendientesCache.length);
+  if (mejorNegocio) mejorNegocio.textContent = top ? `${top.nombre_negocio || "Sin datos"} (${Number(top.promedio || 0).toFixed(1)})` : "Sin datos";
+}
+
 function filtrarRanking() {
   const query = (document.getElementById("buscarRanking")?.value || "").toLowerCase().trim();
   
@@ -2319,7 +2373,7 @@ function filtrarRanking() {
     rankingOrdenado = [...rankingCache];
   } else {
     rankingOrdenado = rankingCache.filter(r =>
-      r.nombre_negocio.toLowerCase().includes(query)
+      String(r.nombre_negocio || "").toLowerCase().includes(query)
     );
   }
   

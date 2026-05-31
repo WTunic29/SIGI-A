@@ -700,6 +700,13 @@
       <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
     </div>
 
+    <div class="rating-stats-dashboard">
+      <article><span>Mis opiniones</span><strong id="statMisCalificaciones">0</strong></article>
+      <article><span>Promedio personal</span><strong id="statPromedioPersonal">0.0</strong></article>
+      <article><span>Pendientes</span><strong id="statPendientesCalificar">0</strong></article>
+      <article><span>Mejor negocio</span><strong id="statMejorNegocio">Sin datos</strong></article>
+    </div>
+
     <div class="rating-tabs-container">
       <div class="rating-tabs">
         <button class="rating-tab active" onclick="switchCalificacionesTab('mis-calificaciones')">
@@ -746,6 +753,14 @@
         </select>
       </div>
       <div id="listaRankingTab" class="ranking-grid"></div>
+      <div class="table-responsive ranking-table-wrap">
+        <table class="ranking-table">
+          <thead>
+            <tr><th>Pos.</th><th>Negocio</th><th>Promedio</th><th>Opiniones</th></tr>
+          </thead>
+          <tbody id="tablaRankingBody"></tbody>
+        </table>
+      </div>
       <span id="rankingMsg" class="form-msg"></span>
     </div>
   </div>

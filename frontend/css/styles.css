@@ -1654,6 +1654,39 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
   display: block;
 }
 
+.rating-stats-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0 18px;
+}
+
+.rating-stats-dashboard article {
+  min-height: 96px;
+  padding: 16px;
+  border: 1px solid rgba(201, 168, 76, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.rating-stats-dashboard span {
+  color: var(--gray);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.rating-stats-dashboard strong {
+  color: var(--white);
+  font-size: clamp(1.2rem, 2vw, 1.75rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1679,6 +1712,14 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
   color: var(--gold);
   margin: 8px 0 6px;
   letter-spacing: 2px;
+}
+
+.rating-stars.compact {
+  display: inline-block;
+  margin: 0 8px 0 0;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 /* Ranking Grid */
@@ -1754,7 +1795,48 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
   font-size: 0.85rem;
 }
 
+.ranking-table-wrap {
+  margin-top: 22px;
+  overflow-x: auto;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid rgba(201, 168, 76, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ranking-table th,
+.ranking-table td {
+  padding: 13px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--white);
+}
+
+.ranking-table th {
+  color: var(--gold);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.ranking-table td {
+  font-size: 0.92rem;
+}
+
+.ranking-table tr:last-child td {
+  border-bottom: none;
+}
+
 @media (max-width: 768px) {
+  .rating-stats-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .rating-tabs {
     gap: 4px;
   }
@@ -1786,6 +1868,10 @@ footer { border-top: 1px solid rgba(201,168,76,0.12); padding: 30px 60px; }
 }
 
 @media (max-width: 480px) {
+  .rating-stats-dashboard {
+    grid-template-columns: 1fr;
+  }
+
   .rating-tabs {
     gap: 2px;
   }
