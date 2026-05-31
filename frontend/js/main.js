@@ -2241,9 +2241,16 @@ async function crearPedidoProducto(idProducto) {
   if (!cantidad) return;
   const total = Number(producto.precio || 0) * cantidad;
   try {
+    const usuario = getUsuario();
+
     const pedido = await apiFetch(API_PATHS.pedidos, {
       method: "POST",
-      body: JSON.stringify({ id_negocio: Number(producto.id_negocio), total, estado: "pendiente" })
+      body: JSON.stringify({
+        id_usuario: Number(usuario?.id_usuario || usuario?.id),
+        id_negocio: Number(carrito.id_negocio),
+        total,
+        estado: "pendiente"
+      })  
     });
     await apiFetch(API_PATHS.pedidoDetalle, {
       method: "POST",
@@ -2286,6 +2293,78 @@ async function reservarProductoCarrito(idProducto) {
     );
 
     await cargarProductosUsuario();
+
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+async function continuarCarritoAPedido() {
+  try {
+    const data = await apiFetch("/carritos/activo/detalle");
+
+    const carrito = data?.carrito;
+    const items = Array.isArray(data?.items) ? data.items : [];
+
+    if (!carrito || !items.length) {
+      showToast("Tu carrito está vacío o las reservas vencieron.", "info");
+      await cargarCarritoUsuario();
+      return;
+    }
+
+    const total = Number(carrito.total_estimado || 0);
+
+    if (total <= 0) {
+      showToast("El carrito no tiene total válido para crear pedido.", "error");
+      await cargarCarritoUsuario();
+      return;
+    }
+
+    const usuario = getUsuario();
+
+    const idUsuarioPedido = Number(
+      carrito.id_usuario ||
+      usuario?.id_usuario ||
+      usuario?.id    
+    );
+
+    if (!idUsuarioPedido) {
+      showToast("No se pudo identificar el usuario del pedido. Inicia sesión nuevamente.", "error");
+      return;
+    }
+
+    const pedido = await apiFetch(API_PATHS.pedidos, {
+      method: "POST",
+      body: JSON.stringify({
+        id_usuario: idUsuarioPedido,
+        id_negocio: Number(carrito.id_negocio),
+        total,
+        estado: "pendiente"
+      })
+    });
+    for (const item of items) {
+      await apiFetch(API_PATHS.pedidoDetalle, {
+        method: "POST",
+        body: JSON.stringify({
+          id_pedido: pedido.id_pedido,
+          tipo_item: item.tipo_item || "producto",
+          id_producto: item.id_producto ? Number(item.id_producto) : null,
+          id_servicio: item.id_servicio ? Number(item.id_servicio) : null,
+          cantidad: Number(item.cantidad || 1),
+          precio_unitario: Number(item.precio_unitario || 0),
+          subtotal: Number(item.subtotal || 0)
+        })
+      });
+    }
+    await apiFetch(`/carritos/${carrito.id_carrito}/convertir`, {
+      method: "POST"
+    });
+    showToast(
+      `Pedido #${pedido.id_pedido} creado correctamente. Ahora puedes pagarlo.`,
+      "success",
+      6500
+    );
+
+    await irMisPedidos();
 
   } catch (e) {
     showToast(friendlyError(e), "error");

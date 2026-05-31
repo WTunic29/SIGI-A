@@ -356,6 +356,83 @@ def agregar_producto_carrito(
 
     return carrito
 
+# =========================
+# CONVERTIR CARRITO A PEDIDO
+# =========================
+
+@router.post("/{id_carrito}/convertir")
+def convertir_carrito_a_pedido(
+    id_carrito: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente", "admin"])
+    )
+):
+    liberar_reservas_vencidas(db)
+
+    carrito = db.query(Carrito).filter(
+        Carrito.id_carrito == id_carrito
+    ).first()
+
+    if not carrito:
+        raise HTTPException(
+            status_code=404,
+            detail="Carrito no encontrado"
+        )
+
+    validar_acceso_carrito(
+        carrito,
+        current_user
+    )
+
+    if carrito.estado != "activo":
+        raise HTTPException(
+            status_code=400,
+            detail="El carrito ya no está activo"
+        )
+
+    detalles_reservados = db.query(CarritoDetalle).filter(
+        CarritoDetalle.id_carrito == carrito.id_carrito,
+        CarritoDetalle.estado_reserva == "RESERVADO"
+    ).all()
+
+    if not detalles_reservados:
+        raise HTTPException(
+            status_code=400,
+            detail="El carrito no tiene reservas activas"
+        )
+
+    for detalle in detalles_reservados:
+        detalle.estado_reserva = "CONVERTIDO"
+
+    carrito.estado = "cerrado"
+    carrito.fecha_actualizacion = datetime.utcnow()
+
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=current_user,
+        accion="CARRITO_CONVERTIDO_PEDIDO",
+        modulo="carritos",
+        tabla_afectada="core.carritos",
+        id_registro=carrito.id_carrito,
+        detalle=(
+            f"Usuario {current_user.correo} convirtió el carrito "
+            f"ID {carrito.id_carrito} en pedido."
+        ),
+        nivel="INFO",
+        resultado="OK"
+    )
+
+    db.commit()
+    db.refresh(carrito)
+
+    return {
+        "message": "Carrito cerrado correctamente después de crear el pedido",
+        "id_carrito": carrito.id_carrito,
+        "estado": carrito.estado
+    }
 
 # =========================
 # CREAR CARRITO
