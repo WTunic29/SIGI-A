@@ -17,3 +17,4 @@ alembic==1.17.2
 pyotp
 qrcode
 pillow
+reportlab

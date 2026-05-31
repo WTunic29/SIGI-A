@@ -2,6 +2,8 @@ import smtplib
 import os
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 load_dotenv()
 
@@ -28,6 +30,52 @@ def enviar_email(destino: str, asunto: str, cuerpo: str):
         server.login(remitente, password)
         server.send_message(mensaje)
 
+def enviar_email_con_adjunto(
+    destino: str,
+    asunto: str,
+    cuerpo: str,
+    ruta_adjunto: str,
+    nombre_adjunto: str
+):
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    remitente = os.getenv("SMTP_USER")
+    password = os.getenv("SMTP_PASSWORD")
+    email_from = os.getenv("EMAIL_FROM", remitente)
+
+    if not remitente or not password:
+        raise Exception("Faltan variables SMTP_USER o SMTP_PASSWORD en el entorno")
+
+    if not os.path.exists(ruta_adjunto):
+        raise Exception(f"No existe el archivo adjunto: {ruta_adjunto}")
+
+    mensaje = MIMEMultipart()
+    mensaje["Subject"] = asunto
+    mensaje["From"] = email_from
+    mensaje["To"] = destino
+
+    mensaje.attach(MIMEText(cuerpo, "plain", "utf-8"))
+
+    with open(ruta_adjunto, "rb") as archivo:
+        adjunto = MIMEApplication(
+            archivo.read(),
+            _subtype="pdf"
+        )
+
+    adjunto.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename=nombre_adjunto
+    )
+
+    mensaje.attach(adjunto)
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(remitente, password)
+        server.send_message(mensaje)
 
 def enviar_codigo_email(destino: str, codigo: str):
     asunto = "Código SIGI-A"
