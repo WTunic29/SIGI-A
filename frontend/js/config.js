@@ -1,4 +1,4 @@
-window.SIGIA_API_BASE = "http://3.15.197.152:10000";
-window.SIGIA_FRONTEND_BASE = "http://3.15.197.152";
+window.SIGIA_API_BASE = "https://api.sigi-e.com";
+window.SIGIA_FRONTEND_BASE = "https://sigi-e.com";
 
 console.log("SIGI-A API:", window.SIGIA_API_BASE);
