@@ -13,8 +13,6 @@ services:
       - "5432:5432"
     volumes:
       - sigi_pgdata:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sigi_user -d sigi"]
       interval: 10s

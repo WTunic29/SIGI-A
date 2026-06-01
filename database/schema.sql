@@ -10,7 +10,6 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -26,7 +25,7 @@ SET row_security = off;
 CREATE SCHEMA core;
 
 
-ALTER SCHEMA core OWNER TO postgres;
+ALTER SCHEMA core OWNER TO sigi_user;
 
 SET default_tablespace = '';
 
@@ -47,7 +46,7 @@ CREATE TABLE core.auditoria (
 );
 
 
-ALTER TABLE core.auditoria OWNER TO postgres;
+ALTER TABLE core.auditoria OWNER TO sigi_user;
 
 --
 -- Name: auditoria_id_auditoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -79,7 +78,7 @@ CREATE TABLE core.calificaciones (
 );
 
 
-ALTER TABLE core.calificaciones OWNER TO postgres;
+ALTER TABLE core.calificaciones OWNER TO sigi_user;
 
 --
 -- Name: calificaciones_id_calificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -114,7 +113,7 @@ CREATE TABLE core.carrito_detalle (
 );
 
 
-ALTER TABLE core.carrito_detalle OWNER TO postgres;
+ALTER TABLE core.carrito_detalle OWNER TO sigi_user;
 
 --
 -- Name: carrito_detalle_id_carrito_detalle_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -143,7 +142,7 @@ CREATE TABLE core.carritos (
 );
 
 
-ALTER TABLE core.carritos OWNER TO postgres;
+ALTER TABLE core.carritos OWNER TO sigi_user;
 
 --
 -- Name: carritos_id_carrito_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -170,7 +169,7 @@ CREATE TABLE core.categorias_negocio (
 );
 
 
-ALTER TABLE core.categorias_negocio OWNER TO postgres;
+ALTER TABLE core.categorias_negocio OWNER TO sigi_user;
 
 --
 -- Name: categorias_negocio_id_categoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -206,7 +205,7 @@ CREATE TABLE core.citas (
 );
 
 
-ALTER TABLE core.citas OWNER TO postgres;
+ALTER TABLE core.citas OWNER TO sigi_user;
 
 --
 -- Name: citas_id_cita_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -236,7 +235,7 @@ CREATE TABLE core.codigos_2fa (
 );
 
 
-ALTER TABLE core.codigos_2fa OWNER TO postgres;
+ALTER TABLE core.codigos_2fa OWNER TO sigi_user;
 
 --
 -- Name: codigos_2fa_id_codigo_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -251,7 +250,7 @@ CREATE SEQUENCE core.codigos_2fa_id_codigo_seq
     CACHE 1;
 
 
-ALTER SEQUENCE core.codigos_2fa_id_codigo_seq OWNER TO postgres;
+ALTER SEQUENCE core.codigos_2fa_id_codigo_seq OWNER TO sigi_user;
 
 --
 -- Name: codigos_2fa_id_codigo_seq; Type: SEQUENCE OWNED BY; Schema: core; Owner: postgres
@@ -275,7 +274,7 @@ CREATE TABLE core.detalle_cita (
 );
 
 
-ALTER TABLE core.detalle_cita OWNER TO postgres;
+ALTER TABLE core.detalle_cita OWNER TO sigi_user;
 
 --
 -- Name: detalle_cita_id_detalle_cita_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -302,7 +301,7 @@ CREATE TABLE core.empleado_servicio (
 );
 
 
-ALTER TABLE core.empleado_servicio OWNER TO postgres;
+ALTER TABLE core.empleado_servicio OWNER TO sigi_user;
 
 --
 -- Name: empleado_servicio_id_empleado_servicio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -336,7 +335,7 @@ CREATE TABLE core.empleados (
 );
 
 
-ALTER TABLE core.empleados OWNER TO postgres;
+ALTER TABLE core.empleados OWNER TO sigi_user;
 
 --
 -- Name: empleados_id_empleado_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -364,7 +363,7 @@ CREATE TABLE core.favoritos (
 );
 
 
-ALTER TABLE core.favoritos OWNER TO postgres;
+ALTER TABLE core.favoritos OWNER TO sigi_user;
 
 --
 -- Name: favoritos_id_favorito_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -396,7 +395,7 @@ CREATE TABLE core.horarios_empleado (
 );
 
 
-ALTER TABLE core.horarios_empleado OWNER TO postgres;
+ALTER TABLE core.horarios_empleado OWNER TO sigi_user;
 
 --
 -- Name: horarios_empleado_id_horario_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -425,7 +424,7 @@ CREATE TABLE core.imagenes_negocio (
 );
 
 
-ALTER TABLE core.imagenes_negocio OWNER TO postgres;
+ALTER TABLE core.imagenes_negocio OWNER TO sigi_user;
 
 --
 -- Name: imagenes_negocio_id_imagen_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -457,7 +456,7 @@ CREATE TABLE core.inventario_movimientos (
 );
 
 
-ALTER TABLE core.inventario_movimientos OWNER TO postgres;
+ALTER TABLE core.inventario_movimientos OWNER TO sigi_user;
 
 --
 -- Name: inventario_movimientos_id_movimiento_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -484,7 +483,7 @@ CREATE TABLE core.negocio_categoria (
 );
 
 
-ALTER TABLE core.negocio_categoria OWNER TO postgres;
+ALTER TABLE core.negocio_categoria OWNER TO sigi_user;
 
 --
 -- Name: negocio_categoria_id_negocio_categoria_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -525,7 +524,7 @@ CREATE TABLE core.negocios (
 );
 
 
-ALTER TABLE core.negocios OWNER TO postgres;
+ALTER TABLE core.negocios OWNER TO sigi_user;
 
 --
 -- Name: negocios_id_negocio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -557,7 +556,7 @@ CREATE TABLE core.notificaciones (
 );
 
 
-ALTER TABLE core.notificaciones OWNER TO postgres;
+ALTER TABLE core.notificaciones OWNER TO sigi_user;
 
 --
 -- Name: notificaciones_id_notificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -592,7 +591,7 @@ CREATE TABLE core.pagos (
 );
 
 
-ALTER TABLE core.pagos OWNER TO postgres;
+ALTER TABLE core.pagos OWNER TO sigi_user;
 
 --
 -- Name: pagos_id_pago_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -629,7 +628,7 @@ CREATE TABLE core.pedido_detalle (
 );
 
 
-ALTER TABLE core.pedido_detalle OWNER TO postgres;
+ALTER TABLE core.pedido_detalle OWNER TO sigi_user;
 
 --
 -- Name: pedido_detalle_id_pedido_detalle_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -661,7 +660,7 @@ CREATE TABLE core.pedidos (
 );
 
 
-ALTER TABLE core.pedidos OWNER TO postgres;
+ALTER TABLE core.pedidos OWNER TO sigi_user;
 
 --
 -- Name: pedidos_id_pedido_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -697,7 +696,7 @@ CREATE TABLE core.productos (
 );
 
 
-ALTER TABLE core.productos OWNER TO postgres;
+ALTER TABLE core.productos OWNER TO sigi_user;
 
 --
 -- Name: productos_id_producto_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -724,7 +723,7 @@ CREATE TABLE core.roles (
 );
 
 
-ALTER TABLE core.roles OWNER TO postgres;
+ALTER TABLE core.roles OWNER TO sigi_user;
 
 --
 -- Name: roles_id_rol_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -759,7 +758,7 @@ CREATE TABLE core.servicios (
 );
 
 
-ALTER TABLE core.servicios OWNER TO postgres;
+ALTER TABLE core.servicios OWNER TO sigi_user;
 
 --
 -- Name: servicios_id_servicio_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -791,7 +790,7 @@ CREATE TABLE core.sesiones (
 );
 
 
-ALTER TABLE core.sesiones OWNER TO postgres;
+ALTER TABLE core.sesiones OWNER TO sigi_user;
 
 --
 -- Name: sesiones_id_sesion_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -821,7 +820,7 @@ CREATE TABLE core.tokens_recuperacion (
 );
 
 
-ALTER TABLE core.tokens_recuperacion OWNER TO postgres;
+ALTER TABLE core.tokens_recuperacion OWNER TO sigi_user;
 
 --
 -- Name: tokens_recuperacion_id_token_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -848,7 +847,7 @@ CREATE TABLE core.usuario_rol (
 );
 
 
-ALTER TABLE core.usuario_rol OWNER TO postgres;
+ALTER TABLE core.usuario_rol OWNER TO sigi_user;
 
 --
 -- Name: usuario_rol_id_usuario_rol_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -885,7 +884,7 @@ CREATE TABLE core.usuarios (
 );
 
 
-ALTER TABLE core.usuarios OWNER TO postgres;
+ALTER TABLE core.usuarios OWNER TO sigi_user;
 
 --
 -- Name: usuarios_id_usuario_seq; Type: SEQUENCE; Schema: core; Owner: postgres
@@ -915,7 +914,7 @@ CREATE TABLE core.tokens_activacion (
 );
 
 
-ALTER TABLE core.tokens_activacion OWNER TO postgres;
+ALTER TABLE core.tokens_activacion OWNER TO sigi_user;
 
 
 --
@@ -934,7 +933,7 @@ CREATE TABLE core.verificacion_2fa (
 );
 
 
-ALTER TABLE core.verificacion_2fa OWNER TO postgres;
+ALTER TABLE core.verificacion_2fa OWNER TO sigi_user;
 
 --
 -- Name: verificacion_2fa_id_verificacion_seq; Type: SEQUENCE; Schema: core; Owner: postgres

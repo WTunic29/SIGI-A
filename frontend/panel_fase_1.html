@@ -448,7 +448,7 @@
       background: rgba(201,168,76,0.05);
       border: 1px solid rgba(201,168,76,0.2);
       border-radius: 18px;
-      padding: 22px 24px;
+      padding: 22px 24px;   
       margin-top: 20px;
       display: none;
     }
@@ -626,7 +626,7 @@
           <div class="mini-avatar">B</div>
         </div>
         <div class="search-pill">Buscar barbería, zona o servicio...</div>
-        <div class="business-preview active"><div class="business-icon">✂</div><div><strong>Barbería Élite</strong><p>Agenda, cortes y perfil del negocio</p></div><span>4.9</span></div>
+        <div class="business-preview active"><div class="business-icon">✂️</div><div><strong>Barbería Élite</strong><p>Agenda, cortes y perfil del negocio</p></div><span>4.9</span></div>
         <div class="business-preview"><div class="business-icon">★</div><div><strong>Urban Style</strong><p>Servicios disponibles en tiempo real</p></div><span>4.8</span></div>
         <div class="business-preview"><div class="business-icon">⌁</div><div><strong>Studio Premium</strong><p>Experiencia moderna para clientes</p></div><span>4.7</span></div>
         <div class="phone-footer-card"><p>Tu próxima cita</p><strong>Gestionada desde SIGI-E</strong></div>
@@ -981,7 +981,8 @@
 
         <!-- Panel de agendar (se muestra al seleccionar trabajador + servicio) -->
         <div class="dn-agendar-panel" id="dnAgendarPanel">
-          <p class="dn-agendar-title">✂ Agendar cita</p>
+<<<<<<< HEAD
+          <p class="dn-agendar-title">✂️ Agendar cita</p>
           <div class="dn-seleccion-resumen" id="dnChips"></div>
           <form id="agendarCitaForm">
             <!-- Campos ocultos que se llenan al seleccionar tarjeta -->
@@ -1217,7 +1218,7 @@ function iconoBarberiaU() {
       border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.3);
       box-shadow:0 3px 10px rgba(201,168,76,0.5);">
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-        transform:rotate(45deg);font-size:12px;">✂</div></div>`,
+        transform:rotate(45deg);font-size:12px;">✂️</div></div>`,
     iconSize:[30,30], iconAnchor:[15,30], popupAnchor:[0,-33]
   });
 }
@@ -1370,7 +1371,11 @@ async function mostrarMapaDetalleNegocio(negocio) {
   L.tileLayer(TILE_DARK_U, TILE_OPTS_U).addTo(mapaDetalle);
   mapaDetalleListo = true;
 
+HEAD
   const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+  const gmaps = https://www.google.com/maps/dir/?api=1&destination=${lat},${lng};
+da9f44d
   L.marker([lat,lng],{icon:iconoBarberiaU()})
     .addTo(mapaDetalle)
     .bindPopup(`<strong>${nombre}</strong>
