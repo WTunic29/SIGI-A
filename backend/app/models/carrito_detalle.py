@@ -14,6 +14,7 @@ class CarritoDetalle(Base):
 
     id_producto = Column(BigInteger, nullable=True)
     id_servicio = Column(BigInteger, nullable=True)
+    id_cita = Column(BigInteger, nullable=True)
 
     cantidad = Column(Integer, nullable=False, default=1)
 

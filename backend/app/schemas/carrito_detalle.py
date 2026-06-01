@@ -9,6 +9,7 @@ class CarritoDetalleBase(BaseModel):
     tipo_item: str
     id_producto: Optional[int] = None
     id_servicio: Optional[int] = None
+    id_cita: Optional[int] = None
     cantidad: int
     precio_unitario: Decimal
 
@@ -36,3 +37,11 @@ class CarritoDetalleResponse(CarritoDetalleBase):
 class AgregarProductoCarrito(BaseModel):
     id_producto: int
     cantidad: int = 1
+
+class AgregarCitaCarrito(BaseModel):
+    id_negocio: int
+    id_empleado: int
+    id_servicio: int
+    fecha: str
+    hora_inicio: str
+    observaciones: Optional[str] = None

@@ -8,12 +8,14 @@ from app.core.deps import (
     require_roles
 )
 
+from app.models.pedido_detalle import PedidoDetalle
 from app.models.pago import Pago
 from app.models.pedido import Pedido
 from app.models.negocio import Negocio
 from app.models.user import Usuario
 from app.models.factura import Factura
 from app.models.pedido_detalle import PedidoDetalle
+from app.models.cita import Cita
 
 from app.schemas.pago import (
     PagoCreate,
@@ -162,45 +164,53 @@ def crear_pago(
     if pago.estado_pago == "aprobado":
         pedido.estado = "pagado"
 
+        detalles_pedido = db.query(PedidoDetalle).filter(
+            PedidoDetalle.id_pedido == pedido.id_pedido
+        ).all()
+
+        for detalle in detalles_pedido:
+            if detalle.id_cita:
+                cita = db.query(Cita).filter(
+                    Cita.id_cita == detalle.id_cita
+                ).first()
+
+                if cita and cita.estado in ["pendiente_pago", "reservada_carrito"]:
+                    cita.estado = "confirmada"
+
         factura = db.query(Factura).filter(
             Factura.id_pedido == pedido.id_pedido
         ).first()
 
-        if not factura:
-            detalles = db.query(PedidoDetalle).filter(
-                PedidoDetalle.id_pedido == pedido.id_pedido
-            ).all()
+        if not factura and detalles_pedido:
+            subtotal = sum([
+                detalle.subtotal or 0
+                for detalle in detalles_pedido
+            ])
 
-            if detalles:
-                subtotal = sum([
-                    detalle.subtotal or 0
-                    for detalle in detalles
-                ])
+            cliente = db.query(Usuario).filter(
+                Usuario.id_usuario == pedido.id_usuario
+            ).first()
 
-                cliente = db.query(Usuario).filter(
-                    Usuario.id_usuario == pedido.id_usuario
-                ).first()
+            correo_destino = pago.correo_factura
 
-                correo_destino = pago.correo_factura
+            if not correo_destino and cliente:
+                correo_destino = cliente.correo
 
-                if not correo_destino and cliente:
-                    correo_destino = cliente.correo
+            factura = Factura(
+                numero_factura=generar_numero_factura(pedido.id_pedido),
+                id_pedido=pedido.id_pedido,
+                id_usuario=pedido.id_usuario,
+                id_negocio=pedido.id_negocio,
+                subtotal=subtotal,
+                impuestos=0,
+                total=pedido.total,
+                estado="emitida",
+                correo_destino=correo_destino
+            )
 
-                factura = Factura(
-                    numero_factura=generar_numero_factura(pedido.id_pedido),
-                    id_pedido=pedido.id_pedido,
-                    id_usuario=pedido.id_usuario,
-                    id_negocio=pedido.id_negocio,
-                    subtotal=subtotal,
-                    impuestos=0,
-                    total=pedido.total,
-                    estado="emitida",
-                    correo_destino=correo_destino
-                )
-
-                db.add(factura)
-                db.flush()
-                db.refresh(factura)
+            db.add(factura)
+            db.flush()
+            db.refresh(factura)
 
         if factura:
             try:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 
 from app.database import SessionLocal
 
@@ -14,13 +14,23 @@ from app.models.carrito import Carrito
 from app.models.carrito_detalle import CarritoDetalle
 from app.models.producto import Producto
 from app.models.user import Usuario
+from app.models.servicio import Servicio
+from app.models.empleado import Empleado
+from app.models.horario_empleado import HorarioEmpleado
+from app.models.cita import Cita
+from app.models.detalle_cita import DetalleCita
+
 
 from app.schemas.carrito import (
     CarritoCreate,
     CarritoUpdate,
     CarritoResponse
 )
-from app.schemas.carrito_detalle import AgregarProductoCarrito
+
+from app.schemas.carrito_detalle import (
+    AgregarProductoCarrito,
+    AgregarCitaCarrito
+)
 
 router = APIRouter(
     prefix="/carritos",
@@ -105,6 +115,15 @@ def liberar_reservas_vencidas(db: Session):
         detalle.estado_reserva = "VENCIDO"
         carritos_afectados.add(detalle.id_carrito)
 
+        if detalle.id_cita:
+            cita = db.query(Cita).filter(
+                Cita.id_cita == detalle.id_cita,
+                Cita.estado == "reservada_carrito"
+            ).first()
+
+            if cita:
+                cita.estado = "vencida"
+
     for id_carrito in carritos_afectados:
         carrito = db.query(Carrito).filter(
             Carrito.id_carrito == id_carrito
@@ -115,10 +134,107 @@ def liberar_reservas_vencidas(db: Session):
 
     return len(detalles_vencidos)
 
+
 def obtener_stock_disponible_producto(
     db: Session,
     producto: Producto
 ):
+    cantidad_reservada = db.query(
+        func.coalesce(func.sum(CarritoDetalle.cantidad), 0)
+    ).filter(
+        CarritoDetalle.id_producto == producto.id_producto,
+        CarritoDetalle.estado_reserva == "RESERVADO",
+        CarritoDetalle.fecha_expiracion_reserva > datetime.utcnow()
+    ).scalar()
+
+    return producto.stock - cantidad_reservada
+
+def combinar_fecha_hora(fecha: date, hora: time) -> datetime:
+    return datetime.combine(fecha, hora)
+
+
+def calcular_hora_fin(fecha: date, hora_inicio: time, duracion_minutos: int) -> time:
+    inicio_dt = combinar_fecha_hora(fecha, hora_inicio)
+    fin_dt = inicio_dt + timedelta(minutes=duracion_minutos)
+    return fin_dt.time()
+
+
+def se_cruza(inicio_a: datetime, fin_a: datetime, inicio_b: datetime, fin_b: datetime) -> bool:
+    return inicio_a < fin_b and fin_a > inicio_b
+
+
+def empleado_trabaja_en_bloque(
+    db: Session,
+    id_empleado: int,
+    fecha: date,
+    hora_inicio: time,
+    hora_fin: time
+) -> bool:
+    dias_posibles = [fecha.weekday(), fecha.isoweekday()]
+
+    horarios = db.query(HorarioEmpleado).filter(
+        HorarioEmpleado.id_empleado == id_empleado,
+        HorarioEmpleado.dia_semana.in_(dias_posibles),
+        HorarioEmpleado.disponible == True
+    ).all()
+
+    inicio_dt = combinar_fecha_hora(fecha, hora_inicio)
+    fin_dt = combinar_fecha_hora(fecha, hora_fin)
+
+    for horario in horarios:
+        laboral_inicio = combinar_fecha_hora(fecha, horario.hora_inicio)
+        laboral_fin = combinar_fecha_hora(fecha, horario.hora_fin)
+
+        if inicio_dt >= laboral_inicio and fin_dt <= laboral_fin:
+            return True
+
+    return False
+
+
+def horario_ocupado_cita(
+    db: Session,
+    id_empleado: int,
+    fecha: date,
+    hora_inicio: time,
+    hora_fin: time
+) -> bool:
+    estados_libres = ["cancelada", "anulada", "eliminada", "rechazada", "vencida"]
+
+    citas = db.query(Cita).filter(
+        Cita.id_empleado == id_empleado,
+        Cita.fecha == fecha,
+        ~Cita.estado.in_(estados_libres)
+    ).all()
+
+    nuevo_inicio = combinar_fecha_hora(fecha, hora_inicio)
+    nuevo_fin = combinar_fecha_hora(fecha, hora_fin)
+
+    for cita in citas:
+        cita_inicio = combinar_fecha_hora(fecha, cita.hora_inicio)
+        cita_fin = combinar_fecha_hora(fecha, cita.hora_fin)
+
+        if se_cruza(nuevo_inicio, nuevo_fin, cita_inicio, cita_fin):
+            return True
+
+    return False
+
+
+def parse_fecha_hora_cita(fecha_str: str, hora_str: str):
+    try:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        hora_inicio = datetime.strptime(hora_str, "%H:%M:%S").time()
+        return fecha, hora_inicio
+    except ValueError:
+        try:
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            hora_inicio = datetime.strptime(hora_str, "%H:%M").time()
+            return fecha, hora_inicio
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato de fecha u hora inválido. Usa fecha YYYY-MM-DD y hora HH:MM o HH:MM:SS."
+            )
+
     cantidad_reservada = db.query(
         func.coalesce(func.sum(CarritoDetalle.cantidad), 0)
     ).filter(
@@ -183,36 +299,80 @@ def obtener_carrito_activo_detalle(
     db.commit()
     db.refresh(carrito)
 
-    detalles = db.query(
-        CarritoDetalle,
-        Producto
-    ).join(
-        Producto,
-        Producto.id_producto == CarritoDetalle.id_producto
-    ).filter(
+    detalles = db.query(CarritoDetalle).filter(
         CarritoDetalle.id_carrito == carrito.id_carrito,
         CarritoDetalle.estado_reserva == "RESERVADO"
     ).all()
 
     items = []
 
-    for detalle, producto in detalles:
-        items.append({
+    for detalle in detalles:
+        item = {
             "id_carrito_detalle": detalle.id_carrito_detalle,
             "id_carrito": detalle.id_carrito,
             "tipo_item": detalle.tipo_item,
             "id_producto": detalle.id_producto,
             "id_servicio": detalle.id_servicio,
-            "nombre": producto.nombre,
-            "descripcion": producto.descripcion,
-            "imagen_url": producto.imagen_url,
+            "id_cita": detalle.id_cita,
             "cantidad": detalle.cantidad,
             "precio_unitario": detalle.precio_unitario,
             "subtotal": detalle.subtotal,
             "estado_reserva": detalle.estado_reserva,
             "fecha_reserva": detalle.fecha_reserva,
             "fecha_expiracion_reserva": detalle.fecha_expiracion_reserva
-        })
+        }
+
+        if detalle.tipo_item == "producto" and detalle.id_producto:
+            producto = db.query(Producto).filter(
+                Producto.id_producto == detalle.id_producto
+            ).first()
+
+            item.update({
+                "nombre": producto.nombre if producto else "Producto no disponible",
+                "descripcion": producto.descripcion if producto else None,
+                "imagen_url": producto.imagen_url if producto else None
+            })
+
+        elif detalle.tipo_item == "servicio" and detalle.id_servicio:
+            servicio = db.query(Servicio).filter(
+                Servicio.id_servicio == detalle.id_servicio
+            ).first()
+
+            cita = None
+            empleado = None
+
+            if detalle.id_cita:
+                cita = db.query(Cita).filter(
+                    Cita.id_cita == detalle.id_cita
+                ).first()
+
+                if cita:
+                    empleado = db.query(Empleado).filter(
+                        Empleado.id_empleado == cita.id_empleado
+                    ).first()
+
+            item.update({
+                "nombre": servicio.nombre if servicio else "Servicio no disponible",
+                "descripcion": servicio.descripcion if servicio else None,
+                "imagen_url": servicio.imagen_url if servicio else None,
+                "id_cita": detalle.id_cita,
+                "fecha": cita.fecha if cita else None,
+                "hora_inicio": cita.hora_inicio if cita else None,
+                "hora_fin": cita.hora_fin if cita else None,
+                "estado_cita": cita.estado if cita else None,
+                "id_empleado": cita.id_empleado if cita else None,
+                "empleado_nombre": empleado.nombre if empleado else None,
+                "empleado_apellido": empleado.apellido if empleado else None
+            })
+
+        else:
+            item.update({
+                "nombre": "Item no disponible",
+                "descripcion": None,
+                "imagen_url": None
+            })
+
+        items.append(item)
 
     return {
         "carrito": carrito,
@@ -357,6 +517,186 @@ def agregar_producto_carrito(
     return carrito
 
 # =========================
+# AGREGAR CITA AL CARRITO
+# =========================
+
+@router.post("/agregar-cita", response_model=CarritoResponse)
+def agregar_cita_carrito(
+    request: Request,
+    datos: AgregarCitaCarrito,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["cliente"])
+    )
+):
+    liberar_reservas_vencidas(db)
+
+    fecha_cita, hora_inicio = parse_fecha_hora_cita(
+        datos.fecha,
+        datos.hora_inicio
+    )
+
+    empleado = db.query(Empleado).filter(
+        Empleado.id_empleado == datos.id_empleado,
+        Empleado.estado == "activo"
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="Empleado no encontrado o inactivo"
+        )
+
+    if empleado.id_negocio != datos.id_negocio:
+        raise HTTPException(
+            status_code=400,
+            detail="El empleado no pertenece al negocio seleccionado"
+        )
+
+    servicio = db.query(Servicio).filter(
+        Servicio.id_servicio == datos.id_servicio,
+        Servicio.estado == "activo"
+    ).first()
+
+    if not servicio:
+        raise HTTPException(
+            status_code=404,
+            detail="Servicio no encontrado o inactivo"
+        )
+
+    if servicio.id_negocio != datos.id_negocio:
+        raise HTTPException(
+            status_code=400,
+            detail="El servicio no pertenece al negocio seleccionado"
+        )
+
+    hora_fin = calcular_hora_fin(
+        fecha_cita,
+        hora_inicio,
+        servicio.duracion_minutos
+    )
+
+    if not empleado_trabaja_en_bloque(
+        db,
+        datos.id_empleado,
+        fecha_cita,
+        hora_inicio,
+        hora_fin
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="El empleado no trabaja en ese horario"
+        )
+
+    if horario_ocupado_cita(
+        db,
+        datos.id_empleado,
+        fecha_cita,
+        hora_inicio,
+        hora_fin
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Ese horario ya no está disponible. Selecciona otra hora."
+        )
+
+    ahora = datetime.utcnow()
+    expiracion = ahora + timedelta(minutes=15)
+
+    carrito = obtener_carrito_activo_usuario(
+        db,
+        current_user.id_usuario
+    )
+
+    if not carrito:
+        carrito = Carrito(
+            id_usuario=current_user.id_usuario,
+            id_negocio=datos.id_negocio,
+            estado="activo",
+            fecha_creacion=ahora,
+            fecha_expiracion=expiracion,
+            fecha_actualizacion=ahora,
+            total_estimado=0
+        )
+        db.add(carrito)
+        db.flush()
+    else:
+        if carrito.id_negocio and carrito.id_negocio != datos.id_negocio:
+            raise HTTPException(
+                status_code=400,
+                detail="No puedes mezclar servicios de diferentes negocios en el mismo carrito"
+            )
+
+        carrito.id_negocio = datos.id_negocio
+        carrito.fecha_expiracion = expiracion
+        carrito.fecha_actualizacion = ahora
+
+    nueva_cita = Cita(
+        id_cliente=current_user.id_usuario,
+        id_negocio=datos.id_negocio,
+        id_empleado=datos.id_empleado,
+        fecha=fecha_cita,
+        hora_inicio=hora_inicio,
+        hora_fin=hora_fin,
+        estado="reservada_carrito",
+        observaciones=datos.observaciones
+    )
+
+    db.add(nueva_cita)
+    db.flush()
+
+    nuevo_detalle_cita = DetalleCita(
+        id_cita=nueva_cita.id_cita,
+        id_servicio=servicio.id_servicio,
+        precio=servicio.precio,
+        duracion=servicio.duracion_minutos
+    )
+
+    db.add(nuevo_detalle_cita)
+
+    detalle_carrito = CarritoDetalle(
+        id_carrito=carrito.id_carrito,
+        tipo_item="servicio",
+        id_producto=None,
+        id_servicio=servicio.id_servicio,
+        id_cita=nueva_cita.id_cita,
+        cantidad=1,
+        precio_unitario=servicio.precio,
+        subtotal=servicio.precio,
+        estado_reserva="RESERVADO",
+        fecha_reserva=ahora,
+        fecha_expiracion_reserva=expiracion
+    )
+
+    db.add(detalle_carrito)
+    db.flush()
+
+    recalcular_total_carrito(db, carrito)
+
+    registrar_auditoria(
+        db=db,
+        request=request,
+        usuario=current_user,
+        accion="CITA_AGREGADA_CARRITO",
+        modulo="carritos",
+        tabla_afectada="core.carrito_detalle",
+        id_registro=carrito.id_carrito,
+        detalle=(
+            f"Usuario {current_user.correo} reservó cita ID {nueva_cita.id_cita} "
+            f"para servicio ID {servicio.id_servicio}, empleado ID {empleado.id_empleado}, "
+            f"fecha {fecha_cita}, hora {hora_inicio} - {hora_fin}. "
+            f"Reserva válida hasta {expiracion}."
+        ),
+        nivel="INFO",
+        resultado="OK"
+    )
+
+    db.commit()
+    db.refresh(carrito)
+
+    return carrito
+
+# =========================
 # CONVERTIR CARRITO A PEDIDO
 # =========================
 
@@ -405,6 +745,14 @@ def convertir_carrito_a_pedido(
 
     for detalle in detalles_reservados:
         detalle.estado_reserva = "CONVERTIDO"
+
+        if detalle.id_cita:
+            cita = db.query(Cita).filter(
+                Cita.id_cita == detalle.id_cita
+            ).first()
+
+            if cita and cita.estado == "reservada_carrito":
+                cita.estado = "pendiente_pago"
 
     carrito.estado = "cerrado"
     carrito.fecha_actualizacion = datetime.utcnow()

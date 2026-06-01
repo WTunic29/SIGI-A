@@ -506,8 +506,8 @@ async function pedirCantidadProducto(producto) {
   const result = await openUiModal({
     eyebrow: "Tienda",
     title: "Cantidad del producto",
-    text: `Selecciona cuántas unidades quieres pedir de ${producto?.nombre || "este producto"}.`,
-    confirmText: "Crear pedido",
+    text: `Selecciona cuántas unidades quieres reservar de ${producto?.nombre || "este producto"}.`,
+    confirmText: "Reservar",
     fields: [{ id: "cantidad", label: "Cantidad", type: "number", min: 1, max: stock > 0 ? stock : undefined, step: 1, value: 1, placeholder: "Ej: 1" }]
   });
   if (!result) return null;
@@ -954,52 +954,83 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    const btn = e.submitter || document.querySelector("#loginForm button[type='submit']");
+
     const payload = {
-      correo: document.getElementById("loginCorreo").value.trim(),
-      password: document.getElementById("loginPassword").value,
+      correo: document.getElementById("loginCorreo")?.value.trim(),
+      password: document.getElementById("loginPassword")?.value,
     };
 
+    if (!payload.correo || !payload.password) {
+      const msg = "Ingresa correo y contraseña.";
+      mostrarMensaje("loginMsg", msg);
+      showToast(msg, "error");
+      return;
+    }
+
     try {
+      setButtonLoading(btn, true, "Verificando...");
+      mostrarMensaje("loginMsg", "Validando credenciales...", false);
+
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && (data.requiere_mfa || data.requiere_mfa === true || data.metodo === "totp")) {
         sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
         sessionStorage.setItem("mfa_mode", "totp");
+
+        document.getElementById("loginForm")?.reset();
+        mostrarMensaje("loginMsg", "", false);
         showToast("Verificación con app autenticadora requerida.", "info");
-        window.location.href = "verificar-mfa.html";
+
+        mostrarVerifyMFA("totp");
         return;
-      } else if (res.ok && data.requieres_2fa) {
+      }
+
+      if (res.ok && data.requieres_2fa) {
         sessionStorage.setItem("correo_2fa", data.correo || payload.correo);
         sessionStorage.setItem("mfa_mode", "email");
+
+        document.getElementById("loginForm")?.reset();
+        mostrarMensaje("loginMsg", "", false);
         showToast("Te enviamos un código de seguridad al correo.", "success");
-        window.location.href = "verificar-mfa.html";
+
+        mostrarVerifyMFA("email");
         return;
-      } else if (res.ok && data.requiere_configurar_mfa === true) {
+      }
+
+      if (res.ok && data.requiere_configurar_mfa === true) {
         guardarSesion(data);
         sessionStorage.setItem("mfa_config_pendiente", "true");
         showToast("Debes configurar MFA con tu aplicación autenticadora.", "info");
         window.location.href = "mfa.html";
-      } else if (res.ok && data.access_token) {
+        return;
+      }
+
+      if (res.ok && data.access_token) {
         guardarSesion(data);
         showToast("Inicio de sesión exitoso.", "success");
         irDashboardPorRol();
-      } else {
-        const msg = friendlyError(data.detail || data.message || "Credenciales inválidas.");
-        mostrarMensaje("loginMsg", msg);
-        showToast(msg, "error");
+        return;
       }
+
+      const msg = friendlyError(data.detail || data.message || "Credenciales inválidas.");
+      mostrarMensaje("loginMsg", msg);
+      showToast(msg, "error");
     } catch (error) {
       const msg = friendlyError(error);
       mostrarMensaje("loginMsg", msg);
       showToast(msg, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   });
-
   document.getElementById("verify2faForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
@@ -1447,10 +1478,15 @@ function renderAdminList(items, contenedorId, tipo) {
     return;
   }
   cont.innerHTML = items.map(item => {
-    const id = item.id_empleado || item.id_servicio || item.id_producto || item.id_cita;
-    const nombre = escapeHtml(item.nombre || item.nombre_negocio || `Registro #${id}`);
+    const id = tipo === "cita"
+      ? item.id_cita
+      : (item.id_empleado || item.id_servicio || item.id_producto);
+    const nombre = tipo === "cita"
+      ? `Cita #${escapeHtml(id)}`
+      : escapeHtml(item.nombre || item.nombre_negocio || `Registro #${id}`);
     let meta = "";
     let acciones = "";
+    let extra = "";
 
     if (tipo === "empleado") {
       meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "")}`;
@@ -1465,11 +1501,44 @@ function renderAdminList(items, contenedorId, tipo) {
       acciones = `<button onclick="editarProducto(${id})">Editar</button><button onclick="movimientoInventario(${id})">Movimiento</button><button onclick="eliminarProducto(${id})">Desactivar</button>`;
     }
     if (tipo === "cita") {
-      meta = `Cliente #${escapeHtml(item.id_cliente)} · Empleado #${escapeHtml(item.id_empleado)} · ${escapeHtml(item.fecha)} ${escapeHtml(item.hora_inicio)}-${escapeHtml(item.hora_fin)} · ${escapeHtml(item.estado)}`;
-      acciones = `<button onclick="cancelarCita(${id})">Cancelar</button>`;
+      const estado = String(item.estado || "pendiente").toLowerCase();
+      const fecha = item.fecha || "";
+      const inicio = String(item.hora_inicio || "").slice(0, 5);
+      const fin = String(item.hora_fin || "").slice(0, 5);
+      const bloqueada = ["cancelada", "vencida", "finalizada", "completada", "no_asistio"].includes(estado);
+
+      const statusClass = bloqueada
+        ? "danger"
+        : (estado === "confirmada" ? "done" : "pending");
+
+      const clienteNombre = `${item.cliente_nombre || ""} ${item.cliente_apellido || ""}`.trim() || `Cliente #${item.id_cliente}`;
+      const empleadoNombre = `${item.empleado_nombre || ""} ${item.empleado_apellido || ""}`.trim() || `Empleado #${item.id_empleado}`;
+      const servicioNombre = item.servicio_nombre || "Servicio no especificado";
+
+      meta = `
+        Cliente: ${escapeHtml(clienteNombre)}
+        · Empleado: ${escapeHtml(empleadoNombre)}
+        · Servicio: ${escapeHtml(servicioNombre)}
+        · ${escapeHtml(fecha)}
+        · ${escapeHtml(inicio)}-${escapeHtml(fin)}
+        · <span class="status-pill ${statusClass}">${escapeHtml(estadoVisualCita(item))}</span>
+      `;
+
+      extra = `
+        <p class="muted small">
+          <strong>Observaciones:</strong>
+          ${escapeHtml(item.observaciones || "Sin observaciones del cliente.")}
+        </p>
+      `;
+
+      acciones = `
+        ${!bloqueada ? `<button onclick="cambiarEstadoCitaNegocio(${id}, 'finalizada')">Finalizar</button>` : ""}
+        ${!bloqueada ? `<button onclick="cambiarEstadoCitaNegocio(${id}, 'no_asistio')">No asistió</button>` : ""}
+        ${!bloqueada ? `<button onclick="cancelarCita(${id})">Cancelar</button>` : ""}
+      `;
     }
 
-    return `<article class="admin-item"><div><h4>${nombre}</h4><p>${meta}</p></div><div class="row-actions">${acciones}</div></article>`;
+    return `<article class="admin-item"><div><h4>${nombre}</h4><p>${meta}</p>${extra}</div><div class="row-actions">${acciones}</div></article>`;
   }).join("");
 }
 
@@ -1817,16 +1886,18 @@ async function agendarCitaCliente(e) {
     return mostrarMensaje("agendarCitaMsg", "Para agendar debes ingresar con una cuenta tipo Usuario/Cliente. Las cuentas de negocio solo gestionan empleados, servicios, inventario y citas recibidas.");
   }
 
-  if (!negocioSeleccionado) return mostrarMensaje("agendarCitaMsg", "Primero selecciona una barbería.");
+  if (!negocioSeleccionado) {
+    return mostrarMensaje("agendarCitaMsg", "Primero selecciona una barbería.");
+  }
 
   const idNegocio = obtenerIdNegocio(negocioSeleccionado);
-  const idEmpleado = Number(document.getElementById("citaEmpleado").value);
-  const idServicio = Number(document.getElementById("citaServicio").value);
-  const fecha = document.getElementById("citaFecha").value;
+  const idEmpleado = Number(document.getElementById("citaEmpleado")?.value);
+  const idServicio = Number(document.getElementById("citaServicio")?.value);
+  const fecha = document.getElementById("citaFecha")?.value;
   const selectHora = document.getElementById("citaHora");
   const horaInicio = normalizarHoraApi(selectHora?.value);
   const horaFinSeleccionada = normalizarHoraApi(selectHora?.selectedOptions?.[0]?.dataset?.fin);
-  const observaciones = document.getElementById("citaObservaciones").value.trim() || null;
+  const observaciones = document.getElementById("citaObservaciones")?.value.trim() || null;
 
   if (!idEmpleado || !idServicio || !fecha || !horaInicio) {
     mostrarMensaje("agendarCitaMsg", "Completa trabajador, servicio, fecha y selecciona una hora disponible.");
@@ -1843,20 +1914,34 @@ async function agendarCitaCliente(e) {
       observaciones,
     };
 
-    console.log("Payload cita enviado:", citaPayload);
+    console.log("Payload cita a carrito:", citaPayload);
 
-    await apiFetchConRutas(RUTAS_CITAS, {
+    await apiFetch("/carritos/agregar-cita", {
       method: "POST",
       body: JSON.stringify(citaPayload),
     });
 
     e.target.reset();
     limpiarHorasDisponibles();
-    const rango = horaFinSeleccionada ? ` de ${formatearHoraVisible(horaInicio)} a ${formatearHoraVisible(horaFinSeleccionada)}` : ` a las ${formatearHoraVisible(horaInicio)}`;
-    mostrarMensaje("agendarCitaMsg", `Cita agendada correctamente${rango}.`, false);
-    showToast("Cita agendada correctamente.", "success");
+
+    const rango = horaFinSeleccionada
+      ? ` de ${formatearHoraVisible(horaInicio)} a ${formatearHoraVisible(horaFinSeleccionada)}`
+      : ` a las ${formatearHoraVisible(horaInicio)}`;
+
+    mostrarMensaje(
+      "agendarCitaMsg",
+      `Servicio reservado en tu carrito${rango}. Tienes 15 minutos para continuar con el pedido.`,
+      false
+    );
+
+    showToast("Servicio reservado en tu carrito.", "success");
+
+    setTimeout(() => {
+      irCarritoUsuario();
+    }, 900);
   } catch (error) {
-    mostrarMensaje("agendarCitaMsg", error.message || "No se pudo agendar la cita.");
+    mostrarMensaje("agendarCitaMsg", error.message || "No se pudo reservar la cita en el carrito.");
+    showToast(error.message || "No se pudo reservar la cita en el carrito.", "error");
   }
 }
 
@@ -1894,7 +1979,43 @@ async function cargarCitas() {
   try {
     const negocio = await obtenerMiNegocio(true);
     if (!negocio?.id_negocio) throw new Error("Primero debes tener un negocio registrado.");
-    renderAdminList(await apiFetchConRutas([`/citas/negocio/${negocio.id_negocio}`, `/cita/negocio/${negocio.id_negocio}`]), "listaCitas", "cita");
+    const citas = await apiFetchConRutas([`/citas/negocio/${negocio.id_negocio}`, `/cita/negocio/${negocio.id_negocio}`]);
+    const listaCitas = Array.isArray(citas) ? citas : [];
+
+    const prioridadEstadoCitaNegocio = (cita) => {
+      const estado = String(cita.estado || "pendiente").toLowerCase();
+
+      if (estado === "confirmada") return 0;
+      if (estado === "pendiente_pago") return 1;
+      if (estado === "reservada_carrito") return 2;
+      if (estado === "pendiente") return 3;
+      if (estado === "finalizada" || estado === "completada") return 4;
+      if (estado === "no_asistio") return 5;
+      if (estado === "vencida") return 6;
+      if (estado.includes("cancel")) return 7;
+
+      return 8;
+    };
+
+    const fechaHoraCitaNegocioMs = (cita) => {
+      const fecha = cita.fecha || "";
+      const hora = cita.hora_inicio || "00:00:00";
+      const ms = Date.parse(`${fecha}T${String(hora).slice(0, 8)}`);
+      return Number.isNaN(ms) ? 0 : ms;
+    };
+
+    const citasOrdenadas = listaCitas.sort((a, b) => {
+      const prioridadA = prioridadEstadoCitaNegocio(a);
+      const prioridadB = prioridadEstadoCitaNegocio(b);
+
+      if (prioridadA !== prioridadB) {
+        return prioridadA - prioridadB;
+      }
+
+      return fechaHoraCitaNegocioMs(a) - fechaHoraCitaNegocioMs(b);
+    });
+
+    renderAdminList(citasOrdenadas, "listaCitas", "cita");
     mostrarMensaje("citasMsg", "", false);
   } catch (e) {
     document.getElementById("listaCitas").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
@@ -2031,8 +2152,17 @@ function citaYaPaso(cita) {
 
 function estadoVisualCita(cita) {
   const estado = String(cita.estado || "pendiente").toLowerCase();
+
+  if (estado === "reservada_carrito") return "Reservada en carrito";
+  if (estado === "pendiente_pago") return "Pendiente de pago";
+  if (estado === "confirmada") return "Confirmada";
+  if (estado === "finalizada" || estado === "completada") return "Finalizada";
+  if (estado === "vencida") return "Vencida";
   if (estado === "cancelada" || estado === "cancelado") return "Cancelada";
+  if (estado === "no_asistio") return "No asistió";
+
   if (citaYaPaso(cita)) return "Ya pasó";
+
   return estado.charAt(0).toUpperCase() + estado.slice(1);
 }
 
@@ -2070,29 +2200,81 @@ async function cargarMisCitas() {
 function renderMisCitas() {
   const cont = document.getElementById("listaMisCitas");
   if (!cont) return;
+
   if (!misCitasCache.length) {
     cont.innerHTML = `<div class="empty-state">Todavía no tienes citas registradas.</div>`;
     return;
   }
-  cont.innerHTML = misCitasCache.map(cita => {
+
+  const prioridadCita = (cita) => {
+    const estado = String(cita.estado || "pendiente").toLowerCase();
+    const paso = citaYaPaso(cita);
+
+    if (!paso && estado === "confirmada") return 0;
+    if (!paso && estado === "pendiente_pago") return 1;
+    if (!paso && estado === "reservada_carrito") return 2;
+    if (!paso && estado === "pendiente") return 3;
+    if (estado === "finalizada" || estado === "completada") return 4;
+    if (paso) return 5;
+    if (estado === "vencida") return 6;
+    if (estado.includes("cancel")) return 7;
+
+    return 8;
+  };
+
+  const fechaCitaMs = (cita) => {
+    const fecha = fechaHoraCita(cita, false);
+    return fecha ? fecha.getTime() : 0;
+  };
+
+  const citasOrdenadas = [...misCitasCache].sort((a, b) => {
+    const prioridadA = prioridadCita(a);
+    const prioridadB = prioridadCita(b);
+
+    if (prioridadA !== prioridadB) {
+      return prioridadA - prioridadB;
+    }
+
+    return fechaCitaMs(a) - fechaCitaMs(b);
+  });
+
+  cont.innerHTML = citasOrdenadas.map(cita => {
     const id = cita.id_cita;
-    const fecha = cita.fecha || String(cita.fecha_hora_inicio || "").slice(0,10);
-    const inicio = cita.hora_inicio || String(cita.fecha_hora_inicio || "").slice(11,16);
-    const fin = cita.hora_fin || String(cita.fecha_hora_fin || "").slice(11,16);
+    const fecha = cita.fecha || String(cita.fecha_hora_inicio || "").slice(0, 10);
+    const inicio = cita.hora_inicio || String(cita.fecha_hora_inicio || "").slice(11, 16);
+    const fin = cita.hora_fin || String(cita.fecha_hora_fin || "").slice(11, 16);
+    const estadoRaw = String(cita.estado || "").toLowerCase();
     const estado = estadoVisualCita(cita);
-    const cancelada = String(cita.estado || "").toLowerCase().includes("cancel");
-    const puedeCalificar = citaYaPaso(cita) && !cancelada;
-    const puedeCancelar = !citaYaPaso(cita) && !cancelada;
+
+    const cancelada = estadoRaw.includes("cancel");
+    const vencida = estadoRaw === "vencida";
+    const confirmada = estadoRaw === "confirmada";
+    const finalizada = estadoRaw === "finalizada" || estadoRaw === "completada";
+    const pendientePago = estadoRaw === "pendiente_pago";
+    const reservadaCarrito = estadoRaw === "reservada_carrito";
+
+    const puedeCalificar = (citaYaPaso(cita) || finalizada) && !cancelada && !vencida;
+    const puedeCancelar = !citaYaPaso(cita) && !cancelada && !vencida && !confirmada;
+
+    const statusClass = cancelada || vencida
+      ? "danger"
+      : (confirmada || finalizada ? "done" : "pending");
+
     return `<article class="admin-item">
       <div>
         <h4>${escapeHtml(negocioNombrePorId(cita.id_negocio))}</h4>
-        <p>${escapeHtml(fecha)} · ${escapeHtml(inicio)} - ${escapeHtml(fin)} · ${escapeHtml(empleadoNombrePorId(cita.id_empleado))}</p>
-        <span class="status-pill ${citaYaPaso(cita) ? 'done' : 'pending'}">${escapeHtml(estado)}</span>
+        <p>
+          ${escapeHtml(fecha)}
+          · ${escapeHtml(String(inicio).slice(0, 5))} - ${escapeHtml(String(fin).slice(0, 5))}
+          · ${escapeHtml(empleadoNombrePorId(cita.id_empleado))}
+        </p>
+        <span class="status-pill ${statusClass}">${escapeHtml(estado)}</span>
+        ${pendientePago ? `<p class="muted small">Completa el pago desde Mis pedidos.</p>` : ""}
+        ${reservadaCarrito ? `<p class="muted small">Esta reserva todavía está en el carrito.</p>` : ""}
       </div>
       <div class="row-actions">
         ${puedeCalificar ? `<button onclick="calificarCita(${id}, ${cita.id_negocio})">Calificar</button>` : ""}
         ${puedeCancelar ? `<button onclick="cancelarMiCita(${id})">Cancelar</button>` : ""}
-        ${!cancelada ? `<button onclick="pagarCitaInfo(${id})">Pagar cita</button>` : ""}
       </div>
     </article>`;
   }).join("");
@@ -2157,20 +2339,80 @@ async function irMisCalificaciones() {
 
 async function cargarMisCalificaciones() {
   const cont = document.getElementById("listaMisCalificaciones");
+
+  if (cont) {
+    cont.innerHTML = `<div class="empty-state">Cargando calificaciones...</div>`;
+  }
+
   try {
-    const data = await apiFetch(API_PATHS.calificaciones);
-    misCalificacionesCache = Array.isArray(data) ? data : [];
-    if (!misCalificacionesCache.length) {
-      cont.innerHTML = `<div class="empty-state">Todavía no tienes calificaciones registradas.</div>`;
-      return;
-    }
-    cont.innerHTML = misCalificacionesCache.map(c => `<article class="admin-item">
-      <div><h4>${"★".repeat(Number(c.puntuacion || 0))}${"☆".repeat(Math.max(0, 5 - Number(c.puntuacion || 0)))}</h4><p>Cita #${escapeHtml(c.id_cita || "—")} · ${escapeHtml(c.comentario || "Sin comentario")}</p></div>
-      <div class="row-actions"><button onclick="eliminarCalificacion(${c.id_calificacion})">Eliminar</button></div>
-    </article>`).join("");
+    const [calificaciones, pendientes] = await Promise.all([
+      apiFetch(API_PATHS.calificaciones).catch(() => []),
+      apiFetch("/calificaciones/citas-pendientes/all").catch(() => [])
+    ]);
+
+    misCalificacionesCache = Array.isArray(calificaciones) ? calificaciones : [];
+    const citasPendientes = Array.isArray(pendientes) ? pendientes : [];
+
+    const pendientesHtml = citasPendientes.length
+      ? citasPendientes.map(cita => {
+          const empleado = `${cita.empleado_nombre || ""} ${cita.empleado_apellido || ""}`.trim() || "Empleado no especificado";
+          const horaInicio = String(cita.hora_inicio || "").slice(0, 5);
+          const horaFin = String(cita.hora_fin || "").slice(0, 5);
+
+          return `<article class="admin-item">
+            <div>
+              <h4>Cita #${escapeHtml(cita.id_cita)} pendiente por calificar</h4>
+              <p>
+                ${escapeHtml(cita.negocio_nombre || "Negocio")}
+                · ${escapeHtml(cita.servicio_nombre || "Servicio")}
+                · ${escapeHtml(empleado)}
+                · ${escapeHtml(cita.fecha)}
+                · ${escapeHtml(horaInicio)}-${escapeHtml(horaFin)}
+              </p>
+              <span class="status-pill pending">Pendiente de opinión</span>
+            </div>
+            <div class="row-actions">
+              <button onclick="calificarCita(${cita.id_cita}, ${cita.id_negocio})">Calificar</button>
+            </div>
+          </article>`;
+        }).join("")
+      : `<div class="empty-state">No tienes citas pendientes por calificar.</div>`;
+
+    const historialHtml = misCalificacionesCache.length
+      ? misCalificacionesCache.map(c => {
+          const estrellas = "★".repeat(Number(c.puntuacion || 0)) + "☆".repeat(Math.max(0, 5 - Number(c.puntuacion || 0)));
+
+          return `<article class="admin-item">
+            <div>
+              <h4>${escapeHtml(estrellas)}</h4>
+              <p>
+                Cita #${escapeHtml(c.id_cita || "—")}
+                · ${escapeHtml(c.comentario || "Sin comentario")}
+              </p>
+              <span class="status-pill done">Calificación registrada</span>
+            </div>
+            <div class="row-actions">
+              <button onclick="eliminarCalificacion(${c.id_calificacion})">Eliminar</button>
+            </div>
+          </article>`;
+        }).join("")
+      : `<div class="empty-state">Todavía no tienes calificaciones registradas.</div>`;
+
+    cont.innerHTML = `
+      <div class="list-header">
+        <h3>Pendientes por calificar</h3>
+      </div>
+      ${pendientesHtml}
+
+      <div class="list-header" style="margin-top: 28px;">
+        <h3>Historial de calificaciones</h3>
+      </div>
+      ${historialHtml}
+    `;
+
     mostrarMensaje("misCalificacionesMsg", "", false);
   } catch (e) {
-    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`;
   }
 }
 
@@ -2225,7 +2467,6 @@ function renderProductosUsuario(productos) {
       <div class="business-meta"><span>${escapeHtml(negocioNombrePorId(p.id_negocio))}</span><span>Stock: ${escapeHtml(p.stock ?? 0)}</span><span>$${Number(p.precio || 0).toLocaleString("es-CO")}</span></div>
       <div class="row-actions">
        <button class="btn-primary tiny" type="button" onclick="reservarProductoCarrito(${p.id_producto})">Reservar</button>
-       <button class="btn-secondary tiny" type="button" onclick="crearPedidoProducto(${p.id_producto})">Crear pedido</button>
       </div>
     </div>
   </article>`).join("");
@@ -2349,6 +2590,7 @@ async function continuarCarritoAPedido() {
           tipo_item: item.tipo_item || "producto",
           id_producto: item.id_producto ? Number(item.id_producto) : null,
           id_servicio: item.id_servicio ? Number(item.id_servicio) : null,
+          id_cita: item.id_cita ? Number(item.id_cita) : null,
           cantidad: Number(item.cantidad || 1),
           precio_unitario: Number(item.precio_unitario || 0),
           subtotal: Number(item.subtotal || 0)
@@ -2460,17 +2702,62 @@ function pedidoPagado(idPedido) {
 function renderMisPedidos() {
   const cont = document.getElementById("listaMisPedidos");
   if (!cont) return;
+
   if (!misPedidosCache.length) {
     cont.innerHTML = `<div class="empty-state">Todavía no tienes pedidos.</div>`;
     return;
   }
-  cont.innerHTML = misPedidosCache.map(p => {
+
+  const prioridadEstado = (pedido) => {
+    const estado = String(pedido.estado || "pendiente").toLowerCase();
+    const pagado = pedidoPagado(pedido.id_pedido);
+
+    if (!pagado && estado.includes("pendiente")) return 0;
+    if (!pagado) return 1;
+    return 2;
+  };
+
+  const fechaPedidoMs = (pedido) => {
+    const fecha = pedido.fecha || pedido.fecha_creacion || pedido.created_at || "";
+    const ms = Date.parse(fecha);
+    return Number.isNaN(ms) ? 0 : ms;
+  };
+
+  const pedidosOrdenados = [...misPedidosCache].sort((a, b) => {
+    const prioridadA = prioridadEstado(a);
+    const prioridadB = prioridadEstado(b);
+
+    if (prioridadA !== prioridadB) {
+      return prioridadA - prioridadB;
+    }
+
+    const fechaB = fechaPedidoMs(b);
+    const fechaA = fechaPedidoMs(a);
+
+    if (fechaB !== fechaA) {
+      return fechaB - fechaA;
+    }
+
+    return Number(b.id_pedido || 0) - Number(a.id_pedido || 0);
+  });
+
+  cont.innerHTML = pedidosOrdenados.map(p => {
     const pagado = pedidoPagado(p.id_pedido);
+    const estado = pagado ? "pagado" : (p.estado || "pendiente");
+    const fecha = p.fecha ? ` · ${escapeHtml(formatearFechaCorta(p.fecha))}` : "";
+
     return `<article class="admin-item">
       <div>
         <h4>Pedido #${escapeHtml(p.id_pedido)}</h4>
-        <p>${escapeHtml(negocioNombrePorId(p.id_negocio))} · Total: $${Number(p.total || 0).toLocaleString("es-CO")} · Estado: ${escapeHtml(p.estado || "pendiente")}</p>
-        <span class="status-pill ${pagado ? 'done' : 'pending'}">${pagado ? 'Pago registrado' : 'Pago pendiente'}</span>
+        <p>
+          ${escapeHtml(negocioNombrePorId(p.id_negocio))}
+          · Total: $${Number(p.total || 0).toLocaleString("es-CO")}
+          · Estado: ${escapeHtml(estado)}
+          ${fecha}
+        </p>
+        <span class="status-pill ${pagado ? 'done' : 'pending'}">
+          ${pagado ? 'Pago registrado' : 'Pago pendiente'}
+        </span>
       </div>
       <div class="row-actions">
         ${pagado ? `
@@ -2836,6 +3123,35 @@ async function movimientoInventario(id) {
     cargarProductos();
   } catch (e) { showToast(friendlyError(e), "error"); }
 }
+async function cambiarEstadoCitaNegocio(id, estado) {
+  const labels = {
+    finalizada: "finalizar",
+    no_asistio: "marcar como no asistió",
+    cancelada: "cancelar"
+  };
+
+  const ok = await pedirConfirmacion({
+    title: "Actualizar cita",
+    text: `¿Deseas ${labels[estado] || "actualizar"} esta cita?`,
+    confirmText: "Confirmar",
+    danger: estado !== "finalizada"
+  });
+
+  if (!ok) return;
+
+  try {
+    await apiFetchConRutas([`/citas/${id}`, `/cita/${id}`], {
+      method: "PUT",
+      body: JSON.stringify({ estado })
+    });
+
+    showToast("Cita actualizada correctamente.", "success");
+    await cargarCitas();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
 async function cancelarCita(id) {
   const ok = await pedirConfirmacion({ title: "Cancelar cita", text: "La cita será cancelada para el negocio y el usuario.", confirmText: "Cancelar cita", danger: true });
   if (!ok) return;

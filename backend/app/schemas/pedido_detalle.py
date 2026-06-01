@@ -8,6 +8,7 @@ class PedidoDetalleBase(BaseModel):
     tipo_item: str
     id_producto: Optional[int] = None
     id_servicio: Optional[int] = None
+    id_cita: Optional[int] = None
     cantidad: int
     precio_unitario: Decimal
     subtotal: Decimal
