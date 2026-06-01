@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel usuario | SIGI-A</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── LAYOUT DASHBOARD USUARIO CON MAPA ── */
+    .user-business-main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    /* Contenedor dividido: negocios izq | mapa der */
+    .user-content-split {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: start;
+      padding: 0 0 24px;
+    }
+
+    /* Panel izquierdo: negocios */
+    .user-negocios-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Panel derecho: mapa mini */
+    .user-mapa-panel {
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .user-mapa-titulo {
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #c9a84c;
+      font-weight: 700;
+    }
+    #mapaUsuarioDash {
+      width: 100%;
+      height: 340px;
+      border-radius: 18px;
+      border: 1px solid rgba(201,168,76,0.22);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      background: #1a1a1a;
+      overflow: hidden;
+    }
+    .leaflet-container { border-radius: 18px; font-family: 'Montserrat', sans-serif; }
+    .user-mapa-btn {
+      padding: 9px 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(201,168,76,0.32);
+      background: rgba(201,168,76,0.09);
+      color: #c9a84c;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .user-mapa-btn:hover { background: #c9a84c; color: #111; }
+    .user-mapa-status {
+      font-size: 0.67rem;
+      color: rgba(201,168,76,0.4);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    /* Punto GPS azul */
+    .punto-gps {
+      width: 16px; height: 16px;
+      background: #4285f4;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 5px rgba(66,133,244,0.25);
+      animation: gps-pulso 2s ease-in-out infinite;
+    }
+    @keyframes gps-pulso {
+      0%,100% { box-shadow: 0 0 0 4px rgba(66,133,244,0.25); }
+      50%      { box-shadow: 0 0 0 10px rgba(66,133,244,0.08); }
+    }
+    /* Popup mapa */
+    .leaflet-popup-content-wrapper {
+      background: rgba(14,14,14,0.97);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 14px;
+      color: #f5f0e8;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: rgba(14,14,14,0.97); }
+    .leaflet-popup-content { margin: 12px 16px; font-size: 0.82rem; line-height: 1.7; }
+    .leaflet-popup-content strong { color: #c9a84c; display: block; margin-bottom: 2px; }
+    .leaflet-popup-content .pm-dir { color: rgba(232,224,208,0.75); display:block; font-size:0.76rem; }
+    .pm-ruta {
+      display: inline-block; margin-top: 8px;
+      padding: 6px 12px; background: #c9a84c; color: #111;
+      border-radius: 9px; font-size: 0.68rem; font-weight: 800;
+      text-decoration: none; letter-spacing: 0.5px;
+    }
+    .pm-ruta:hover { background: #e8c97a; }
+    .leaflet-popup-close-button { color: #c9a84c !important; }
+
+    /* ── MAPA DETALLE NEGOCIO ── */
+    .detalle-mapa-wrap {
+      margin-top: 20px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(201,168,76,0.2);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+    .detalle-mapa-header {
+      padding: 10px 16px;
+      background: rgba(201,168,76,0.07);
+      border-bottom: 1px solid rgba(201,168,76,0.12);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c9a84c;
+    }
+    #mapaDetalleNegocio {
+      width: 100%;
+      height: 220px;
+      background: #1a1a1a;
+    }
+
+    @media (max-width: 900px) {
+      .user-content-split {
+        grid-template-columns: 1fr;
+      }
+      .user-mapa-panel { position: static; }
+      #mapaUsuarioDash { height: 260px; }
+    }
+
+    /* ══ FASE 1: DETALLE NEGOCIO REDISEÑADO ══ */
+
+    /* Tabs de navegación dentro del detalle */
+    .dn-tabs {
+      display: flex;
+      gap: 6px;
+      margin: 18px 0 20px;
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      padding-bottom: 0;
+    }
+    .dn-tab {
+      padding: 9px 18px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(232,224,208,0.45);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .dn-tab:hover { color: #c9a84c; }
+    .dn-tab.active {
+      color: #c9a84c;
+      border-bottom-color: #c9a84c;
+    }
+    .dn-tab-panel { display: none; }
+    .dn-tab-panel.active { display: block; }
+
+    /* Calificación global del negocio */
+    .dn-rating-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: rgba(201,168,76,0.06);
+      border: 1px solid rgba(201,168,76,0.15);
+      border-radius: 14px;
+      margin-bottom: 20px;
+    }
+    .dn-rating-score {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #c9a84c;
+      font-family: 'Playfair Display', serif;
+      line-height: 1;
+    }
+    .dn-rating-info { flex: 1; }
+    .dn-stars-row {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 4px;
+    }
+    .dn-star {
+      font-size: 1.1rem;
+      color: rgba(201,168,76,0.25);
+      transition: color 0.15s;
+    }
+    .dn-star.on { color: #c9a84c; }
+    .dn-star.half { color: #c9a84c; opacity: 0.55; }
+    .dn-rating-count {
+      font-size: 0.7rem;
+      color: rgba(232,224,208,0.45);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Barras de distribución por estrella */
+    .dn-rating-bars { width: 160px; }
+    .dn-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 4px;
+    }
+    .dn-bar-label {
+      font-size: 0.65rem;
+      color: rgba(232,224,208,0.5);
+      width: 14px;
+      text-align: right;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .dn-bar-track {
+      flex: 1;
+      height: 5px;
+      background: rgba(201,168,76,0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .dn-bar-fill {
+      height: 100%;
+      background: #c9a84c;
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Grid de tarjetas: trabajadores / servicios / productos */
+    .dn-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    /* Tarjeta de trabajador */
+    .dn-worker-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(201,168,76,0.14);
+      border-radius: 16px;
+      padding: 18px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-align: center;
+    }
+    .dn-worker-card:hover {
+      border-color: rgba(201,168,76,0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .dn-worker-card.selected {
+      border-color: #c9a84c;
+      background: rgba(201,168,76,0.07);
+    }
+    .dn-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(201,168,76,0.3), rgba(201,168,76,0.1));
+      border: 2px solid rgba(201,168,76,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #c9a84c;
+      font-family: 'Playfair Display', serif;
+      overflow: hidden;
+    }
+    .dn-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .dn-worker-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f5f0e8;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .dn-worker-spec {
+      font-size: 0.68rem;
+      color: rgba(232,224,208,0.45);
+      letter-spacing: 0.5px;
+    }
+    .dn-worker-stars {
+      display: flex;
+      gap: 2px;
+      font-size: 0.75rem;
+    }
+    .dn-worker-avg {
+      font-size: 0.68rem;
+      color: #c9a84c;
+      font-weight: 700;
+    }
+    .dn-select-badge {
+      font-size: 0.6rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(201,168,76,0.12);
+      color: #c9a84c;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .dn-worker-card.selected .dn-select-badge {
+      background: #c9a84c;
+      color: #111;
+    }
+
+    /* Tarjeta de servicio */
+    .dn-service-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(201,168,76,0.14);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .dn-service-card:hover {
+      border-color: rgba(201,168,76,0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .dn-service-card.selected {
+      border-color: #c9a84c;
+      background: rgba(201,168,76,0.07);
+    }
+    .dn-service-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f5f0e8;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .dn-service-desc {
+      font-size: 0.68rem;
+      color: rgba(232,224,208,0.45);
+      line-height: 1.5;
+    }
+    .dn-service-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .dn-service-price {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #c9a84c;
+      font-family: 'Playfair Display', serif;
+    }
+    .dn-service-dur {
+      font-size: 0.65rem;
+      color: rgba(232,224,208,0.4);
+      letter-spacing: 0.5px;
+    }
+
+    /* Tarjeta de producto */
+    .dn-product-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(201,168,76,0.14);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .dn-product-card:hover {
+      border-color: rgba(201,168,76,0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .dn-product-img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      background: rgba(201,168,76,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(201,168,76,0.3);
+    }
+    .dn-product-body { padding: 12px 14px; }
+    .dn-product-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #f5f0e8;
+      font-family: 'Montserrat', sans-serif;
+      margin-bottom: 4px;
+    }
+    .dn-product-price {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #c9a84c;
+      font-family: 'Playfair Display', serif;
+    }
+    .dn-product-stock {
+      font-size: 0.62rem;
+      color: rgba(232,224,208,0.4);
+      letter-spacing: 0.5px;
+    }
+    .dn-add-cart {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px;
+      border-radius: 9px;
+      border: 1px solid rgba(201,168,76,0.3);
+      background: rgba(201,168,76,0.08);
+      color: #c9a84c;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dn-add-cart:hover { background: #c9a84c; color: #111; }
+
+    /* Panel de agendar (aparece al seleccionar trabajador + servicio) */
+    .dn-agendar-panel {
+      background: rgba(201,168,76,0.05);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 18px;
+      padding: 22px 24px;
+      margin-top: 20px;
+      display: none;
+    }
+    .dn-agendar-panel.visible { display: block; }
+    .dn-agendar-title {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #c9a84c;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .dn-seleccion-resumen {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .dn-chip {
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(201,168,76,0.12);
+      color: #c9a84c;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    /* Loading skeleton */
+    .dn-skeleton {
+      background: linear-gradient(90deg,
+        rgba(201,168,76,0.06) 25%,
+        rgba(201,168,76,0.12) 50%,
+        rgba(201,168,76,0.06) 75%);
+      background-size: 200% 100%;
+      animation: dn-shimmer 1.4s infinite;
+      border-radius: 10px;
+      height: 120px;
+    }
+    @keyframes dn-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Rating interactivo */
+    .dn-rate-stars { display: flex; gap: 6px; cursor: pointer; }
+    .dn-rate-stars .dn-star-btn {
+      font-size: 1.5rem;
+      color: rgba(201,168,76,0.25);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.15s, transform 0.15s;
+      padding: 0;
+    }
+    .dn-rate-stars .dn-star-btn:hover,
+    .dn-rate-stars .dn-star-btn.sel { color: #c9a84c; transform: scale(1.15); }
+
+    /* Sección de reseñas */
+    .dn-review-item {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(201,168,76,0.08);
+    }
+    .dn-review-item:last-child { border-bottom: none; }
+    .dn-review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .dn-review-user {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: rgba(232,224,208,0.8);
+      font-family: 'Montserrat', sans-serif;
+    }
+    .dn-review-date {
+      font-size: 0.63rem;
+      color: rgba(232,224,208,0.35);
+    }
+    .dn-review-text {
+      font-size: 0.75rem;
+      color: rgba(232,224,208,0.55);
+      line-height: 1.6;
+    }
+
+    /* Empty state */
+    .dn-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(232,224,208,0.3);
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      letter-spacing: 0.5px;
+    }
+    .dn-empty-icon { font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .dn-cards-grid { grid-template-columns: 1fr 1fr; }
+      .dn-rating-bars { display: none; }
+    }
+    @media (max-width: 480px) {
+      .dn-cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="dashboard-loading">
+<div id="appLoader" class="app-loader">
+  <div class="app-loader-card">
+    <div class="app-loader-spinner"></div>
+    <h2>Cargando panel...</h2>
+    <p>Validando sesión y permisos del usuario.</p>
+  </div>
+</div>
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+<div id="uiModalRoot" class="ui-modal-backdrop" style="display:none;" aria-hidden="true"></div>
+
+<nav id="navbar">
+  <a class="nav-logo" href="#" onclick="mostrarInicio()">SIGI<span>-E</span></a>
+  <div class="nav-buttons" id="navGuest">
+    <a class="nav-register" href="#" onclick="mostrarRegistro()">Registrarse</a>
+    <a class="nav-cta" href="#" onclick="mostrarLogin()">Iniciar Sesión</a>
+  </div>
+  <div class="nav-user" id="navUser" style="display:none;">
+    <button class="user-menu-btn" type="button" onclick="toggleUserMenu()">
+      <span id="navUserName">Usuario</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="user-dropdown" id="userDropdown">
+      <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
+      <a href="#" onclick="irMiPerfil()">Mi perfil</a>
+      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
+      <a href="#" onclick="irVerNegocios()">Ver negocios</a>
+      <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
+      <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
+      <a href="#" class="menu-cliente" onclick="irCarritoUsuario()">Carrito</a>
+      <a href="#" class="menu-cliente" onclick="irMisPedidos()">Mis pedidos</a>
+      <a href="#" class="menu-cliente" onclick="irMisCalificaciones()">Calificaciones</a>
+      <a href="#" id="menuValidarAcceso" onclick="irValidarAcceso()">Validar acceso</a>
+      <a href="#" class="menu-negocio" onclick="irGestionEmpleados()">Empleados</a>
+      <a href="#" class="menu-negocio" onclick="irGestionServicios()">Servicios</a>
+      <a href="#" class="menu-negocio" onclick="irGestionProductos()">Productos / Inventario</a>
+      <a href="#" class="menu-negocio" onclick="irGestionCitas()">Citas</a>
+      <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+</nav>
+
+<section class="hero landing-hero" id="inicio">
+  <div class="hero-bg landing-bg"></div>
+  <div class="landing-orb orb-one"></div>
+  <div class="landing-orb orb-two"></div>
+  <div class="landing-wrap">
+    <div class="hero-content landing-copy">
+      <div class="hero-badge"><span class="badge-dot"></span>Plataforma inteligente para barberías modernas</div>
+      <h1 class="landing-title">Agenda, descubre y gestiona barberías con <span>SIGI-E</span></h1>
+      <p class="landing-desc">Una experiencia visual, rápida y profesional para conectar usuarios con negocios disponibles, administrar barberías y centralizar la operación desde un solo lugar.</p>
+      <div class="landing-actions">
+        <a class="btn-primary big" href="#" onclick="mostrarRegistro('cliente')">Entrar como usuario</a>
+        <a class="btn-glass" href="#" onclick="mostrarRegistro('negocio')">Registrar mi negocio</a>
+      </div>
+      <div class="landing-metrics">
+        <div><strong>24/7</strong><span>Consulta disponible</span></div>
+        <div><strong>MFA</strong><span>Inicio seguro</span></div>
+        <div><strong>100%</strong><span>Web responsive</span></div>
+      </div>
+    </div>
+    <div class="landing-showcase" aria-hidden="true">
+      <div class="phone-card">
+        <div class="phone-top"><span></span><span></span><span></span></div>
+        <div class="phone-header">
+          <div><p>Directorio</p><h3>Negocios disponibles</h3></div>
+          <div class="mini-avatar">B</div>
+        </div>
+        <div class="search-pill">Buscar barbería, zona o servicio...</div>
+        <div class="business-preview active"><div class="business-icon">✂</div><div><strong>Barbería Élite</strong><p>Agenda, cortes y perfil del negocio</p></div><span>4.9</span></div>
+        <div class="business-preview"><div class="business-icon">★</div><div><strong>Urban Style</strong><p>Servicios disponibles en tiempo real</p></div><span>4.8</span></div>
+        <div class="business-preview"><div class="business-icon">⌁</div><div><strong>Studio Premium</strong><p>Experiencia moderna para clientes</p></div><span>4.7</span></div>
+        <div class="phone-footer-card"><p>Tu próxima cita</p><strong>Gestionada desde SIGI-E</strong></div>
+      </div>
+      <div class="floating-card card-a"><span>Rol</span><strong>Usuario / Negocio</strong></div>
+      <div class="floating-card card-b"><span>Seguridad</span><strong>Login + MFA</strong></div>
+    </div>
+  </div>
+  <div class="scroll-hint"><div class="scroll-hint-mouse"><div class="scroll-hint-dot"></div></div><span>Scroll</span></div>
+</section>
+
+<section class="landing-features" id="cta">
+  <div class="section-header">
+    <p class="section-eyebrow">Una plataforma, dos experiencias</p>
+    <h2 class="section-title">Diseñada para usuarios y negocios</h2>
+    <p class="section-desc">El usuario encuentra negocios disponibles. El negocio administra su presencia, acceso y operación desde un panel moderno.</p>
+  </div>
+  <div class="feature-grid">
+    <article class="feature-card"><div class="feature-icon">01</div><h3>Explora negocios</h3><p>Los usuarios ven barberías disponibles en tarjetas limpias, con información clara y buscador.</p></article>
+    <article class="feature-card featured"><div class="feature-icon">02</div><h3>Panel inteligente</h3><p>Al iniciar sesión, cada rol ve solo lo que necesita: usuario, negocio, empleado o administrador.</p></article>
+    <article class="feature-card"><div class="feature-icon">03</div><h3>Acceso seguro</h3><p>Autenticación con token y verificación MFA para proteger la información del sistema.</p></article>
+  </div>
+  <div class="cta-banner">
+    <div><p class="section-eyebrow">Comienza ahora</p><h3>Convierte la gestión de barberías en una experiencia premium.</h3></div>
+    <div class="cta-actions">
+      <a class="btn-primary" href="#" onclick="mostrarRegistro('negocio')">Registrar negocio</a>
+      <a class="btn-secondary" href="#" onclick="mostrarRegistro('cliente')">Crear usuario</a>
+    </div>
+  </div>
+</section>
+
+<section class="hero" id="login" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Bienvenido de nuevo</p>
+    <h1 class="form-title">Iniciar <span>Sesión</span></h1>
+    <form id="loginForm">
+      <input type="email" id="loginCorreo" placeholder="Correo" required />
+      <div class="password-field">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <button class="btn-primary full" type="submit">Entrar</button>
+    </form>
+    <span id="loginMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarRecuperarPassword()">¿Olvidaste tu contraseña?</a></p>
+    <p class="form-link">¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a></p>
+  </div>
+</section>
+
+<section class="hero" id="recuperar-password" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Recuperación de acceso</p>
+    <h1 class="form-title">Olvidé mi <span>Contraseña</span></h1>
+    <p class="muted">Ingresa el correo asociado a tu cuenta. Si está registrado, te enviaremos un enlace para restablecer tu contraseña.</p>
+    <form id="forgotPasswordForm">
+      <input type="email" id="forgotCorreo" placeholder="Correo electrónico" autocomplete="email" required />
+      <button class="btn-primary full" id="forgotPasswordBtn" type="submit">Enviar enlace</button>
+    </form>
+    <span id="forgotPasswordMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
+  </div>
+</section>
+
+<section class="hero" id="verify2fa" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Seguridad de la cuenta</p>
+    <h1 class="form-title" id="verify2faTitle">Verificar <span>Código</span></h1>
+    <p class="muted" id="verify2faText">Ingresa el código de 6 dígitos que enviamos a tu correo.</p>
+    <form id="verify2faForm">
+      <input type="text" id="codigo2fa" placeholder="Código de 6 dígitos" maxlength="6" pattern="\d{6}" inputmode="numeric" autocomplete="one-time-code" required />
+      <button class="btn-primary full" id="verify2faBtn" type="submit">Verificar</button>
+    </form>
+    <span id="verify2faMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="mostrarLogin()">← Volver al login</a></p>
+  </div>
+</section>
+
+<section class="hero" id="registro" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Nueva cuenta</p>
+    <h1 class="form-title">Crear <span>Cuenta</span></h1>
+    <form id="registroForm">
+      <div class="role-selector">
+        <label class="role-option"><input type="radio" name="rolRegistro" value="cliente" checked /><span>Usuario</span><small>Explorar negocios disponibles</small></label>
+        <label class="role-option"><input type="radio" name="rolRegistro" value="negocio" /><span>Negocio</span><small>Administrar mi barbería</small></label>
+      </div>
+      <div class="form-grid">
+        <input type="text" id="nombre" placeholder="Nombre" required />
+        <input type="text" id="apellido" placeholder="Apellido" required />
+        <input type="email" id="correo" placeholder="Correo" required />
+        <input type="email" id="confirmarCorreo" placeholder="Confirmar correo" required />
+        <input type="text" id="telefono" placeholder="Teléfono" required />
+      </div>
+      <div class="password-field">
+        <input type="password" id="password" placeholder="Contraseña" required minlength="8" autocomplete="new-password" />
+        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <small class="password-help">Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
+      <button class="btn-primary full" type="submit">Registrarse</button>
+    </form>
+    <span id="registroMsg" class="form-msg"></span>
+    <p class="form-link">¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="dashboard-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Panel de negocio</p>
+        <h1 class="dashboard-title">Hola, <span id="dashNombreUsuario">—</span></h1>
+        <p class="muted">Negocio asociado: <strong id="dashNombreNegocio">—</strong></p>
+      </div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+    <div class="module-grid">
+      <article class="module-card"><span>Mi barbería</span><h3>Negocio</h3><p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p><button onclick="irRegistrarNegocio()">Registrar negocio</button></article>
+      <article class="module-card"><span>Agenda</span><h3>Citas</h3><p>Consulta y administra las citas asociadas a tu negocio.</p><button onclick="irGestionCitas()">Gestionar citas</button></article>
+      <article class="module-card"><span>Equipo</span><h3>Empleados</h3><p>Crea empleados, consulta el listado y desactiva empleados cuando sea necesario.</p><button onclick="irGestionEmpleados()">Gestionar empleados</button></article>
+      <article class="module-card"><span>Catálogo</span><h3>Servicios</h3><p>Crea servicios, define duración, precio y administra el catálogo del negocio.</p><button onclick="irGestionServicios()">Gestionar servicios</button></article>
+      <article class="module-card"><span>Inventario</span><h3>Productos</h3><p>Carga productos, controla stock y registra movimientos de entrada o salida.</p><button onclick="irGestionProductos()">Gestionar inventario</button></article>
+      <article class="module-card"><span>Cuenta</span><h3>Perfil</h3><p>Consulta tus datos de usuario y valida el acceso como negocio.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen user-home" id="dashboard-usuario" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="user-dashboard-shell">
+    <aside class="user-side-panel">
+      <div class="side-brand-mini side-menu-title">
+        <p class="section-eyebrow">Menú</p>
+        <p>Gestiona tu cuenta.</p>
+      </div>
+      <nav class="user-quick-menu" aria-label="Opciones de usuario">
+        <button type="button" onclick="irMisCitas()"><span>Agenda</span><strong>Mis citas</strong></button>
+        <button type="button" onclick="irTiendaUsuario()"><span>Tienda</span><strong>Productos</strong></button>
+        <button type="button" onclick="irCarritoUsuario()"><span>Reserva</span><strong>Carrito</strong></button>
+        <button type="button" onclick="irMisPedidos()"><span>Compras</span><strong>Mis pedidos</strong></button>
+        <button type="button" onclick="irMisCalificaciones()"><span>Opiniones</span><strong>Calificaciones</strong></button>
+      </nav>
+      <button class="btn-secondary clean side-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+    </aside>
+    <main class="user-business-main">
+      <div class="business-main-header">
+        <div>
+          <p class="section-eyebrow">Panel de usuario</p>
+          <h1 class="dashboard-title user-welcome-title">Hola, <span id="userDashNombre">—</span></h1>
+          <h2 class="business-subtitle">Negocios <span class="gold">disponibles</span></h2>
+          <p class="muted">Elige una barbería para ver trabajadores, servicios y agendar tu cita.</p>
+        </div>
+        <button class="btn-primary" onclick="cargarNegociosUsuario()">Actualizar</button>
+      </div>
+      <div class="toolbar user-business-toolbar">
+        <input type="search" id="buscarNegocio" placeholder="Buscar por nombre, dirección o teléfono..." oninput="filtrarNegociosUsuario()" />
+      </div>
+      <div class="user-content-split">
+        <div class="user-negocios-panel">
+          <div id="listaNegociosUsuario" class="business-grid user-business-grid"></div>
+          <span id="usuarioNegociosMsg" class="form-msg"></span>
+        </div>
+        <div class="user-mapa-panel">
+          <span class="user-mapa-titulo">📍 Barberías cerca de ti</span>
+          <div id="mapaUsuarioDash"></div>
+          <button class="user-mapa-btn" id="btnUbicacionDash" onclick="centrarUbicacionDash()">
+            📍 Ver mi ubicación
+          </button>
+          <p class="user-mapa-status" id="mapaStatusDash">Cargando barberías...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="dashboard-admin" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Panel de administración</p><h1 class="dashboard-title">Hola, <span id="adminDashNombre">Administrador</span></h1><p class="muted">Gestiona la información general del sistema y consulta los módulos principales.</p></div>
+      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+    <div class="dashboard-grid">
+      <article class="dash-card"><span>Negocios</span><strong>Directorio</strong><p>Consulta los negocios registrados en la plataforma.</p><button onclick="irVerNegocios()">Ver negocios</button></article>
+      <article class="dash-card"><span>Equipo</span><strong>Empleados</strong><p>Consulta y administra empleados cuando el backend lo permita.</p><button onclick="irGestionEmpleados()">Gestionar empleados</button></article>
+      <article class="dash-card"><span>Catálogo</span><strong>Servicios</strong><p>Consulta servicios publicados por los negocios.</p><button onclick="irGestionServicios()">Gestionar servicios</button></article>
+      <article class="dash-card"><span>Inventario</span><strong>Productos</strong><p>Consulta productos disponibles y controla el inventario.</p><button onclick="irGestionProductos()">Gestionar productos</button></article>
+      <article class="dash-card"><span>Agenda</span><strong>Citas</strong><p>Consulta las citas registradas en el sistema.</p><button onclick="irGestionCitas()">Gestionar citas</button></article>
+      <article class="dash-card"><span>Seguridad</span><strong>Mi perfil</strong><p>Consulta tus datos y activa MFA con app autenticadora.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
+    </div>
+  </div>
+</section>
+
+<section class="hero" id="registrar-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card wide">
+    <p class="section-eyebrow">Administración</p>
+    <h1 class="form-title">Registrar <span>Negocio</span></h1>
+    <form id="negocioForm">
+      <input type="text" id="negNombre" placeholder="Nombre del negocio" required />
+      <input type="text" id="negDescripcion" placeholder="Descripción (opcional)" />
+      <div class="form-grid">
+        <input type="text" id="negDireccion" placeholder="Dirección (opcional)" />
+        <input type="text" id="negTelefono" placeholder="Teléfono (opcional)" />
+      </div>
+      <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)" />
+      <button class="btn-primary full" type="submit">Guardar negocio</button>
+    </form>
+    <span id="negocioMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero" id="mi-perfil" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Cuenta</p>
+    <h1 class="form-title">Mi <span>Perfil</span></h1>
+    <div id="perfilInfo" class="profile-card">
+      <p><span>Nombre</span><strong id="perfilNombre"></strong></p>
+      <p><span>Apellido</span><strong id="perfilApellido"></strong></p>
+      <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
+      <p><span>Rol</span><strong id="perfilRol"></strong></p>
+    </div>
+    <div class="security-panel">
+      <div><p class="section-eyebrow">Seguridad adicional</p><h3>App autenticadora</h3><p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p></div>
+      <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
+      <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
+        <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
+        <img id="mfaQrImage" class="mfa-qr" alt="Código QR para activar MFA" />
+        <small id="mfaSecret" class="mfa-secret"></small>
+        <form id="mfaConfirmForm">
+          <input type="text" id="mfaConfirmCodigo" placeholder="Código de la app autenticadora" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
+          <button class="btn-primary full" type="submit">Confirmar activación</button>
+        </form>
+      </div>
+    </div>
+    <span id="perfilMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="ver-negocios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Directorio</p><h1 class="dashboard-title">Negocios <span>Disponibles</span></h1><p class="muted">Listado general de barberías y centros registrados.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div id="listaNegocios" class="business-grid"></div>
+    <span id="verNegociosMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="detalle-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+
+    <!-- Cabecera -->
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow" id="detalleNegocioEyebrow">Barbería</p>
+        <h1 class="dashboard-title" id="detalleNegocioNombre">Negocio</h1>
+        <p class="muted" id="detalleNegocioDescripcion">Explora servicios, productos y trabajadores.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irVerNegocios()">Volver</button>
+    </div>
+
+    <!-- Info + mapa side -->
+    <div class="business-detail-layout">
+      <aside class="detail-card">
+        <h3>Información</h3>
+        <p><span>Dirección</span><strong id="detalleNegocioDireccion">—</strong></p>
+        <p><span>Teléfono</span><strong id="detalleNegocioTelefono">—</strong></p>
+        <p><span>Correo</span><strong id="detalleNegocioCorreo">—</strong></p>
+        <div class="detalle-mapa-wrap">
+          <div class="detalle-mapa-header">📍 Ubicación del negocio</div>
+          <div id="mapaDetalleNegocio"></div>
+        </div>
+      </aside>
+
+      <!-- Calificación global -->
+      <div style="flex:1;min-width:0;">
+        <div class="dn-rating-header" id="dnRatingHeader">
+          <div class="dn-rating-score" id="dnScoreGlobal">—</div>
+          <div class="dn-rating-info">
+            <div class="dn-stars-row" id="dnStarsGlobal"></div>
+            <div class="dn-rating-count" id="dnCountGlobal">Sin calificaciones aún</div>
+          </div>
+          <div class="dn-rating-bars" id="dnBarras"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="dn-tabs">
+          <button class="dn-tab active" onclick="dnTab(this,'tab-trabajadores')">Trabajadores</button>
+          <button class="dn-tab" onclick="dnTab(this,'tab-servicios')">Servicios</button>
+          <button class="dn-tab" onclick="dnTab(this,'tab-productos')">Productos</button>
+          <button class="dn-tab" onclick="dnTab(this,'tab-resenas')">Reseñas</button>
+        </div>
+
+        <!-- TAB: Trabajadores -->
+        <div class="dn-tab-panel active" id="tab-trabajadores">
+          <div class="dn-cards-grid" id="dnTrabajadoresGrid">
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Servicios -->
+        <div class="dn-tab-panel" id="tab-servicios">
+          <div class="dn-cards-grid" id="dnServiciosGrid">
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Productos -->
+        <div class="dn-tab-panel" id="tab-productos">
+          <div class="dn-cards-grid" id="dnProductosGrid">
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+            <div class="dn-skeleton"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Reseñas -->
+        <div class="dn-tab-panel" id="tab-resenas">
+          <div id="dnResenasList">
+            <div class="dn-empty"><div class="dn-empty-icon">💬</div>Cargando reseñas...</div>
+          </div>
+          <!-- Dejar calificación (solo si está logueado como cliente) -->
+          <div id="dnDejarResena" style="margin-top:24px;display:none;">
+            <p class="dn-agendar-title">Deja tu calificación</p>
+            <div class="dn-rate-stars" id="dnRateStars">
+              <button class="dn-star-btn" data-v="1" onclick="dnSetStar(1)">★</button>
+              <button class="dn-star-btn" data-v="2" onclick="dnSetStar(2)">★</button>
+              <button class="dn-star-btn" data-v="3" onclick="dnSetStar(3)">★</button>
+              <button class="dn-star-btn" data-v="4" onclick="dnSetStar(4)">★</button>
+              <button class="dn-star-btn" data-v="5" onclick="dnSetStar(5)">★</button>
+            </div>
+            <textarea id="dnResenaTexto" rows="3" placeholder="Cuéntanos tu experiencia (opcional)" style="margin-top:12px;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:10px 14px;color:#f5f0e8;font-family:'Montserrat',sans-serif;font-size:0.8rem;resize:vertical;"></textarea>
+            <button class="btn-primary" style="margin-top:10px;" onclick="dnEnviarResena()">Enviar calificación</button>
+            <span id="dnResenaMsg" class="form-msg"></span>
+          </div>
+        </div>
+
+        <!-- Panel de agendar (se muestra al seleccionar trabajador + servicio) -->
+        <div class="dn-agendar-panel" id="dnAgendarPanel">
+          <p class="dn-agendar-title">✂ Agendar cita</p>
+          <div class="dn-seleccion-resumen" id="dnChips"></div>
+          <form id="agendarCitaForm">
+            <!-- Campos ocultos que se llenan al seleccionar tarjeta -->
+            <select id="citaEmpleado" required style="display:none;"><option value="">—</option></select>
+            <select id="citaServicio" required style="display:none;"><option value="">—</option></select>
+            <div class="form-grid">
+              <input id="citaFecha" type="date" required>
+              <select id="citaHora" required disabled><option value="">Selecciona fecha primero</option></select>
+            </div>
+            <small id="citaHorarioInfo" class="helper-text booking-helper">Selecciona una fecha para ver horarios disponibles.</small>
+            <textarea id="citaObservaciones" rows="2" placeholder="Observaciones opcionales (opcional)"></textarea>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn-primary" type="submit">Confirmar cita</button>
+              <button class="btn-secondary clean" type="button" onclick="dnLimpiarSeleccion()">Cambiar selección</button>
+            </div>
+            <span id="agendarCitaMsg" class="form-msg"></span>
+          </form>
+        </div>
+
+      </div><!-- fin flex right -->
+    </div><!-- fin business-detail-layout -->
+
+    <!-- IDs ocultos que main.js ya usaba — se mantienen para compatibilidad -->
+    <div style="display:none;">
+      <div id="detalleEmpleadosNegocio"></div>
+      <div id="detalleServiciosNegocio"></div>
+    </div>
+
+  </div>
+</section>
+
+<section class="hero" id="validar-acceso" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="auth-card">
+    <p class="section-eyebrow">Permisos</p>
+    <h1 class="form-title">Acceso <span>Negocio</span></h1>
+    <div id="validarInfo" class="profile-card"></div>
+    <span id="validarMsg" class="form-msg"></span>
+    <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-empleados" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Equipo</p><h1 class="dashboard-title">Gestionar <span>Empleados</span></h1><p class="muted">Crea, consulta, edita o desactiva empleados de tu negocio.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <div class="manager-stack">
+        <form id="empleadoForm" class="manager-form">
+          <h3 id="empleadoFormTitle">Crear empleado</h3>
+          <input id="empId" type="hidden">
+          <div class="form-grid"><input id="empNombre" placeholder="Nombre" required><input id="empApellido" placeholder="Apellido" required></div>
+          <div class="form-grid"><input id="empTelefono" placeholder="Teléfono"><input id="empEmail" type="email" placeholder="Email"></div>
+          <input id="empEspecialidad" placeholder="Especialidad">
+          <input id="empFoto" placeholder="Foto URL opcional">
+          <button id="empleadoSubmitBtn" class="btn-primary full" type="submit">Guardar empleado</button>
+          <button id="empleadoCancelEditBtn" class="btn-secondary clean full-link" type="button" style="display:none;" onclick="cancelarEdicionEmpleado()">Cancelar edición</button>
+          <span id="empleadoMsg" class="form-msg"></span>
+        </form>
+        <form id="horarioEmpleadoForm" class="manager-form">
+          <h3>Asignar horario</h3>
+          <select id="horarioEmpleadoSelect" required><option value="">Selecciona empleado</option></select>
+          <div class="day-picker" id="horarioDias">
+            <label><input type="checkbox" name="horarioDias" value="1"> Lun</label>
+            <label><input type="checkbox" name="horarioDias" value="2"> Mar</label>
+            <label><input type="checkbox" name="horarioDias" value="3"> Mié</label>
+            <label><input type="checkbox" name="horarioDias" value="4"> Jue</label>
+            <label><input type="checkbox" name="horarioDias" value="5"> Vie</label>
+            <label><input type="checkbox" name="horarioDias" value="6"> Sáb</label>
+            <label><input type="checkbox" name="horarioDias" value="7"> Dom</label>
+          </div>
+          <p class="field-help">Puedes marcar varios días para guardar el mismo horario de una vez.</p>
+          <div class="form-grid"><input id="horarioInicio" type="time" required><input id="horarioFin" type="time" required></div>
+          <label class="check-row"><input id="horarioDisponible" type="checkbox" checked> Disponible</label>
+          <button class="btn-primary full" type="submit">Guardar horario</button>
+          <span id="horarioMsg" class="form-msg"></span>
+        </form>
+      </div>
+      <div>
+        <div class="list-header"><h3>Empleados registrados</h3><button class="btn-primary small" onclick="cargarEmpleados()">Actualizar</button></div>
+        <div id="listaEmpleados" class="admin-list"></div>
+        <div class="list-header spacing-top"><h3>Horarios del empleado</h3><button class="btn-primary small" onclick="cargarHorariosEmpleadoSeleccionado()">Ver horarios</button></div>
+        <div id="listaHorariosEmpleado" class="admin-list"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-servicios" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Catálogo</p><h1 class="dashboard-title">Gestionar <span>Servicios</span></h1><p class="muted">Crea servicios, ajusta precios, duración y estado.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="servicioForm" class="manager-form">
+        <h3>Crear servicio</h3>
+        <input id="serNombre" placeholder="Nombre del servicio" required>
+        <input id="serDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="serDuracion" type="number" min="1" placeholder="Duración minutos" required><input id="serPrecio" type="number" min="0" step="0.01" placeholder="Precio" required></div>
+        <input id="serImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar servicio</button>
+        <span id="servicioMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Servicios registrados</h3><button class="btn-primary small" onclick="cargarServicios()">Actualizar</button></div><div id="listaServicios" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-productos" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Inventario</p><h1 class="dashboard-title">Gestionar <span>Productos</span></h1><p class="muted">Carga productos, controla stock y registra entradas o salidas.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="manager-layout">
+      <form id="productoForm" class="manager-form">
+        <h3>Cargar producto</h3>
+        <input id="proNombre" placeholder="Nombre del producto" required>
+        <input id="proDescripcion" placeholder="Descripción">
+        <div class="form-grid"><input id="proPrecio" type="number" min="0" step="0.01" placeholder="Precio" required><input id="proStock" type="number" min="0" placeholder="Stock inicial" required></div>
+        <input id="proImagen" placeholder="Imagen URL opcional">
+        <button class="btn-primary full" type="submit">Guardar producto</button>
+        <span id="productoMsg" class="form-msg"></span>
+      </form>
+      <div><div class="list-header"><h3>Productos registrados</h3><button class="btn-primary small" onclick="cargarProductos()">Actualizar</button></div><div id="listaProductos" class="admin-list"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="gestion-citas" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div><p class="section-eyebrow">Agenda</p><h1 class="dashboard-title">Gestionar <span>Citas</span></h1><p class="muted">Consulta las citas de tu negocio y cancela las que corresponda.</p></div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="list-header"><h3>Citas del negocio</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
+    <div id="listaCitas" class="admin-list"></div>
+    <span id="citasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-citas-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Agenda personal</p><h1 class="dashboard-title">Mis <span>Citas</span></h1><p class="muted">Consulta tus citas y califica cuando ya hayan pasado.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCitas()">Actualizar</button><button class="btn-secondary clean" onclick="irVerNegocios()">Agendar nueva cita</button></div>
+    <div id="listaMisCitas" class="admin-list"></div><span id="misCitasMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-calificaciones-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Opiniones</p><h1 class="dashboard-title">Mis <span>Calificaciones</span></h1><p class="muted">Historial de calificaciones realizadas.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisCalificaciones()">Actualizar</button></div>
+    <div id="listaMisCalificaciones" class="admin-list"></div><span id="misCalificacionesMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="tienda-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Productos</p><h1 class="dashboard-title">Tienda <span>SIGI-E</span></h1><p class="muted">Productos activos publicados por los negocios.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><input type="search" id="buscarProductoUsuario" placeholder="Buscar producto..." oninput="filtrarProductosUsuario()" /><button class="btn-primary" onclick="cargarProductosUsuario()">Actualizar</button></div>
+    <div id="listaProductosUsuario" class="business-grid"></div><span id="tiendaUsuarioMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="carrito-usuario" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Reserva temporal</p>
+        <h1 class="dashboard-title">Mi <span>Carrito</span></h1>
+        <p class="muted">Productos reservados por 15 minutos antes de confirmar la compra.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+    <div class="toolbar">
+      <button class="btn-primary" onclick="cargarCarritoUsuario()">Actualizar carrito</button>
+      <button class="btn-secondary clean" onclick="irTiendaUsuario()">Seguir comprando</button>
+    </div>
+    <div id="listaCarritoUsuario" class="admin-list"></div>
+    <div class="cart-summary-card">
+      <p>Total estimado</p>
+      <strong id="carritoTotalUsuario">$0</strong>
+      <button class="btn-primary full" type="button" onclick="continuarCarritoAPedido()">Continuar a pedido</button>
+      <small class="muted">El pedido y pago se conectarán en el siguiente paso.</small>
+    </div>
+    <span id="carritoUsuarioMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<section class="hero dashboard-screen" id="mis-pedidos-usuario" style="display:none;">
+  <div class="hero-bg"></div><div class="dashboard-container">
+    <div class="dashboard-header"><div><p class="section-eyebrow">Compras</p><h1 class="dashboard-title">Mis <span>Pedidos</span></h1><p class="muted">Consulta pedidos y registra pagos.</p></div><button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button></div>
+    <div class="toolbar"><button class="btn-primary" onclick="cargarMisPedidos()">Actualizar</button><button class="btn-secondary clean" onclick="irTiendaUsuario()">Crear pedido</button></div>
+    <div id="listaMisPedidos" class="admin-list"></div><span id="misPedidosMsg" class="form-msg"></span>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-bottom">
+    <span class="footer-copy">SIGI-E © 2026</span>
+    <span class="footer-course">Sistema de Gestión Inteligente</span>
+  </div>
+</footer>
+
+<script src="js/config.js?v=20260530-config"></script>
+<script src="js/main.js?v=20260530-mfa-roles-12"></script>
+
+<script>
+const API_MAPA_U = window.SIGIA_API_BASE;
+const TILE_DARK_U  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_OPTS_U  = { subdomains:"abcd", maxZoom:19, attribution:'© <a href="https://carto.com/">CARTO</a>' };
+
+let mapaDash       = null;
+let mapaDashListo  = false;
+let marcadorDashU  = null;
+
+let mapaDetalle      = null;
+let mapaDetalleListo = false;
+
+function iconoBarberiaU() {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:30px;height:30px;background:linear-gradient(135deg,#c9a84c,#7a5c14);
+      border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.3);
+      box-shadow:0 3px 10px rgba(201,168,76,0.5);">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+        transform:rotate(45deg);font-size:12px;">✂</div></div>`,
+    iconSize:[30,30], iconAnchor:[15,30], popupAnchor:[0,-33]
+  });
+}
+function iconoGPS() {
+  return L.divIcon({
+    className:'',
+    html:'<div class="punto-gps"></div>',
+    iconSize:[16,16], iconAnchor:[8,8]
+  });
+}
+
+async function geocodificarU(q) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=co`,
+      { headers:{"Accept-Language":"es"} });
+    const d = await r.json();
+    if (d && d[0]) return { lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+async function inicializarMapaDash() {
+  if (mapaDashListo) return;
+  if (!document.getElementById("mapaUsuarioDash")) return;
+
+  mapaDash = L.map("mapaUsuarioDash", { center:[4.6097,-74.0817], zoom:12, zoomControl:true });
+  L.tileLayer(TILE_DARK_U, TILE_OPTS_U).addTo(mapaDash);
+  mapaDashListo = true;
+
+  await cargarNegociosEnMapaDash();
+  pedirUbicacionDashSilenciosa();
+}
+
+async function cargarNegociosEnMapaDash() {
+  const status = document.getElementById("mapaStatusDash");
+  try {
+    const res     = await fetch(`${API_MAPA_U}/negocios/`);
+    const lista   = await res.json().catch(()=>[]);
+    const negocios = Array.isArray(lista) ? lista : [];
+    if (!negocios.length) {
+      if (status) status.textContent = "Sin barberías registradas aún.";
+      return;
+    }
+    if (status) status.textContent = `Ubicando ${negocios.length} barbería(s)...`;
+    const ic = iconoBarberiaU();
+    let colocados = 0;
+    const bounds = [];
+
+    for (const n of negocios) {
+      let lat = Number(n.latitud||n.lat||0);
+      let lng = Number(n.longitud||n.lng||n.lon||0);
+      if ((lat===0||lng===0) && n.direccion) {
+        const c = await geocodificarU(n.direccion + ", Colombia");
+        if (c) { lat=c.lat; lng=c.lng; }
+        await new Promise(r=>setTimeout(r,700));
+      }
+      if (lat!==0 && lng!==0) {
+        colocados++;
+        bounds.push([lat,lng]);
+        const nombre  = n.nombre_negocio||n.nombre||"Negocio";
+        const dir     = n.direccion||"Sin dirección";
+        const gmaps   = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        L.marker([lat,lng],{icon:ic}).addTo(mapaDash)
+          .bindPopup(`<strong>${nombre}</strong>
+            <span class="pm-dir">📍 ${dir}</span>
+            <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`);
+      }
+    }
+    if (bounds.length) mapaDash.fitBounds(bounds, {padding:[30,30], maxZoom:14});
+    if (status) status.textContent = colocados ? `${colocados} barbería(s) en el mapa.` : "Sin ubicaciones disponibles.";
+  } catch(e) {
+    if (status) status.textContent = "No se pudieron cargar las barberías.";
+  }
+}
+
+function pedirUbicacionDashSilenciosa() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const {latitude:lat, longitude:lng} = pos.coords;
+    ponerPuntoGPS(lat, lng);
+  }, ()=>{}, {enableHighAccuracy:false, timeout:8000});
+}
+
+function ponerPuntoGPS(lat, lng) {
+  if (!mapaDashListo) return;
+  if (marcadorDashU) marcadorDashU.remove();
+  marcadorDashU = L.marker([lat,lng],{icon:iconoGPS(), zIndexOffset:1000})
+    .addTo(mapaDash)
+    .bindPopup('<strong style="color:#4285f4">📍 Tu ubicación</strong>');
+}
+
+function centrarUbicacionDash() {
+  if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); return; }
+  const btn = document.getElementById("btnUbicacionDash");
+  if (btn) { btn.textContent="⏳ Buscando..."; btn.disabled=true; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const {latitude:lat, longitude:lng} = pos.coords;
+      mapaDash.setView([lat,lng],15);
+      ponerPuntoGPS(lat,lng);
+      marcadorDashU.openPopup();
+      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+    },
+    () => {
+      alert("No se pudo obtener tu ubicación.");
+      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+    },
+    {enableHighAccuracy:true, timeout:12000}
+  );
+}
+
+async function mostrarMapaDetalleNegocio(negocio) {
+  const contenedor = document.getElementById("mapaDetalleNegocio");
+  if (!contenedor) return;
+
+  if (mapaDetalle) {
+    mapaDetalle.remove();
+    mapaDetalle = null;
+    mapaDetalleListo = false;
+  }
+
+  const nombre  = negocio.nombre_negocio || negocio.nombre || "Negocio";
+  const dir     = negocio.direccion || "";
+  let lat = Number(negocio.latitud||negocio.lat||0);
+  let lng = Number(negocio.longitud||negocio.lng||negocio.lon||0);
+
+  if ((lat===0||lng===0) && dir) {
+    const c = await geocodificarU(dir + ", Colombia");
+    if (c) { lat=c.lat; lng=c.lng; }
+  }
+
+  if (lat===0 || lng===0) {
+    const wrap = contenedor.closest(".detalle-mapa-wrap");
+    if (wrap) wrap.style.display = "none";
+    return;
+  }
+
+  const wrap = contenedor.closest(".detalle-mapa-wrap");
+  if (wrap) wrap.style.display = "block";
+
+  await new Promise(r => setTimeout(r, 80));
+
+  mapaDetalle = L.map("mapaDetalleNegocio", {
+    center:[lat,lng], zoom:15,
+    zoomControl:false,
+    dragging:false,
+    scrollWheelZoom:false,
+    doubleClickZoom:false,
+  });
+  L.tileLayer(TILE_DARK_U, TILE_OPTS_U).addTo(mapaDetalle);
+  mapaDetalleListo = true;
+
+  const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  L.marker([lat,lng],{icon:iconoBarberiaU()})
+    .addTo(mapaDetalle)
+    .bindPopup(`<strong>${nombre}</strong>
+      <span class="pm-dir">📍 ${dir||"Sin dirección"}</span>
+      <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`)
+    .openPopup();
+}
+
+const _origCargarDash = typeof cargarDatosDashboardUsuario === "function"
+  ? cargarDatosDashboardUsuario : null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const observer = new MutationObserver(() => {
+    const dash = document.getElementById("dashboard-usuario");
+    if (dash && dash.style.display !== "none" && !mapaDashListo) {
+      setTimeout(inicializarMapaDash, 300);
+    }
+  });
+  observer.observe(document.body, { subtree:true, attributes:true, attributeFilter:["style"] });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof window.abrirNegocioCliente === "function") {
+    const orig = window.abrirNegocioCliente.bind(window);
+    window.abrirNegocioCliente = async function(idNegocio) {
+      await orig(idNegocio);
+      if (typeof negociosCache !== "undefined") {
+        const n = negociosCache.find(x => Number(x.id_negocio||x.id||x.negocio_id) === Number(idNegocio));
+        if (n) mostrarMapaDetalleNegocio(n);
+      }
+    };
+  }
+});
+</script>
+
+  <!-- ══ JS FASE 1: DETALLE NEGOCIO ══ -->
+  <script>
+  (function(){
+    const API = window.SIGIA_API_BASE || '';
+    let _idNegocioActual = null;
+    let _trabajadorSel   = null;
+    let _servicioSel     = null;
+    let _dnStarValue     = 0;
+
+    /* ── helpers ── */
+    function stars(avg, size='0.8rem'){
+      let s=''; const r=Math.round(avg*2)/2;
+      for(let i=1;i<=5;i++){
+        if(i<=r) s+=`<span class="dn-star on" style="font-size:${size}">★</span>`;
+        else if(i-0.5===r) s+=`<span class="dn-star half" style="font-size:${size}">★</span>`;
+        else s+=`<span class="dn-star" style="font-size:${size}">★</span>`;
+      }
+      return s;
+    }
+    function fmt(n){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n); }
+    function inicial(n,a){ return ((n||'?')[0]+(a||'')[0]||'').toUpperCase(); }
+    function token(){ try{ return JSON.parse(localStorage.getItem('sigie_user')||'{}').token || localStorage.getItem('sigie_token') || ''; }catch(e){ return ''; } }
+
+    /* ── Tabs ── */
+    window.dnTab = function(btn, panelId){
+      document.querySelectorAll('.dn-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.dn-tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(panelId).classList.add('active');
+    };
+
+    /* ── Calificación global ── */
+    async function cargarCalificacionesNegocio(idNegocio){
+      try{
+        const h = token() ? {'Authorization':'Bearer '+token()} : {};
+        const r = await fetch(`${API}/calificaciones/?negocio_id=${idNegocio}`,{headers:h});
+        const data = await r.json().catch(()=>({items:[],total:0}));
+        const lista = Array.isArray(data) ? data : (data.items||data.calificaciones||[]);
+        if(!lista.length){ renderRatingEmpty(); return []; }
+        const avg = lista.reduce((s,c)=>s+(c.puntuacion||c.calificacion||c.estrellas||0),0)/lista.length;
+        renderRatingHeader(avg, lista.length);
+        renderBarras(lista);
+        return lista;
+      }catch(e){ renderRatingEmpty(); return []; }
+    }
+
+    function renderRatingEmpty(){
+      const el=document.getElementById('dnScoreGlobal'); if(el) el.textContent='—';
+      const cnt=document.getElementById('dnCountGlobal'); if(cnt) cnt.textContent='Sin calificaciones aún';
+      const sg=document.getElementById('dnStarsGlobal'); if(sg) sg.innerHTML=stars(0);
+      const bars=document.getElementById('dnBarras'); if(bars) bars.innerHTML='';
+    }
+
+    function renderRatingHeader(avg, count){
+      const sc=document.getElementById('dnScoreGlobal'); if(sc) sc.textContent=avg.toFixed(1);
+      const sg=document.getElementById('dnStarsGlobal'); if(sg) sg.innerHTML=stars(avg,'1rem');
+      const cnt=document.getElementById('dnCountGlobal'); if(cnt) cnt.textContent=`${count} reseña${count===1?'':'s'}`;
+    }
+
+    function renderBarras(lista){
+      const bars=document.getElementById('dnBarras'); if(!bars) return;
+      const counts=[0,0,0,0,0];
+      lista.forEach(c=>{ const v=Math.min(5,Math.max(1,Math.round(c.puntuacion||c.calificacion||c.estrellas||3))); counts[v-1]++; });
+      const max=Math.max(1,...counts);
+      let html='';
+      for(let i=5;i>=1;i--){
+        const pct=Math.round((counts[i-1]/max)*100);
+        html+=`<div class="dn-bar-row">
+          <span class="dn-bar-label">${i}</span>
+          <div class="dn-bar-track"><div class="dn-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }
+      bars.innerHTML=html;
+    }
+
+    /* ── Calificaciones por empleado/servicio (promedio) ── */
+    function avgPorEntidad(lista, campo, id){
+      const sub=lista.filter(c=>(c[campo]||c[campo.replace('_id','')]?.id||0)===id);
+      if(!sub.length) return null;
+      return sub.reduce((s,c)=>s+(c.puntuacion||c.calificacion||c.estrellas||0),0)/sub.length;
+    }
+
+    /* ── Trabajadores ── */
+    async function cargarTrabajadores(idNegocio, cals){
+      const grid=document.getElementById('dnTrabajadoresGrid'); if(!grid) return;
+      try{
+        const h = token() ? {'Authorization':'Bearer '+token()} : {};
+        const r = await fetch(`${API}/empleados/?negocio_id=${idNegocio}`,{headers:h});
+        const data = await r.json().catch(()=>[]);
+        const lista = Array.isArray(data) ? data : (data.items||data.empleados||[]);
+        if(!lista.length){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">👤</div>Sin trabajadores registrados.</div>'; return; }
+
+        // Llenar también el select oculto para compatibilidad con main.js
+        const sel=document.getElementById('citaEmpleado');
+        if(sel){ sel.innerHTML='<option value="">Selecciona trabajador</option>'; lista.forEach(e=>{ const o=document.createElement('option'); o.value=e.id_empleado||e.id; o.textContent=`${e.nombre} ${e.apellido||''}`; sel.appendChild(o); }); }
+
+        grid.innerHTML = lista.map(e=>{
+          const id=e.id_empleado||e.id;
+          const avg=cals.length ? avgPorEntidad(cals,'empleado_id',id) : null;
+          const avgStr=avg!=null?avg.toFixed(1):'—';
+          const starsHtml=avg!=null?stars(avg):'<span class="dn-worker-avg" style="font-size:0.65rem;color:rgba(232,224,208,0.3)">Sin reseñas</span>';
+          const foto=e.foto_url||e.foto||'';
+          const avatarHtml=foto
+            ? `<div class="dn-avatar"><img src="${foto}" alt="${e.nombre}" onerror="this.parentNode.textContent='${inicial(e.nombre,e.apellido)}'"></div>`
+            : `<div class="dn-avatar">${inicial(e.nombre,e.apellido)}</div>`;
+          return `<div class="dn-worker-card" id="wcard-${id}" onclick="dnSelTrabajador(${id},'${e.nombre} ${e.apellido||''}')">
+            ${avatarHtml}
+            <div class="dn-worker-name">${e.nombre} ${e.apellido||''}</div>
+            ${e.especialidad?`<div class="dn-worker-spec">${e.especialidad}</div>`:''}
+            <div class="dn-worker-stars">${starsHtml}</div>
+            ${avg!=null?`<div class="dn-worker-avg">${avgStr} / 5</div>`:''}
+            <div class="dn-select-badge">Seleccionar</div>
+          </div>`;
+        }).join('');
+      }catch(e){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">⚠️</div>No se pudieron cargar los trabajadores.</div>'; }
+    }
+
+    /* ── Servicios ── */
+    async function cargarServicios(idNegocio, cals){
+      const grid=document.getElementById('dnServiciosGrid'); if(!grid) return;
+      try{
+        const r = await fetch(`${API}/servicios/publicos/negocio/${idNegocio}`);
+        const data = await r.json().catch(()=>[]);
+        const lista = Array.isArray(data) ? data : (data.items||data.servicios||[]);
+        if(!lista.length){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">✂</div>Sin servicios publicados.</div>'; return; }
+
+        const sel=document.getElementById('citaServicio');
+        if(sel){ sel.innerHTML='<option value="">Selecciona servicio</option>'; lista.forEach(s=>{ const o=document.createElement('option'); o.value=s.id_servicio||s.id; o.textContent=s.nombre; sel.appendChild(o); }); }
+
+        grid.innerHTML = lista.map(s=>{
+          const id=s.id_servicio||s.id;
+          const avg=cals.length ? avgPorEntidad(cals,'servicio_id',id) : null;
+          const starsHtml=avg!=null?`<div class="dn-worker-stars" style="margin-top:4px">${stars(avg)}<span class="dn-worker-avg" style="margin-left:4px">${avg.toFixed(1)}</span></div>`:'';
+          return `<div class="dn-service-card" id="scard-${id}" onclick="dnSelServicio(${id},'${s.nombre}',${s.precio||0})">
+            <div class="dn-service-name">${s.nombre}</div>
+            ${s.descripcion?`<div class="dn-service-desc">${s.descripcion}</div>`:''}
+            ${starsHtml}
+            <div class="dn-service-meta">
+              <span class="dn-service-price">${fmt(s.precio||0)}</span>
+              <span class="dn-service-dur">${s.duracion_minutos||s.duracion||'?'} min</span>
+            </div>
+          </div>`;
+        }).join('');
+      }catch(e){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">⚠️</div>No se pudieron cargar los servicios.</div>'; }
+    }
+
+    /* ── Productos ── */
+    async function cargarProductosNegocio(idNegocio){
+      const grid=document.getElementById('dnProductosGrid'); if(!grid) return;
+      try{
+        const r = await fetch(`${API}/productos/publicos`);
+        const data = await r.json().catch(()=>[]);
+        const todos = Array.isArray(data) ? data : (data.items||data.productos||[]);
+        const lista = todos.filter(p=>(p.negocio_id||p.id_negocio||0)===Number(idNegocio));
+        if(!lista.length){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">🛍️</div>Sin productos disponibles.</div>'; return; }
+        grid.innerHTML = lista.map(p=>{
+          const id=p.id_producto||p.id;
+          const imgHtml=p.imagen_url||p.imagen
+            ? `<img class="dn-product-img" src="${p.imagen_url||p.imagen}" alt="${p.nombre}" style="display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="dn-product-img" style="display:none">🛍️</div>`
+            : `<div class="dn-product-img">🛍️</div>`;
+          return `<div class="dn-product-card">
+            ${imgHtml}
+            <div class="dn-product-body">
+              <div class="dn-product-name">${p.nombre}</div>
+              <div class="dn-product-price">${fmt(p.precio||0)}</div>
+              <div class="dn-product-stock">Stock: ${p.stock??'—'}</div>
+              <button class="dn-add-cart" onclick="dnAgregarCarrito(${id})">+ Añadir al carrito</button>
+            </div>
+          </div>`;
+        }).join('');
+      }catch(e){ grid.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">⚠️</div>No se pudieron cargar los productos.</div>'; }
+    }
+
+    /* ── Reseñas ── */
+    async function cargarResenas(idNegocio){
+      const lista_el=document.getElementById('dnResenasList'); if(!lista_el) return;
+      try{
+        const h = token() ? {'Authorization':'Bearer '+token()} : {};
+        const r = await fetch(`${API}/calificaciones/?negocio_id=${idNegocio}`,{headers:h});
+        const data = await r.json().catch(()=>[]);
+        const lista = Array.isArray(data) ? data : (data.items||data.calificaciones||[]);
+        if(!lista.length){ lista_el.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">💬</div>Sé el primero en dejar una reseña.</div>'; return; }
+        lista_el.innerHTML = lista.slice(0,20).map(c=>{
+          const pts=c.puntuacion||c.calificacion||c.estrellas||0;
+          const usuario=c.usuario?.nombre||c.nombre_usuario||'Cliente';
+          const fecha=c.fecha_creacion||c.created_at||'';
+          const fechaStr=fecha?new Date(fecha).toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'numeric'}):'';
+          return `<div class="dn-review-item">
+            <div class="dn-review-header">
+              <span class="dn-review-user">${usuario}</span>
+              <span class="dn-review-date">${fechaStr}</span>
+            </div>
+            <div style="margin-bottom:4px">${stars(pts,'0.82rem')}</div>
+            ${c.comentario||c.texto||c.comment?`<div class="dn-review-text">${c.comentario||c.texto||c.comment}</div>`:''}
+          </div>`;
+        }).join('');
+      }catch(e){ lista_el.innerHTML='<div class="dn-empty"><div class="dn-empty-icon">⚠️</div>No se pudieron cargar las reseñas.</div>'; }
+      // Mostrar formulario si el usuario está logueado
+      const dnForm=document.getElementById('dnDejarResena');
+      if(dnForm && token()) dnForm.style.display='block';
+    }
+
+    /* ── Selección trabajador ── */
+    window.dnSelTrabajador = function(id, nombre){
+      document.querySelectorAll('.dn-worker-card').forEach(c=>c.classList.remove('selected'));
+      const card=document.getElementById('wcard-'+id); if(card) card.classList.add('selected');
+      _trabajadorSel={id,nombre};
+      const sel=document.getElementById('citaEmpleado'); if(sel) sel.value=id;
+      dnActualizarPanel();
+    };
+
+    /* ── Selección servicio ── */
+    window.dnSelServicio = function(id, nombre, precio){
+      document.querySelectorAll('.dn-service-card').forEach(c=>c.classList.remove('selected'));
+      const card=document.getElementById('scard-'+id); if(card) card.classList.add('selected');
+      _servicioSel={id,nombre,precio};
+      const sel=document.getElementById('citaServicio'); if(sel) sel.value=id;
+      dnActualizarPanel();
+    };
+
+    /* ── Panel de agendar ── */
+    function dnActualizarPanel(){
+      const panel=document.getElementById('dnAgendarPanel'); if(!panel) return;
+      const chips=document.getElementById('dnChips'); if(!chips) return;
+      let html='';
+      if(_trabajadorSel) html+=`<span class="dn-chip">✂ ${_trabajadorSel.nombre}</span>`;
+      if(_servicioSel)   html+=`<span class="dn-chip">💈 ${_servicioSel.nombre} · ${fmt(_servicioSel.precio)}</span>`;
+      chips.innerHTML=html;
+      if(_trabajadorSel && _servicioSel){
+        panel.classList.add('visible');
+        panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+        // disparar cambio de fecha si ya hay una seleccionada
+        const f=document.getElementById('citaFecha');
+        if(f && f.value) f.dispatchEvent(new Event('change'));
+      }
+    }
+
+    window.dnLimpiarSeleccion = function(){
+      _trabajadorSel=null; _servicioSel=null;
+      document.querySelectorAll('.dn-worker-card,.dn-service-card').forEach(c=>c.classList.remove('selected'));
+      document.getElementById('dnAgendarPanel')?.classList.remove('visible');
+      const sel1=document.getElementById('citaEmpleado'); if(sel1) sel1.value='';
+      const sel2=document.getElementById('citaServicio'); if(sel2) sel2.value='';
+    };
+
+    /* ── Añadir al carrito ── */
+    window.dnAgregarCarrito = async function(idProducto){
+      if(!token()){ alert('Inicia sesión para agregar productos al carrito.'); return; }
+      try{
+        const r=await fetch(`${API}/carritos/agregar-producto`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+          body:JSON.stringify({id_producto:idProducto,cantidad:1})
+        });
+        if(r.ok) { if(typeof mostrarToast==='function') mostrarToast('Producto agregado al carrito ✓','success'); }
+        else alert('No se pudo agregar al carrito.');
+      }catch(e){ alert('Error de conexión.'); }
+    };
+
+    /* ── Estrellas interactivas ── */
+    window.dnSetStar = function(v){
+      _dnStarValue=v;
+      document.querySelectorAll('#dnRateStars .dn-star-btn').forEach((b,i)=>{
+        b.classList.toggle('sel', i<v);
+      });
+    };
+
+    /* ── Enviar reseña ── */
+    window.dnEnviarResena = async function(){
+      const msg=document.getElementById('dnResenaMsg');
+      if(!_dnStarValue){ if(msg) msg.textContent='Selecciona una calificación.'; return; }
+      if(!_idNegocioActual){ return; }
+      const texto=document.getElementById('dnResenaTexto')?.value||'';
+      try{
+        const r=await fetch(`${API}/calificaciones/`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+          body:JSON.stringify({negocio_id:_idNegocioActual,puntuacion:_dnStarValue,comentario:texto})
+        });
+        if(r.ok){
+          if(msg){ msg.textContent='¡Gracias por tu reseña!'; msg.style.color='#c9a84c'; }
+          document.getElementById('dnDejarResena').style.display='none';
+          await cargarResenas(_idNegocioActual);
+          const cals=await cargarCalificacionesNegocio(_idNegocioActual);
+          renderBarras(cals);
+        } else {
+          const e=await r.json().catch(()=>({}));
+          if(msg) msg.textContent=e.detail||'No se pudo enviar la reseña.';
+        }
+      }catch(e){ if(msg) msg.textContent='Error de conexión.'; }
+    };
+
+    /* ── Punto de entrada: cargar todo al abrir el detalle ── */
+    window.cargarDetalleNegocioFase1 = async function(idNegocio){
+      _idNegocioActual = Number(idNegocio);
+      _trabajadorSel=null; _servicioSel=null; _dnStarValue=0;
+
+      // Limpiar estado visual
+      ['dnTrabajadoresGrid','dnServiciosGrid','dnProductosGrid'].forEach(id=>{
+        const g=document.getElementById(id);
+        if(g) g.innerHTML='<div class="dn-skeleton"></div><div class="dn-skeleton"></div><div class="dn-skeleton"></div>';
+      });
+      document.getElementById('dnAgendarPanel')?.classList.remove('visible');
+      document.getElementById('dnDejarResena') && (document.getElementById('dnDejarResena').style.display='none');
+
+      // Cargar calificaciones primero (las usan los demás)
+      const cals = await cargarCalificacionesNegocio(idNegocio);
+      // Cargar en paralelo
+      await Promise.all([
+        cargarTrabajadores(idNegocio, cals),
+        cargarServicios(idNegocio, cals),
+        cargarProductosNegocio(idNegocio),
+        cargarResenas(idNegocio)
+      ]);
+    };
+
+    /* ── Interceptar abrirNegocioCliente para también llamar Fase1 ── */
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const origFn = window.abrirNegocioCliente;
+      if(typeof origFn === 'function'){
+        window.abrirNegocioCliente = async function(idNegocio){
+          await origFn(idNegocio);
+          await window.cargarDetalleNegocioFase1(idNegocio);
+        };
+      }
+    });
+
+  })();
+  </script>
+
+</body>
+</html>
