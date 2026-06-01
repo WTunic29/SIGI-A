@@ -278,6 +278,31 @@
   </div>
 </section>
 
+
+  <section class="hero dashboard-screen" id="selector-negocio" style="display:none;">
+    <div class="hero-bg"></div>
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <div>
+          <p class="section-eyebrow">Selecciona tu empresa</p>
+          <h1 class="dashboard-title">Hola, <span id="selectorNombreUsuario">—</span></h1>
+          <p class="muted">Elige el negocio que deseas administrar. El panel cargará solo la información de la empresa seleccionada.</p>
+        </div>
+        <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <div id="selectorNegociosMsg" class="form-msg"></div>
+
+      <div class="module-grid" id="selectorNegociosLista">
+        <div class="empty-state">Cargando negocios...</div>
+      </div>
+
+      <div style="margin-top: 24px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn-primary" onclick="irRegistrarNegocio()">Crear nueva empresa</button>
+      </div>
+    </div>
+  </section>
+
 <section class="hero dashboard-screen" id="dashboard-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="dashboard-container">
@@ -287,7 +312,10 @@
         <h1 class="dashboard-title">Hola, <span id="dashNombreUsuario">—</span></h1>
         <p class="muted">Negocio asociado: <strong id="dashNombreNegocio">—</strong></p>
       </div>
-      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary clean" onclick="cambiarEmpresa()">Cambiar empresa</button>
+        <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
     </div>
 
     <div class="module-grid">
@@ -771,7 +799,7 @@
 </footer>
 
 <script src="js/config.js?v=20260601-https-domain-01"></script>
-<script src="js/main.js?v=20260601-negocio-config-01"></script>
+<script src="js/main.js?v=20260601-multinegocio-selector-03"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/graficas-negocio.js?v=20260601-analiticas-negocio-fix-loop-01"></script>
 </body>

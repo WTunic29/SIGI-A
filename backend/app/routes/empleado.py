@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 
@@ -40,19 +40,14 @@ def validar_acceso_empleado(
         return
 
     negocio = db.query(Negocio).filter(
+        Negocio.id_negocio == empleado.id_negocio,
         Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:
         raise HTTPException(
-            status_code=404,
-            detail="Negocio no encontrado"
-        )
-
-    if empleado.id_negocio != negocio.id_negocio:
-        raise HTTPException(
             status_code=403,
-            detail="No autorizado"
+            detail="No autorizado para este negocio"
         )
 
 
@@ -73,13 +68,14 @@ def crear_empleado(
     if current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
+            Negocio.id_negocio == empleado.id_negocio,
             Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
             raise HTTPException(
-                status_code=404,
-                detail="Negocio no encontrado"
+                status_code=403,
+                detail="No autorizado para crear empleados en este negocio"
             )
 
         id_negocio = negocio.id_negocio
@@ -112,6 +108,7 @@ def crear_empleado(
 
 @router.get("/", response_model=List[EmpleadoResponse])
 def listar_empleados(
+    id_negocio: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["cliente", "negocio", "admin"])
@@ -120,29 +117,50 @@ def listar_empleados(
 
     # ADMIN
     if current_user.rol == "admin":
-        return db.query(Empleado).all()
+        query = db.query(Empleado)
+        if id_negocio:
+            query = query.filter(Empleado.id_negocio == id_negocio)
+        return query.all()
 
     # NEGOCIO
     if current_user.rol == "negocio":
 
-        negocio = db.query(Negocio).filter(
+        negocios_propios = db.query(Negocio.id_negocio).filter(
             Negocio.id_usuario_propietario == current_user.id_usuario
-        ).first()
+        ).all()
 
-        if not negocio:
+        ids_negocios = [n.id_negocio for n in negocios_propios]
+
+        if not ids_negocios:
             raise HTTPException(
                 status_code=404,
                 detail="Negocio no encontrado"
             )
 
+        if id_negocio:
+            if id_negocio not in ids_negocios:
+                raise HTTPException(
+                    status_code=403,
+                    detail="No autorizado para consultar este negocio"
+                )
+
+            return db.query(Empleado).filter(
+                Empleado.id_negocio == id_negocio
+            ).all()
+
         return db.query(Empleado).filter(
-            Empleado.id_negocio == negocio.id_negocio
+            Empleado.id_negocio.in_(ids_negocios)
         ).all()
 
     # CLIENTE
-    return db.query(Empleado).filter(
+    query = db.query(Empleado).filter(
         Empleado.estado == "activo"
-    ).all()
+    )
+
+    if id_negocio:
+        query = query.filter(Empleado.id_negocio == id_negocio)
+
+    return query.all()
 
 
 # =========================

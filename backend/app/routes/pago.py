@@ -78,7 +78,7 @@ def validar_acceso_pago(
     elif current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
-            Negocio.id_usuario == current_user.id_usuario
+            Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
@@ -134,7 +134,7 @@ def crear_pago(
     elif current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
-            Negocio.id_usuario == current_user.id_usuario
+            Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
@@ -307,7 +307,7 @@ def listar_pagos(
 
     # NEGOCIO
     negocio = db.query(Negocio).filter(
-        Negocio.id_usuario == current_user.id_usuario
+        Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:

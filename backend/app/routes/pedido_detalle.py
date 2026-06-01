@@ -60,7 +60,7 @@ def validar_acceso_pedido(
     elif current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
-            Negocio.id_usuario == current_user.id_usuario
+            Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
@@ -144,7 +144,7 @@ def listar_detalles(
 
     # NEGOCIO
     negocio = db.query(Negocio).filter(
-        Negocio.id_usuario == current_user.id_usuario
+        Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:

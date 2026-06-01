@@ -129,7 +129,7 @@ function actualizarNavbar() {
 // ─────────────────────────────────────────────
 const TODAS = [
   "inicio", "cta", "login", "registro", "recuperar-password", "verify2fa",
-  "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "gestion-usuarios-admin", "auditoria-admin", "mi-perfil",
+  "selector-negocio", "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "gestion-usuarios-admin", "auditoria-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
   "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
   "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "carrito-usuario", "mis-pedidos-usuario"
@@ -219,6 +219,10 @@ function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
 function mostrarRegistrarNegocio() { setVisible(["registrar-negocio"]); }
 function mostrarDetalleNegocio() { setVisible(["detalle-negocio"]); }
 
+function mostrarSelectorNegocio() {
+  setVisible(["selector-negocio"]);
+}
+
 function paginaActual() {
   return (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
 }
@@ -254,8 +258,14 @@ function irDashboardPorRol() {
     mostrarDashboardAdmin();
     cargarDatosDashboardAdmin(usuario);
   } else if (rol === "negocio") {
-    mostrarDashboardNegocio();
-    cargarDatosDashboard(usuario);
+    const idNegocioActivo = Number(localStorage.getItem("id_negocio_actual"));
+    if (!idNegocioActivo) {
+      mostrarSelectorNegocio();
+      cargarSelectorNegocios();
+    } else {
+      mostrarDashboardNegocio();
+      cargarDatosDashboard(usuario);
+    }
   } else {
     mostrarDashboardUsuario();
     cargarDatosDashboardUsuario(usuario);
@@ -576,7 +586,17 @@ function normalizarRol(rol) {
 function guardarSesion(data) {
   localStorage.setItem("access_token", data.access_token);
   if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
-  if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
+  if (data.usuario) {
+    localStorage.setItem("usuario", JSON.stringify(data.usuario));
+
+    // Multi-negocio limpio:
+    // al iniciar sesión como negocio, no se reutiliza una empresa vieja guardada.
+    if (normalizarRol(data.usuario.rol) === "negocio") {
+      localStorage.removeItem("id_negocio_actual");
+      localStorage.removeItem("negocio_actual");
+      miNegocioCache = null;
+    }
+  }
   actualizarNavbar();
 }
 
@@ -585,6 +605,8 @@ function limpiarSesionLocal() {
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("usuario");
   localStorage.removeItem("id_negocio_actual");
+  localStorage.removeItem("negocio_actual");
+  miNegocioCache = null;
   sessionStorage.removeItem("correo_2fa");
   sessionStorage.removeItem("mfa_mode");
 }
@@ -642,21 +664,31 @@ function obtenerIdNegocio(n) {
 function guardarNegocioActual(negocio) {
   if (!negocio) return;
   const idNegocio = obtenerIdNegocio(negocio);
-  if (idNegocio) localStorage.setItem("id_negocio_actual", String(idNegocio));
+  if (!idNegocio) return;
+
+  localStorage.setItem("id_negocio_actual", String(idNegocio));
+  localStorage.setItem("negocio_actual", JSON.stringify(negocio));
+}
+
+function limpiarNegocioActual() {
+  localStorage.removeItem("id_negocio_actual");
+  localStorage.removeItem("negocio_actual");
+  miNegocioCache = null;
+}
+
+function obtenerNegocioActualGuardado() {
+  try {
+    return JSON.parse(localStorage.getItem("negocio_actual") || "null");
+  } catch {
+    return null;
+  }
 }
 
 async function obtenerIdNegocioActual() {
   const guardado = Number(localStorage.getItem("id_negocio_actual"));
   if (guardado) return guardado;
 
-  const negocio = await obtenerMiNegocio(true);
-  const idNegocio = obtenerIdNegocio(negocio);
-  if (idNegocio) {
-    localStorage.setItem("id_negocio_actual", String(idNegocio));
-    return idNegocio;
-  }
-
-  throw new Error("No se encontró el negocio asociado a tu cuenta. Registra primero tu negocio o vuelve al panel principal.");
+  throw new Error("Primero debes seleccionar una empresa para continuar.");
 }
 
 const DIAS_SEMANA = {
@@ -1147,24 +1179,41 @@ document.addEventListener("DOMContentLoaded", () => {
 // DASHBOARDS
 // ─────────────────────────────────────────────
 function cargarDatosDashboard(usuario) {
-  document.getElementById("dashNombreUsuario").textContent = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.correo;
+  const nombreEl = document.getElementById("dashNombreUsuario");
+  if (nombreEl) {
+    nombreEl.textContent = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.correo;
+  }
 
-  const token = getToken();
-  if (!token) return;
+  const idActual = Number(localStorage.getItem("id_negocio_actual"));
+  const span = document.getElementById("dashNombreNegocio");
 
-  fetch(`${API_BASE}/negocios/`, { headers: { "Authorization": `Bearer ${token}` } })
-    .then(res => res.json())
-    .then(data => {
-      if (!Array.isArray(data)) return;
-      const miNegocio = data.find(n =>
-        Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario.id_usuario || usuario.id)
-      ) || data[0];
-      miNegocioCache = miNegocio || null;
+  if (!idActual) {
+    if (span) span.textContent = "Selecciona una empresa";
+    mostrarSelectorNegocio();
+    cargarSelectorNegocios();
+    return;
+  }
+
+  obtenerMiNegocio(true)
+    .then(miNegocio => {
+      if (!miNegocio) {
+        limpiarNegocioActual();
+        if (span) span.textContent = "Selecciona una empresa";
+        mostrarSelectorNegocio();
+        cargarSelectorNegocios();
+        return;
+      }
+
+      miNegocioCache = miNegocio;
       guardarNegocioActual(miNegocioCache);
-      const span = document.getElementById("dashNombreNegocio");
-      if (span) span.textContent = miNegocio ? campoNegocio(miNegocio, "nombre_negocio", "nombre") : "Sin negocio aún";
+
+      if (span) {
+        span.textContent = campoNegocio(miNegocio, "nombre_negocio", "nombre") || `Negocio #${idActual}`;
+      }
     })
-    .catch(() => {});
+    .catch(() => {
+      if (span) span.textContent = "No se pudo cargar la empresa";
+    });
 }
 
 function cargarDatosDashboardUsuario(usuario) {
@@ -1253,6 +1302,18 @@ async function checkSession() {
 
   const sesionOk = await validarSesionActiva();
   if (!sesionOk) return;
+
+  const rolActual = normalizarRol(getUsuario()?.rol || usuario?.rol);
+
+  // Multi-negocio limpio:
+  // al cargar negocio.html siempre se muestra primero el selector de empresas.
+  if (pagina === "negocio.html" && rolActual === "negocio") {
+    limpiarNegocioActual();
+    mostrarSelectorNegocio();
+    cargarSelectorNegocios();
+    finalizarCargaDashboard();
+    return;
+  }
 
   if (pagina === "login.html" || pagina === "registro.html" || pagina === "index.html" || esPaginaDashboardRol(pagina)) {
     irDashboardPorRol();
@@ -1493,14 +1554,120 @@ function asegurarRolNegocio() {
 
 async function obtenerMiNegocio(force = false) {
   if (miNegocioCache && !force) return miNegocioCache;
-  const usuario = getUsuario();
+
+  const idActual = Number(localStorage.getItem("id_negocio_actual"));
+  if (!idActual) return null;
+
+  const negocioGuardado = obtenerNegocioActualGuardado();
+  if (negocioGuardado && obtenerIdNegocio(negocioGuardado) === idActual && !force) {
+    miNegocioCache = negocioGuardado;
+    return miNegocioCache;
+  }
+
   const negocios = await apiFetch("/negocios/");
   miNegocioCache = Array.isArray(negocios)
-    ? negocios.find(n => Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario?.id_usuario || usuario?.id)) || negocios[0]
+    ? negocios.find(n => obtenerIdNegocio(n) === idActual) || null
     : null;
-  guardarNegocioActual(miNegocioCache);
+
+  if (miNegocioCache) guardarNegocioActual(miNegocioCache);
   return miNegocioCache;
 }
+
+async function cargarSelectorNegocios() {
+  const usuario = getUsuario();
+  const nombreSpan = document.getElementById("selectorNombreUsuario");
+  const lista = document.getElementById("selectorNegociosLista");
+  const msg = document.getElementById("selectorNegociosMsg");
+
+  if (nombreSpan) {
+    nombreSpan.textContent = usuario?.nombre || usuario?.correo || "usuario";
+  }
+
+  if (!lista) return;
+
+  lista.innerHTML = `<div class="empty-state">Cargando negocios...</div>`;
+  if (msg) msg.textContent = "";
+
+  try {
+    const negocios = await apiFetch("/negocios/");
+    const propios = Array.isArray(negocios)
+      ? negocios.filter(n => Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario?.id_usuario || usuario?.id))
+      : [];
+
+    limpiarNegocioActual();
+
+    if (!propios.length) {
+      lista.innerHTML = `
+        <div class="empty-state">
+          No tienes empresas registradas todavía.
+          <br><br>
+          <button class="btn-primary" onclick="irRegistrarNegocio()">Crear nueva empresa</button>
+        </div>
+      `;
+      return;
+    }
+
+    lista.innerHTML = propios.map(n => {
+      const id = obtenerIdNegocio(n);
+      const nombre = escapeHtml(campoNegocio(n, "nombre_negocio", "nombre", "razon_social") || `Negocio #${id}`);
+      const direccion = escapeHtml(campoNegocio(n, "direccion", "ubicacion") || "Sin dirección registrada");
+      const telefono = escapeHtml(campoNegocio(n, "telefono", "celular") || "Sin teléfono");
+      const estado = escapeHtml(campoNegocio(n, "estado") || "activo");
+
+      return `
+        <article class="module-card">
+          <span>Empresa</span>
+          <h3>${nombre}</h3>
+          <p>${direccion}</p>
+          <p class="muted">Tel: ${telefono} · Estado: ${estado}</p>
+          <button onclick="entrarNegocio(${id})">Entrar</button>
+        </article>
+      `;
+    }).join("");
+
+  } catch (error) {
+    lista.innerHTML = `<div class="empty-state">No se pudieron cargar tus empresas.</div>`;
+    if (msg) msg.textContent = error.message || "Error cargando empresas.";
+  }
+}
+
+async function entrarNegocio(idNegocio) {
+  try {
+    const usuario = getUsuario();
+    const negocios = await apiFetch("/negocios/");
+    const negocio = Array.isArray(negocios)
+      ? negocios.find(n =>
+          obtenerIdNegocio(n) === Number(idNegocio) &&
+          Number(campoNegocio(n, "id_usuario_propietario", "usuario_id", "propietario_id")) === Number(usuario?.id_usuario || usuario?.id)
+        )
+      : null;
+
+    if (!negocio) {
+      showToast("No se encontró la empresa seleccionada o no pertenece a tu cuenta.", "error");
+      await cargarSelectorNegocios();
+      return;
+    }
+
+    guardarNegocioActual(negocio);
+    miNegocioCache = negocio;
+
+    mostrarDashboardNegocio();
+    await cargarDatosDashboard(usuario);
+  } catch (error) {
+    showToast(error.message || "No se pudo entrar a la empresa.", "error");
+  }
+}
+
+function cambiarEmpresa() {
+  limpiarNegocioActual();
+  mostrarSelectorNegocio();
+  cargarSelectorNegocios();
+}
+// Exponer funciones del selector multi-negocio para botones onclick del HTML
+window.cargarSelectorNegocios = cargarSelectorNegocios;
+window.entrarNegocio = entrarNegocio;
+window.cambiarEmpresa = cambiarEmpresa;
+
 
 function renderAdminList(items, contenedorId, tipo) {
   const cont = document.getElementById(contenedorId);
@@ -1983,8 +2150,12 @@ async function irGestionCitas() { mostrarGestion("gestion-citas"); await cargarC
 
 async function cargarEmpleados() {
   try {
-    const empleados = await apiFetch(API_PATHS.empleados);
-    empleadosCache = Array.isArray(empleados) ? empleados : [];
+    const idNegocio = await obtenerIdNegocioActual();
+    const empleados = await apiFetch(`${API_PATHS.empleados}?id_negocio=${encodeURIComponent(idNegocio)}`);
+    empleadosCache = Array.isArray(empleados)
+      ? empleados.filter(e => Number(e.id_negocio) === Number(idNegocio))
+      : [];
+
     renderAdminList(empleadosCache, "listaEmpleados", "empleado");
     llenarSelectHorariosEmpleado(empleadosCache);
     mostrarMensaje("empleadoMsg", "", false);
