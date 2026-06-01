@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel negocio | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260601-citas-botones-columna-01" />
+  <link rel="stylesheet" href="css/styles.css?v=20260601-analiticas-negocio-03" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body><body class="dashboard-loading">
@@ -327,6 +327,57 @@
         <p>Consulta tus datos de usuario y valida el acceso como negocio.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
+    </div>
+
+    <!-- Analíticas del negocio -->
+    <div class="ana-section" id="anaNegocioSection" style="display:none">
+      <p class="ana-eyebrow">📊 Analíticas del negocio</p>
+
+      <div class="ana-metrics">
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetCitas">—</div>
+          <div class="ana-mlabel">Citas hoy</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetTotalCitas">—</div>
+          <div class="ana-mlabel">Citas totales</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetCalif">—</div>
+          <div class="ana-mlabel">Calificación media</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetServicios">—</div>
+          <div class="ana-mlabel">Servicios activos</div>
+        </div>
+      </div>
+
+      <div class="ana-charts">
+        <div class="ana-card">
+          <div class="ana-ctitle">Servicios más usados</div>
+          <div class="ana-canvas-wrap"><canvas id="chartServUsados"></canvas></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Distribución de estados</div>
+          <div class="ana-canvas-wrap"><canvas id="chartEstadosCitas"></canvas></div>
+        </div>
+
+        <div class="ana-card wide">
+          <div class="ana-ctitle">Citas por día</div>
+          <div class="ana-canvas-wrap"><canvas id="chartCitasDia"></canvas></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Top empleados por citas</div>
+          <div id="anaTopEmpleados"></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Distribución de calificaciones</div>
+          <div class="ana-canvas-wrap"><canvas id="chartCalifDist"></canvas></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -719,6 +770,8 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=20260601-ranking-calificaciones-01"></script>
+<script src="js/main.js?v=20260601-ranking-negocios-card-02"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/graficas-negocio.js?v=20260601-analiticas-negocio-fix-loop-01"></script>
 </body>
 </html>
