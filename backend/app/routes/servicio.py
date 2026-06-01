@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -35,18 +36,13 @@ def validar_acceso_servicio(
     if current_user.rol in ["admin", "superadmin"]:
         return
 
-    # NEGOCIO solo puede gestionar servicios de su propio negocio
+    # NEGOCIO solo puede gestionar servicios de negocios propios
     negocio = db.query(Negocio).filter(
+        Negocio.id_negocio == servicio.id_negocio,
         Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:
-        raise HTTPException(
-            status_code=404,
-            detail="Negocio no encontrado"
-        )
-
-    if servicio.id_negocio != negocio.id_negocio:
         raise HTTPException(
             status_code=403,
             detail="No autorizado para gestionar este servicio"
@@ -78,16 +74,23 @@ def crear_servicio(
             detail="El precio del servicio no puede ser negativo"
         )
 
-    # NEGOCIO: se asigna automáticamente a su negocio
+    # NEGOCIO: debe enviar el negocio activo y pertenecer al dueño
     if current_user.rol == "negocio":
+        if not servicio.id_negocio:
+            raise HTTPException(
+                status_code=400,
+                detail="Debes seleccionar una empresa antes de crear servicios"
+            )
+
         negocio = db.query(Negocio).filter(
+            Negocio.id_negocio == servicio.id_negocio,
             Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
             raise HTTPException(
-                status_code=404,
-                detail="No tienes un negocio registrado"
+                status_code=403,
+                detail="No autorizado para crear servicios en este negocio"
             )
 
         id_negocio = negocio.id_negocio
@@ -181,6 +184,7 @@ def listar_servicios_publicos_por_negocio(
 
 @router.get("/", response_model=list[ServicioResponse])
 def listar_servicios(
+    id_negocio: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["cliente", "negocio", "admin", "superadmin"])
@@ -188,28 +192,49 @@ def listar_servicios(
 ):
     # ADMIN / SUPERADMIN ven todos
     if current_user.rol in ["admin", "superadmin"]:
-        return db.query(Servicio).all()
+        query = db.query(Servicio)
+        if id_negocio:
+            query = query.filter(Servicio.id_negocio == id_negocio)
+        return query.all()
 
-    # NEGOCIO ve solo sus servicios
+    # NEGOCIO ve servicios de sus negocios, o solo del negocio activo enviado
     if current_user.rol == "negocio":
-        negocio = db.query(Negocio).filter(
+        negocios_propios = db.query(Negocio.id_negocio).filter(
             Negocio.id_usuario_propietario == current_user.id_usuario
-        ).first()
+        ).all()
 
-        if not negocio:
+        ids_negocios = [n.id_negocio for n in negocios_propios]
+
+        if not ids_negocios:
             raise HTTPException(
                 status_code=404,
                 detail="Negocio no encontrado"
             )
 
+        if id_negocio:
+            if id_negocio not in ids_negocios:
+                raise HTTPException(
+                    status_code=403,
+                    detail="No autorizado para consultar este negocio"
+                )
+
+            return db.query(Servicio).filter(
+                Servicio.id_negocio == id_negocio
+            ).all()
+
         return db.query(Servicio).filter(
-            Servicio.id_negocio == negocio.id_negocio
+            Servicio.id_negocio.in_(ids_negocios)
         ).all()
 
     # CLIENTE ve servicios activos
-    return db.query(Servicio).filter(
+    query = db.query(Servicio).filter(
         Servicio.estado == "activo"
-    ).all()
+    )
+
+    if id_negocio:
+        query = query.filter(Servicio.id_negocio == id_negocio)
+
+    return query.all()
 
 
 # =========================
