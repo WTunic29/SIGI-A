@@ -14,6 +14,7 @@ const ROLES = {
 };
 
 let negociosCache = [];
+let rankingNegociosCache = [];
 let empleadosCache = [];
 let loginVerificationMode = "email";
 
@@ -689,6 +690,16 @@ function limpiarDiasHorario() {
   document.querySelectorAll('input[name="horarioDias"]').forEach(input => { input.checked = false; });
 }
 
+function obtenerRankingNegocio(idNegocio) {
+  return rankingNegociosCache.find(r => Number(r.id_negocio) === Number(idNegocio)) || null;
+}
+
+function pintarEstrellasPromedio(promedio) {
+  const valor = Number(promedio || 0);
+  const llenas = Math.round(valor);
+  return "★".repeat(Math.min(5, llenas)) + "☆".repeat(Math.max(0, 5 - llenas));
+}
+
 function renderNegocios(lista, contenedorId) {
   const contenedor = document.getElementById(contenedorId);
   if (!contenedor) return;
@@ -717,6 +728,21 @@ function renderNegocios(lista, contenedorId) {
             <span>📞 ${telefono}</span>
             <span>✉️ ${correo}</span>
           </div>
+          ${(() => {
+            const ranking = obtenerRankingNegocio(idNegocio);
+
+            if (!ranking) {
+              return `<div class="business-rating muted">☆☆☆☆☆ Sin calificaciones todavía</div>`;
+            }
+
+            const promedio = Number(ranking.promedio || 0).toFixed(1);
+            const total = Number(ranking.total_calificaciones || 0);
+
+            return `<div class="business-rating">
+              <strong>${escapeHtml(pintarEstrellasPromedio(ranking.promedio))}</strong>
+              <span>${escapeHtml(promedio)} · ${escapeHtml(total)} calificación${total === 1 ? "" : "es"}</span>
+            </div>`;
+          })()}
           <button class="btn-primary tiny" type="button">Ver y agendar</button>
         </div>
       </article>
@@ -1311,9 +1337,15 @@ async function irVerNegocios() {
 
 async function cargarNegociosUsuario() {
   try {
-    const data = await obtenerNegocios();
-    negociosCache = data;
-    renderNegocios(data, "listaNegociosUsuario");
+    const [data, ranking] = await Promise.all([
+      obtenerNegocios(),
+      apiFetch("/calificaciones/ranking/all").catch(() => [])
+    ]);
+
+    negociosCache = Array.isArray(data) ? data : [];
+    rankingNegociosCache = Array.isArray(ranking) ? ranking : [];
+
+    renderNegocios(negociosCache, "listaNegociosUsuario");
     mostrarMensaje("usuarioNegociosMsg", "", false);
   } catch (error) {
     renderNegocios([], "listaNegociosUsuario");

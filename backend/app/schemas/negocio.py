@@ -39,6 +39,8 @@ class NegocioResponse(BaseModel):
     direccion: Optional[str]
     telefono: Optional[str]
     email_negocio: Optional[EmailStr]
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
 
     class Config:
         from_attributes = True

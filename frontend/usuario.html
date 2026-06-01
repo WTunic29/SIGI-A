@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel usuario | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260601-analiticas-negocio-03" />
+  <link rel="stylesheet" href="css/styles.css?v=20260601-mapa-cache-01" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -777,13 +777,13 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260601-ranking-negocios-card-02"></script>
+<script src="js/main.js?v=20260601-mapa-cache-01"></script>
 
 <!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
 <script>
 const API_MAPA_U = window.SIGIA_API_BASE;
-const TILE_DARK_U  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const TILE_OPTS_U  = { subdomains:"abcd", maxZoom:19, attribution:'© <a href="https://carto.com/">CARTO</a>' };
+const TILE_DARK_U  = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_OPTS_U  = { maxZoom:19, attribution:'© OpenStreetMap contributors' };
 
 /* ── Estado global mapas ── */
 let mapaDash       = null;
@@ -841,42 +841,87 @@ async function inicializarMapaDash() {
 
 async function cargarNegociosEnMapaDash() {
   const status = document.getElementById("mapaStatusDash");
+
   try {
-    const res     = await fetch(`${API_MAPA_U}/negocios/`);
-    const lista   = await res.json().catch(()=>[]);
-    const negocios = Array.isArray(lista) ? lista : [];
+    let negocios = [];
+
+    if (typeof negociosCache !== "undefined" && Array.isArray(negociosCache) && negociosCache.length) {
+      negocios = negociosCache;
+    } else {
+      const tokenMapa = typeof getToken === "function"
+        ? getToken()
+        : localStorage.getItem("sigia_token");
+
+      const res = await fetch(`${API_MAPA_U}/negocios/`, {
+        headers: tokenMapa ? { "Authorization": `Bearer ${tokenMapa}` } : {}
+      });
+
+      const lista = await res.json().catch(() => []);
+
+      if (Array.isArray(lista)) {
+        negocios = lista;
+      } else if (Array.isArray(lista.items)) {
+        negocios = lista.items;
+      } else if (Array.isArray(lista.negocios)) {
+        negocios = lista.negocios;
+      } else {
+        negocios = [];
+      }
+    }
+
     if (!negocios.length) {
       if (status) status.textContent = "Sin barberías registradas aún.";
       return;
     }
+
     if (status) status.textContent = `Ubicando ${negocios.length} barbería(s)...`;
+
     const ic = iconoBarberiaU();
     let colocados = 0;
     const bounds = [];
 
     for (const n of negocios) {
-      let lat = Number(n.latitud||n.lat||0);
-      let lng = Number(n.longitud||n.lng||n.lon||0);
-      if ((lat===0||lng===0) && n.direccion) {
-        const c = await geocodificarU(n.direccion + ", Colombia");
-        if (c) { lat=c.lat; lng=c.lng; }
-        await new Promise(r=>setTimeout(r,700));
+      let lat = Number(n.latitud ?? n.lat ?? 0);
+      let lng = Number(n.longitud ?? n.lng ?? n.lon ?? 0);
+
+      if ((!lat || !lng) && n.direccion) {
+        const ciudad = n.ciudad || "Bogotá";
+        const c = await geocodificarU(`${n.direccion}, ${ciudad}, Colombia`);
+
+        if (c) {
+          lat = Number(c.lat);
+          lng = Number(c.lng);
+        }
+
+        await new Promise(r => setTimeout(r, 700));
       }
-      if (lat!==0 && lng!==0) {
+
+      if (lat && lng) {
         colocados++;
-        bounds.push([lat,lng]);
-        const nombre  = n.nombre_negocio||n.nombre||"Negocio";
-        const dir     = n.direccion||"Sin dirección";
-        const gmaps   = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-        L.marker([lat,lng],{icon:ic}).addTo(mapaDash)
+        bounds.push([lat, lng]);
+
+        const nombre = n.nombre_negocio || n.nombre || "Negocio";
+        const dir = n.direccion || "Sin dirección";
+        const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+        L.marker([lat, lng], { icon: ic }).addTo(mapaDash)
           .bindPopup(`<strong>${nombre}</strong>
             <span class="pm-dir">📍 ${dir}</span>
             <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`);
       }
     }
-    if (bounds.length) mapaDash.fitBounds(bounds, {padding:[30,30], maxZoom:14});
-    if (status) status.textContent = colocados ? `${colocados} barbería(s) en el mapa.` : "Sin ubicaciones disponibles.";
-  } catch(e) {
+
+    if (bounds.length) {
+      mapaDash.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    }
+
+    if (status) {
+      status.textContent = colocados
+        ? `${colocados} barbería(s) en el mapa.`
+        : "Sin ubicaciones disponibles.";
+    }
+  } catch (e) {
+    console.error("Error cargando barberías en mapa:", e);
     if (status) status.textContent = "No se pudieron cargar las barberías.";
   }
 }
@@ -910,7 +955,10 @@ function centrarUbicacionDash() {
       if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
     },
     () => {
-      alert("No se pudo obtener tu ubicación.");
+      const status = document.getElementById("mapaStatusDash");
+      if (status) {
+        status.textContent = "No se pudo obtener tu ubicación. Revisa permisos del navegador o usa HTTPS.";
+      }
       if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
     },
     {enableHighAccuracy:true, timeout:12000}

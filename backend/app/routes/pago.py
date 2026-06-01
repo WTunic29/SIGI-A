@@ -8,13 +8,13 @@ from app.core.deps import (
     require_roles
 )
 
-from app.models.pedido_detalle import PedidoDetalle
 from app.models.pago import Pago
 from app.models.pedido import Pedido
+from app.models.pedido_detalle import PedidoDetalle
 from app.models.negocio import Negocio
 from app.models.user import Usuario
 from app.models.factura import Factura
-from app.models.pedido_detalle import PedidoDetalle
+from app.models.producto import Producto
 from app.models.cita import Cita
 
 from app.schemas.pago import (
@@ -148,6 +148,11 @@ def crear_pago(
                 status_code=403,
                 detail="No autorizado"
             )
+    if pago.estado_pago == "aprobado" and pedido.estado == "pagado":
+        raise HTTPException(
+            status_code=400,
+            detail="Este pedido ya fue pagado"
+        )
 
     nuevo_pago = Pago(
         id_pedido=pago.id_pedido,
@@ -169,6 +174,25 @@ def crear_pago(
         ).all()
 
         for detalle in detalles_pedido:
+            if detalle.tipo_item == "producto" and detalle.id_producto:
+                producto = db.query(Producto).filter(
+                    Producto.id_producto == detalle.id_producto
+                ).first()
+
+                if not producto:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Producto ID {detalle.id_producto} no encontrado"
+                    )
+
+                if producto.stock < detalle.cantidad:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Stock insuficiente para el producto {producto.nombre}"
+                    )
+
+                producto.stock = producto.stock - detalle.cantidad
+
             if detalle.id_cita:
                 cita = db.query(Cita).filter(
                     Cita.id_cita == detalle.id_cita
