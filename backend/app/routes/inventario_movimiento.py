@@ -32,24 +32,19 @@ def validar_acceso_producto(
     db: Session
 ):
 
-    # ADMIN
-    if current_user.rol == "admin":
+    # ADMIN / SUPERADMIN
+    if current_user.rol in ["admin", "superadmin"]:
         return
 
     negocio = db.query(Negocio).filter(
+        Negocio.id_negocio == producto.id_negocio,
         Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:
         raise HTTPException(
-            status_code=404,
-            detail="Negocio no encontrado"
-        )
-
-    if producto.id_negocio != negocio.id_negocio:
-        raise HTTPException(
             status_code=403,
-            detail="No autorizado"
+            detail="No autorizado para gestionar inventario de este producto"
         )
 
 

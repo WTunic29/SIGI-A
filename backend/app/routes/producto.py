@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 
@@ -33,22 +33,17 @@ def validar_acceso_producto(
     current_user: Usuario,
     db: Session
 ):
-    # ADMIN puede gestionar cualquier producto
-    if current_user.rol == "admin":
+    # ADMIN / SUPERADMIN puede gestionar cualquier producto
+    if current_user.rol in ["admin", "superadmin"]:
         return
 
-    # NEGOCIO solo puede gestionar productos de su propio negocio
+    # NEGOCIO solo puede gestionar productos de negocios propios
     negocio = db.query(Negocio).filter(
+        Negocio.id_negocio == producto.id_negocio,
         Negocio.id_usuario_propietario == current_user.id_usuario
     ).first()
 
     if not negocio:
-        raise HTTPException(
-            status_code=404,
-            detail="Negocio no encontrado"
-        )
-
-    if producto.id_negocio != negocio.id_negocio:
         raise HTTPException(
             status_code=403,
             detail="No autorizado para gestionar este producto"
@@ -68,16 +63,23 @@ def crear_producto(
         require_roles(["negocio", "admin"])
     )
 ):
-    # NEGOCIO: se asigna automáticamente a su negocio
+    # NEGOCIO: debe enviar el negocio activo y pertenecer al dueño
     if current_user.rol == "negocio":
+        if not producto.id_negocio:
+            raise HTTPException(
+                status_code=400,
+                detail="Debes seleccionar una empresa antes de crear productos"
+            )
+
         negocio = db.query(Negocio).filter(
+            Negocio.id_negocio == producto.id_negocio,
             Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
             raise HTTPException(
-                status_code=404,
-                detail="Negocio no encontrado"
+                status_code=403,
+                detail="No autorizado para crear productos en este negocio"
             )
 
         id_negocio = negocio.id_negocio
@@ -154,6 +156,7 @@ def listar_productos_publicos(
 
 @router.get("/", response_model=List[ProductoResponse])
 def listar_productos(
+    id_negocio: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["cliente", "negocio", "admin", "superadmin"])
@@ -161,28 +164,49 @@ def listar_productos(
 ):
     # ADMIN / SUPERADMIN ven todos
     if current_user.rol in ["admin", "superadmin"]:
-        return db.query(Producto).all()
+        query = db.query(Producto)
+        if id_negocio:
+            query = query.filter(Producto.id_negocio == id_negocio)
+        return query.all()
 
-    # NEGOCIO ve solo sus productos
+    # NEGOCIO ve productos de sus negocios, o solo del negocio activo enviado
     if current_user.rol == "negocio":
-        negocio = db.query(Negocio).filter(
+        negocios_propios = db.query(Negocio.id_negocio).filter(
             Negocio.id_usuario_propietario == current_user.id_usuario
-        ).first()
+        ).all()
 
-        if not negocio:
+        ids_negocios = [n.id_negocio for n in negocios_propios]
+
+        if not ids_negocios:
             raise HTTPException(
                 status_code=404,
                 detail="Negocio no encontrado"
             )
 
+        if id_negocio:
+            if id_negocio not in ids_negocios:
+                raise HTTPException(
+                    status_code=403,
+                    detail="No autorizado para consultar este negocio"
+                )
+
+            return db.query(Producto).filter(
+                Producto.id_negocio == id_negocio
+            ).all()
+
         return db.query(Producto).filter(
-            Producto.id_negocio == negocio.id_negocio
+            Producto.id_negocio.in_(ids_negocios)
         ).all()
 
     # CLIENTE ve productos activos
-    return db.query(Producto).filter(
+    query = db.query(Producto).filter(
         Producto.estado == "activo"
-    ).all()
+    )
+
+    if id_negocio:
+        query = query.filter(Producto.id_negocio == id_negocio)
+
+    return query.all()
 
 
 # =========================

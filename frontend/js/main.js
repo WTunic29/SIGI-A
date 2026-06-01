@@ -2164,19 +2164,36 @@ async function cargarEmpleados() {
   }
 }
 async function cargarServicios() {
-  try { renderAdminList(await apiFetch(API_PATHS.servicios), "listaServicios", "servicio"); mostrarMensaje("servicioMsg", "", false); }
-  catch (e) { document.getElementById("listaServicios").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`; }
+  try {
+    const idNegocio = await obtenerIdNegocioActual();
+    const servicios = await apiFetch(`${API_PATHS.servicios}?id_negocio=${encodeURIComponent(idNegocio)}`);
+
+    const lista = Array.isArray(servicios)
+      ? servicios.filter(s => Number(s.id_negocio) === Number(idNegocio))
+      : [];
+
+    renderAdminList(lista, "listaServicios", "servicio");
+    mostrarMensaje("servicioMsg", "", false);
+  } catch (e) {
+    const cont = document.getElementById("listaServicios");
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+  }
 }
 async function cargarProductos() {
   try {
-    const productos = await apiFetch(API_PATHS.productos);
-    let lista = Array.isArray(productos) ? productos : [];
-    const idNegocio = Number(localStorage.getItem("id_negocio_actual")) || Number(obtenerIdNegocio(miNegocioCache || {}));
-    if (idNegocio) lista = lista.filter(p => !p.id_negocio || Number(p.id_negocio) === idNegocio);
+    const idNegocio = await obtenerIdNegocioActual();
+    const productos = await apiFetch(`${API_PATHS.productos}?id_negocio=${encodeURIComponent(idNegocio)}`);
+
+    const lista = Array.isArray(productos)
+      ? productos.filter(p => Number(p.id_negocio) === Number(idNegocio))
+      : [];
+
     renderAdminList(lista, "listaProductos", "producto");
     mostrarMensaje("productoMsg", "", false);
+  } catch (e) {
+    const cont = document.getElementById("listaProductos");
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`;
   }
-  catch (e) { document.getElementById("listaProductos").innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`; }
 }
 async function cargarCitas() {
   try {
