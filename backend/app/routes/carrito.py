@@ -101,6 +101,30 @@ def recalcular_total_carrito(
     carrito.fecha_actualizacion = datetime.utcnow()
     return total
 
+
+def carrito_tiene_reservas_activas(
+    db: Session,
+    id_carrito: int
+):
+    return db.query(CarritoDetalle).filter(
+        CarritoDetalle.id_carrito == id_carrito,
+        CarritoDetalle.estado_reserva == "RESERVADO"
+    ).first() is not None
+
+
+def limpiar_carrito_si_no_tiene_reservas(
+    db: Session,
+    carrito: Carrito
+):
+    if carrito_tiene_reservas_activas(db, carrito.id_carrito):
+        return False
+
+    carrito.id_negocio = None
+    carrito.total_estimado = 0
+    carrito.fecha_expiracion = None
+    carrito.fecha_actualizacion = datetime.utcnow()
+    return True
+
 def liberar_reservas_vencidas(db: Session):
     ahora = datetime.utcnow()
 
@@ -131,6 +155,7 @@ def liberar_reservas_vencidas(db: Session):
 
         if carrito:
             recalcular_total_carrito(db, carrito)
+            limpiar_carrito_si_no_tiene_reservas(db, carrito)
 
     return len(detalles_vencidos)
 
@@ -442,6 +467,8 @@ def agregar_producto_carrito(
         db.add(carrito)
         db.flush()
     else:
+        limpiar_carrito_si_no_tiene_reservas(db, carrito)
+
         if carrito.id_negocio and carrito.id_negocio != producto.id_negocio:
             raise HTTPException(
                 status_code=400,
@@ -621,6 +648,8 @@ def agregar_cita_carrito(
         db.add(carrito)
         db.flush()
     else:
+        limpiar_carrito_si_no_tiene_reservas(db, carrito)
+
         if carrito.id_negocio and carrito.id_negocio != datos.id_negocio:
             raise HTTPException(
                 status_code=400,
