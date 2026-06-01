@@ -511,7 +511,7 @@
         <p><span>Correo</span><strong id="detalleNegocioCorreo">—</strong></p>
         <!-- Mapa pequeño de ubicación de este negocio -->
         <div class="detalle-mapa-wrap">
-          <div class="detalle-mapa-header">📍 Ubicación del negocio</div>
+          <div class="detalle-mapa-header"> Ubicación del negocio</div>
           <div id="mapaDetalleNegocio"></div>
         </div>
       </aside>
@@ -787,7 +787,7 @@ async function cargarNegociosEnMapaDash() {
         const gmaps   = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
         L.marker([lat,lng],{icon:ic}).addTo(mapaDash)
           .bindPopup(`<strong>${nombre}</strong>
-            <span class="pm-dir">📍 ${dir}</span>
+            <span class="pm-dir"> ${dir}</span>
             <a class="pm-ruta" href="${gmaps}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>`);
       }
     }
@@ -811,24 +811,24 @@ function ponerPuntoGPS(lat, lng) {
   if (marcadorDashU) marcadorDashU.remove();
   marcadorDashU = L.marker([lat,lng],{icon:iconoGPS(), zIndexOffset:1000})
     .addTo(mapaDash)
-    .bindPopup('<strong style="color:#4285f4">📍 Tu ubicación</strong>');
+    .bindPopup('<strong style="color:#4285f4"> Tu ubicación</strong>');
 }
 
 function centrarUbicacionDash() {
   if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); return; }
   const btn = document.getElementById("btnUbicacionDash");
-  if (btn) { btn.textContent="⏳ Buscando..."; btn.disabled=true; }
+  if (btn) { btn.textContent=" Buscando..."; btn.disabled=true; }
   navigator.geolocation.getCurrentPosition(
     pos => {
       const {latitude:lat, longitude:lng} = pos.coords;
       mapaDash.setView([lat,lng],15);
       ponerPuntoGPS(lat,lng);
       marcadorDashU.openPopup();
-      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+      if (btn) { btn.textContent=" Ver mi ubicación"; btn.disabled=false; }
     },
     () => {
       alert("No se pudo obtener tu ubicación.");
-      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+      if (btn) { btn.textContent=" Ver mi ubicación"; btn.disabled=false; }
     },
     {enableHighAccuracy:true, timeout:12000}
   );
