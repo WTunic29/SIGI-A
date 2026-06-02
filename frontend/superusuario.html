@@ -23,6 +23,16 @@
   }
 </style>
 
+
+<style id="fix-ocultar-mfa-perfil">
+  #mi-perfil .profile-security,
+  #mi-perfil #btnMfaSetup,
+  #mi-perfil #mfaSetupBox,
+  #mi-perfil #mfaConfirmForm {
+    display: none !important;
+  }
+</style>
+
 </head>
 <body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
@@ -51,7 +61,6 @@
     <div class="user-dropdown" id="userDropdown">
       <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
-      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
@@ -492,7 +501,7 @@
       <article class="dash-card">
         <span>Cuenta</span>
         <strong>Mi perfil</strong>
-        <p>Consulta tus datos y valida la seguridad MFA de tu cuenta.</p>
+        <p>Consulta tus datos de usuario.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
     </div>
@@ -950,6 +959,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="js/config.js"></script>
-<script src="js/main.js?v=20260602-entrega-pago-citas-01"></script>
+<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
 </body>
 </html>

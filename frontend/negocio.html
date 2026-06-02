@@ -23,6 +23,16 @@
   }
 </style>
 
+
+<style id="fix-ocultar-mfa-perfil">
+  #mi-perfil .profile-security,
+  #mi-perfil #btnMfaSetup,
+  #mi-perfil #mfaSetupBox,
+  #mi-perfil #mfaConfirmForm {
+    display: none !important;
+  }
+</style>
+
 </head>
 <body><body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
@@ -51,7 +61,6 @@
     <div class="user-dropdown" id="userDropdown">
       <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
-      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
@@ -337,17 +346,17 @@
 
     <div class="module-grid">
       <article class="module-card">
-        <span>Mi barbería</span>
-        <h3>Negocio</h3>
-        <p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p>
-        <button onclick="irRegistrarNegocio()">Registrar negocio</button>
-      </article>
-      <article class="module-card">
         <span>Agenda</span>
         <h3>Citas</h3>
         <p>Consulta y administra las citas asociadas a tu negocio.</p>
         <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
+        <article class="module-card">
+          <span>Ventas</span>
+          <h3>Pedidos</h3>
+          <p>Consulta pedidos del negocio, pagos y facturas asociadas.</p>
+          <button onclick="irGestionPedidosNegocio()">Gestionar pedidos</button>
+        </article>
       <article class="module-card">
         <span>Equipo</span>
         <h3>Empleados</h3>
@@ -522,10 +531,16 @@
         <p>Consulta las citas registradas en el sistema.</p>
         <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
+        <article class="module-card">
+          <span>Ventas</span>
+          <h3>Pedidos</h3>
+          <p>Consulta pedidos del negocio, pagos y facturas asociadas.</p>
+          <button onclick="irGestionPedidosNegocio()">Gestionar pedidos</button>
+        </article>
       <article class="dash-card">
         <span>Seguridad</span>
         <strong>Mi perfil</strong>
-        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
+        <p>Consulta tus datos de usuario.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
     </div>
@@ -664,6 +679,30 @@
     <div id="validarInfo" class="profile-card"></div>
     <span id="validarMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+
+<section class="hero dashboard-screen" id="gestion-pedidos-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Ventas</p>
+        <h1 class="dashboard-title">Gestionar <span>Pedidos</span></h1>
+        <p class="muted">Consulta pedidos, pagos y facturas de la empresa seleccionada.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="cargarPedidosNegocio()">Actualizar pedidos</button>
+    </div>
+
+    <div id="pedidosNegocioMsg" class="form-msg"></div>
+    <div id="listaPedidosNegocio" class="admin-list">
+      <div class="empty-state">Cargando pedidos...</div>
+    </div>
   </div>
 </section>
 
@@ -816,7 +855,7 @@
 </footer>
 
 <script src="js/config.js?v=20260601-https-domain-01"></script>
-<script src="js/main.js?v=20260602-entrega-pago-citas-01"></script>
+<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/graficas-negocio.js?v=20260601-analiticas-negocio-fix-loop-01"></script>
 </body>

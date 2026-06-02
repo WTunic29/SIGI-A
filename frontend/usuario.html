@@ -165,6 +165,16 @@
   }
 </style>
 
+
+<style id="fix-ocultar-mfa-perfil">
+  #mi-perfil .profile-security,
+  #mi-perfil #btnMfaSetup,
+  #mi-perfil #mfaSetupBox,
+  #mi-perfil #mfaConfirmForm {
+    display: none !important;
+  }
+</style>
+
 </head>
 <body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
@@ -191,7 +201,6 @@
     <div class="user-dropdown" id="userDropdown">
       <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
-      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
@@ -495,7 +504,7 @@
       <article class="dash-card"><span>Catálogo</span><strong>Servicios</strong><p>Consulta servicios publicados por los negocios.</p><button onclick="irGestionServicios()">Gestionar servicios</button></article>
       <article class="dash-card"><span>Inventario</span><strong>Productos</strong><p>Consulta productos disponibles y controla el inventario.</p><button onclick="irGestionProductos()">Gestionar productos</button></article>
       <article class="dash-card"><span>Agenda</span><strong>Citas</strong><p>Consulta las citas registradas en el sistema.</p><button onclick="irGestionCitas()">Gestionar citas</button></article>
-      <article class="dash-card"><span>Seguridad</span><strong>Mi perfil</strong><p>Consulta tus datos y activa MFA con app autenticadora.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
+      <article class="dash-card"><span>Seguridad</span><strong>Mi perfil</strong><p>Consulta tus datos de usuario.</p><button onclick="irMiPerfil()">Mi perfil</button></article>
     </div>
   </div>
 </section>
@@ -794,7 +803,7 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260602-entrega-pago-citas-01"></script>
+<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
 
 <!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
 <script>

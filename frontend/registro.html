@@ -23,6 +23,16 @@
   }
 </style>
 
+
+<style id="fix-ocultar-mfa-perfil">
+  #mi-perfil .profile-security,
+  #mi-perfil #btnMfaSetup,
+  #mi-perfil #mfaSetupBox,
+  #mi-perfil #mfaConfirmForm {
+    display: none !important;
+  }
+</style>
+
 </head>
 <body>
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -44,7 +54,6 @@
     <div class="user-dropdown" id="userDropdown">
       <a href="#" onclick="irDashboardPorRol()">Panel principal</a>
       <a href="#" onclick="irMiPerfil()">Mi perfil</a>
-      <a href="#" id="menuRegistrarNegocio" onclick="irRegistrarNegocio()">Registrar negocio</a>
       <a href="#" onclick="irVerNegocios()">Ver negocios</a>
       <a href="#" class="menu-cliente" onclick="irMisCitas()">Mis citas</a>
       <a href="#" class="menu-cliente" onclick="irTiendaUsuario()">Productos</a>
@@ -439,7 +448,7 @@
       <article class="dash-card">
         <span>Seguridad</span>
         <strong>Mi perfil</strong>
-        <p>Consulta tus datos y activa MFA con app autenticadora.</p>
+        <p>Consulta tus datos de usuario.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
     </div>
@@ -729,6 +738,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=20260602-entrega-pago-citas-01"></script>
+<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
 </body>
 </html>

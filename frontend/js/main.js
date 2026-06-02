@@ -132,7 +132,7 @@ const TODAS = [
   "inicio", "cta", "login", "registro", "recuperar-password", "verify2fa",
   "selector-negocio", "dashboard-negocio", "dashboard-usuario", "dashboard-admin", "gestion-usuarios-admin", "auditoria-admin", "mi-perfil",
   "ver-negocios", "validar-acceso", "registrar-negocio",
-  "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
+  "gestion-pedidos-negocio", "gestion-empleados", "gestion-servicios", "gestion-productos", "gestion-citas", "detalle-negocio",
   "mis-citas-usuario", "mis-calificaciones-usuario", "tienda-usuario", "carrito-usuario", "mis-pedidos-usuario"
 ];
 
@@ -1786,6 +1786,108 @@ function configurarFormularioAgendamientoPorRol() {
   }
 }
 
+
+async function irGestionPedidosNegocio() {
+  if (!asegurarRolNegocio()) return;
+  setVisible(["gestion-pedidos-negocio"]);
+  await cargarPedidosNegocio();
+}
+
+function pagoAprobadoPedidoNegocio(idPedido) {
+  return pagosNegocioCache.find(p =>
+    Number(p.id_pedido) === Number(idPedido) &&
+    String(p.estado_pago || "").toLowerCase() === "aprobado"
+  );
+}
+
+async function cargarPedidosNegocio() {
+  const cont = document.getElementById("listaPedidosNegocio");
+  const msg = document.getElementById("pedidosNegocioMsg");
+
+  if (!cont) return;
+
+  cont.innerHTML = `<div class="empty-state">Cargando pedidos...</div>`;
+  if (msg) msg.textContent = "";
+
+  try {
+    const idNegocio = await obtenerIdNegocioActual();
+
+    const [pedidos, pagos] = await Promise.all([
+      apiFetch(`${API_PATHS.pedidos}?id_negocio=${idNegocio}`),
+      apiFetch(`/pagos/?id_negocio=${idNegocio}`)
+    ]);
+
+    pedidosNegocioCache = Array.isArray(pedidos) ? pedidos : [];
+    pagosNegocioCache = Array.isArray(pagos) ? pagos : [];
+
+    renderPedidosNegocio();
+  } catch (error) {
+    cont.innerHTML = `<div class="empty-state">No se pudieron cargar los pedidos.</div>`;
+    if (msg) msg.textContent = friendlyError(error);
+  }
+}
+
+function renderPedidosNegocio() {
+  const cont = document.getElementById("listaPedidosNegocio");
+  if (!cont) return;
+
+  if (!pedidosNegocioCache.length) {
+    cont.innerHTML = `<div class="empty-state">Este negocio todavía no tiene pedidos.</div>`;
+    return;
+  }
+
+  const ordenados = [...pedidosNegocioCache].sort((a, b) => Number(b.id_pedido || 0) - Number(a.id_pedido || 0));
+
+  cont.innerHTML = ordenados.map(p => {
+    const pago = pagoAprobadoPedidoNegocio(p.id_pedido);
+    const estado = pago ? "pagado" : (p.estado || "pendiente");
+    const metodo = pago?.metodo_pago ? ` · Método: ${escapeHtml(pago.metodo_pago)}` : "";
+    const referencia = pago?.referencia_externa ? ` · Ref: ${escapeHtml(pago.referencia_externa)}` : "";
+    const fecha = p.fecha ? ` · ${escapeHtml(formatearFechaCorta(p.fecha))}` : "";
+
+    return `<article class="admin-item">
+      <div>
+        <h4>Pedido #${escapeHtml(p.id_pedido)}</h4>
+        <p>Total: $${Number(p.total || 0).toLocaleString("es-CO")} · Estado: ${escapeHtml(estado)}${metodo}${referencia}${fecha}</p>
+      </div>
+      <div class="row-actions">
+        <button onclick="reenviarFacturaPedidoNegocio(${p.id_pedido})">Reenviar factura</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+async function buscarFacturaPorPedidoNegocio(idPedido) {
+  const idNegocio = await obtenerIdNegocioActual();
+  const facturas = await apiFetch(`/facturas/?id_negocio=${idNegocio}`);
+  const lista = Array.isArray(facturas) ? facturas : [];
+  return lista.find(f => Number(f.id_pedido) === Number(idPedido));
+}
+
+async function reenviarFacturaPedidoNegocio(idPedido) {
+  try {
+    const factura = await buscarFacturaPorPedidoNegocio(idPedido);
+
+    if (!factura) {
+      showToast("Este pedido todavía no tiene factura generada.", "error");
+      return;
+    }
+
+    await apiFetch(`/facturas/${factura.id_factura}/enviar-correo`, {
+      method: "POST"
+    });
+
+    showToast("Factura reenviada al correo del cliente.", "success");
+  } catch (error) {
+    showToast(friendlyError(error), "error");
+  }
+}
+
+window.irGestionPedidosNegocio = irGestionPedidosNegocio;
+window.cargarPedidosNegocio = cargarPedidosNegocio;
+window.reenviarFacturaPedidoNegocio = reenviarFacturaPedidoNegocio;
+
+
 async function irGestionEmpleados() { mostrarGestion("gestion-empleados"); await cargarEmpleados(); }
 
 async function abrirNegocioCliente(idNegocio) {
@@ -2197,6 +2299,7 @@ async function cargarServicios() {
       ? servicios.filter(s => Number(s.id_negocio) === Number(idNegocio))
       : [];
 
+    serviciosCache = lista;
     renderAdminList(lista, "listaServicios", "servicio");
     mostrarMensaje("servicioMsg", "", false);
   } catch (e) {
@@ -2213,6 +2316,7 @@ async function cargarProductos() {
       ? productos.filter(p => Number(p.id_negocio) === Number(idNegocio))
       : [];
 
+    productosCache = lista;
     renderAdminList(lista, "listaProductos", "producto");
     mostrarMensaje("productoMsg", "", false);
   } catch (e) {
@@ -2357,6 +2461,9 @@ async function cargarHorariosEmpleadoCliente(idEmpleado) {
 let misCitasCache = [];
 let misCalificacionesCache = [];
 let productosUsuarioCache = [];
+let pedidosNegocioCache = [];
+let pagosNegocioCache = [];
+
 let misPedidosCache = [];
 let misPagosCache = [];
 
@@ -3364,26 +3471,96 @@ async function eliminarEmpleado(id) {
   try { await apiFetch(`${API_PATHS.empleados}${id}`, { method: "DELETE" }); showToast("Empleado eliminado correctamente.", "success"); cargarEmpleados(); }
   catch (e) { showToast(friendlyError(e), "error"); }
 }
-async function editarServicio(id) {
-  const servicio = serviciosCache?.find?.(s => Number(s.id_servicio) === Number(id));
-  const precio = await pedirPrecioNuevo("Actualizar precio del servicio", servicio?.precio ?? "");
-  if (precio === null) return;
-  try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "PUT", body: JSON.stringify({ precio }) }); showToast("Precio del servicio actualizado.", "success"); cargarServicios(); }
-  catch (e) { showToast(friendlyError(e), "error"); }
-}
+  async function editarServicio(id) {
+    let servicio = serviciosCache?.find?.(s => Number(s.id_servicio) === Number(id));
+
+    try {
+      if (!servicio) servicio = await apiFetch(`${API_PATHS.servicios}${id}`);
+    } catch {}
+
+    const result = await openUiModal({
+      eyebrow: "Servicios",
+      title: "Editar servicio",
+      text: "Actualiza la información principal del servicio.",
+      confirmText: "Guardar cambios",
+      fields: [
+        { id: "nombre", label: "Nombre", type: "text", value: servicio?.nombre || "" },
+        { id: "descripcion", label: "Descripción", type: "textarea", value: servicio?.descripcion || "", required: false },
+        { id: "duracion_minutos", label: "Duración en minutos", type: "number", min: 1, step: 1, value: servicio?.duracion_minutos ?? 40 },
+        { id: "precio", label: "Precio", type: "number", min: 0, step: 100, value: servicio?.precio ?? 0 },
+        { id: "imagen_url", label: "URL de imagen", type: "text", value: servicio?.imagen_url || "", required: false }
+      ]
+    });
+
+    if (!result) return;
+
+    try {
+      await apiFetch(`${API_PATHS.servicios}${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          nombre: result.nombre,
+          descripcion: result.descripcion || null,
+          duracion_minutos: Number(result.duracion_minutos),
+          precio: Number(result.precio),
+          imagen_url: result.imagen_url || null
+        })
+      });
+
+      showToast("Servicio actualizado correctamente.", "success");
+      await cargarServicios();
+
+    } catch (e) {
+      showToast(friendlyError(e), "error");
+    }
+  }
 async function eliminarServicio(id) {
   const ok = await pedirConfirmacion({ title: "Eliminar o desactivar servicio", text: "El servicio dejará de estar disponible para agendar nuevas citas.", confirmText: "Continuar", danger: true });
   if (!ok) return;
   try { await apiFetch(`${API_PATHS.servicios}${id}`, { method: "DELETE" }); showToast("Servicio actualizado correctamente.", "success"); cargarServicios(); }
   catch (e) { showToast(friendlyError(e), "error"); }
 }
-async function editarProducto(id) {
-  const producto = productosCache?.find?.(p => Number(p.id_producto) === Number(id));
-  const precio = await pedirPrecioNuevo("Actualizar precio del producto", producto?.precio ?? "");
-  if (precio === null) return;
-  try { await apiFetch(`${API_PATHS.productos}${id}`, { method: "PUT", body: JSON.stringify({ precio }) }); showToast("Precio del producto actualizado.", "success"); cargarProductos(); }
-  catch (e) { showToast(friendlyError(e), "error"); }
-}
+  async function editarProducto(id) {
+    let producto = productosCache?.find?.(p => Number(p.id_producto) === Number(id));
+
+    try {
+      if (!producto) producto = await apiFetch(`${API_PATHS.productos}${id}`);
+    } catch {}
+
+    const result = await openUiModal({
+      eyebrow: "Productos",
+      title: "Editar producto",
+      text: "Actualiza la información principal del producto.",
+      confirmText: "Guardar cambios",
+      fields: [
+        { id: "nombre", label: "Nombre", type: "text", value: producto?.nombre || "" },
+        { id: "descripcion", label: "Descripción", type: "textarea", value: producto?.descripcion || "", required: false },
+        { id: "precio", label: "Precio", type: "number", min: 0, step: 100, value: producto?.precio ?? 0 },
+        { id: "stock", label: "Stock", type: "number", min: 0, step: 1, value: producto?.stock ?? 0 },
+        { id: "imagen_url", label: "URL de imagen", type: "text", value: producto?.imagen_url || "", required: false }
+      ]
+    });
+
+    if (!result) return;
+
+    try {
+      await apiFetch(`${API_PATHS.productos}${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          nombre: result.nombre,
+          descripcion: result.descripcion || null,
+          precio: Number(result.precio),
+          stock: Number(result.stock),
+          imagen_url: result.imagen_url || null
+        })
+      });
+
+      showToast("Producto actualizado correctamente.", "success");
+      await cargarProductos();
+
+    } catch (e) {
+      showToast(friendlyError(e), "error");
+    }
+  }
 async function eliminarProducto(id) {
   const ok = await pedirConfirmacion({ title: "Desactivar producto", text: "El producto dejará de estar disponible en la tienda.", confirmText: "Desactivar", danger: true });
   if (!ok) return;
