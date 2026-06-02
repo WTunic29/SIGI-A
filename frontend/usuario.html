@@ -148,6 +148,23 @@
       #mapaUsuarioDash { height: 260px; }
     }
   </style>
+
+<style id="fix-select-pago-visible">
+  .ui-modal-backdrop select,
+  .ui-modal-backdrop option,
+  select option {
+    color: #111827 !important;
+    background: #ffffff !important;
+  }
+
+  .ui-modal-backdrop input,
+  .ui-modal-backdrop textarea,
+  .ui-modal-backdrop select {
+    color: #111827 !important;
+    background: #ffffff !important;
+  }
+</style>
+
 </head>
 <body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
@@ -777,7 +794,7 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260602-render-strip-ok-01"></script>
+<script src="js/main.js?v=20260602-entrega-pago-citas-01"></script>
 
 <!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
 <script>

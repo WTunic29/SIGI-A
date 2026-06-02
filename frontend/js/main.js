@@ -2048,6 +2048,13 @@ async function actualizarOpcionesHoraDisponible() {
   const idEmpleado = Number(document.getElementById("citaEmpleado")?.value);
   const idServicio = Number(document.getElementById("citaServicio")?.value);
   const fecha = document.getElementById("citaFecha")?.value;
+
+    const hoyColombia = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+    if (fecha && fecha < hoyColombia) {
+      mostrarMensaje("agendarCitaMsg", "No puedes agendar citas en días anteriores.");
+      showToast("No puedes agendar citas en días anteriores.", "error");
+      return;
+    }
   const info = document.getElementById("citaHorarioInfo");
   const selectHora = document.getElementById("citaHora");
   if (!selectHora) return;
@@ -2104,6 +2111,13 @@ async function agendarCitaCliente(e) {
   const idEmpleado = Number(document.getElementById("citaEmpleado")?.value);
   const idServicio = Number(document.getElementById("citaServicio")?.value);
   const fecha = document.getElementById("citaFecha")?.value;
+
+    const hoyColombia = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+    if (fecha && fecha < hoyColombia) {
+      mostrarMensaje("agendarCitaMsg", "No puedes agendar citas en días anteriores.");
+      showToast("No puedes agendar citas en días anteriores.", "error");
+      return;
+    }
   const selectHora = document.getElementById("citaHora");
   const horaInicio = normalizarHoraApi(selectHora?.value);
   const horaFinSeleccionada = normalizarHoraApi(selectHora?.selectedOptions?.[0]?.dataset?.fin);
@@ -3145,6 +3159,7 @@ async function pagarPedido(idPedido) {
       { id: "metodo", label: "Método de pago", type: "select", value: "efectivo", options: [
         { value: "efectivo", label: "Efectivo" },
         { value: "transferencia", label: "Transferencia" },
+          { value: "nequi", label: "Nequi" },
         { value: "tarjeta", label: "Tarjeta" },
       ]},
       { id: "referencia", label: "Referencia opcional", type: "text", value: `PED-${idPedido}-${Date.now()}`, required: false },
