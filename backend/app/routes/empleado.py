@@ -263,26 +263,13 @@ def eliminar_empleado(
         db
     )
 
-    # 1. Eliminar horarios del empleado
-    db.query(HorarioEmpleado).filter(
-        HorarioEmpleado.id_empleado == id_empleado
-    ).delete(synchronize_session=False)
-
-    # 2. Eliminar relación empleado-servicio, si existe
-    db.query(EmpleadoServicio).filter(
-        EmpleadoServicio.id_empleado == id_empleado
-    ).delete(synchronize_session=False)
-
-    # 3. Eliminar citas asociadas al empleado
-    db.query(Cita).filter(
-        Cita.id_empleado == id_empleado
-    ).delete(synchronize_session=False)
-
-    # 4. Eliminar empleado definitivamente
-    db.delete(empleado_db)
+    # Eliminación lógica: conserva historial de citas, pedidos, pagos y facturas.
+    empleado_db.estado = "inactivo"
 
     db.commit()
+    db.refresh(empleado_db)
 
     return {
-        "message": "Empleado, horarios, servicios asociados y citas eliminados correctamente"
+        "message": "Empleado desactivado correctamente"
     }
+

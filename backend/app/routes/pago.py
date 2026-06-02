@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
 
 from app.database import SessionLocal
 from app.core.deps import (
@@ -77,24 +78,21 @@ def validar_acceso_pago(
     # NEGOCIO
     elif current_user.rol == "negocio":
 
-        negocio = db.query(Negocio).filter(
-            Negocio.id_usuario_propietario == current_user.id_usuario
-        ).first()
-
-        if not negocio:
-            raise HTTPException(
-                status_code=404,
-                detail="Negocio no encontrado"
-            )
-
         pedido = db.query(Pedido).filter(
             Pedido.id_pedido == pago.id_pedido
         ).first()
 
-        if not pedido or pedido.id_negocio != negocio.id_negocio:
+        negocio = None
+        if pedido:
+            negocio = db.query(Negocio).filter(
+                Negocio.id_negocio == pedido.id_negocio,
+                Negocio.id_usuario_propietario == current_user.id_usuario
+            ).first()
+
+        if not pedido or not negocio:
             raise HTTPException(
                 status_code=403,
-                detail="No autorizado"
+                detail="No autorizado para este negocio"
             )
 
 
@@ -134,19 +132,14 @@ def crear_pago(
     elif current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
+            Negocio.id_negocio == pedido.id_negocio,
             Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
             raise HTTPException(
-                status_code=404,
-                detail="Negocio no encontrado"
-            )
-
-        if pedido.id_negocio != negocio.id_negocio:
-            raise HTTPException(
                 status_code=403,
-                detail="No autorizado"
+                detail="No autorizado para este negocio"
             )
     if pago.estado_pago == "aprobado" and pedido.estado == "pagado":
         raise HTTPException(
@@ -281,6 +274,7 @@ def crear_pago(
 
 @router.get("/", response_model=list[PagoResponse])
 def listar_pagos(
+    id_negocio: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["cliente", "negocio", "admin"])
@@ -289,7 +283,10 @@ def listar_pagos(
 
     # ADMIN
     if current_user.rol == "admin":
-        return db.query(Pago).all()
+        query = db.query(Pago).join(Pedido, Pedido.id_pedido == Pago.id_pedido)
+        if id_negocio:
+            query = query.filter(Pedido.id_negocio == id_negocio)
+        return query.all()
 
     # CLIENTE
     if current_user.rol == "cliente":
@@ -306,26 +303,31 @@ def listar_pagos(
         return pagos
 
     # NEGOCIO
-    negocio = db.query(Negocio).filter(
+    negocios_propios = db.query(Negocio.id_negocio).filter(
         Negocio.id_usuario_propietario == current_user.id_usuario
-    ).first()
+    ).all()
 
-    if not negocio:
+    ids_negocios = [n.id_negocio for n in negocios_propios]
+
+    if not ids_negocios:
         raise HTTPException(
             status_code=404,
             detail="Negocio no encontrado"
         )
 
-    pagos = (
-        db.query(Pago)
-        .join(Pedido, Pedido.id_pedido == Pago.id_pedido)
-        .filter(
-            Pedido.id_negocio == negocio.id_negocio
-        )
-        .all()
-    )
+    query = db.query(Pago).join(Pedido, Pedido.id_pedido == Pago.id_pedido)
 
-    return pagos
+    if id_negocio:
+        if id_negocio not in ids_negocios:
+            raise HTTPException(
+                status_code=403,
+                detail="No autorizado para consultar este negocio"
+            )
+        query = query.filter(Pedido.id_negocio == id_negocio)
+    else:
+        query = query.filter(Pedido.id_negocio.in_(ids_negocios))
+
+    return query.all()
 
 
 # =========================

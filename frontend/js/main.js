@@ -643,18 +643,25 @@ function escapeHtml(value) {
 function formatearFechaCorta(fecha) {
   if (!fecha) return "sin fecha";
 
-  const date = new Date(fecha);
+  const valor = String(fecha);
+
+  // Si backend envía "YYYY-MM-DD HH:mm:ss" sin zona horaria,
+  // lo normalizamos para mostrarlo siempre en hora Colombia.
+  const normalizado = valor.includes("T") ? valor : valor.replace(" ", "T");
+  const date = new Date(normalizado);
 
   if (Number.isNaN(date.getTime())) {
     return String(fecha);
   }
 
   return date.toLocaleString("es-CO", {
+    timeZone: "America/Bogota",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    hour12: true
   });
 }
 function obtenerIdNegocio(n) {
@@ -2975,6 +2982,21 @@ function renderMisPedidos() {
     return Number.isNaN(ms) ? 0 : ms;
   };
 
+  const numeroVisualPorPedido = new Map(
+    [...misPedidosCache]
+      .sort((a, b) => {
+        const fechaA = fechaPedidoMs(a);
+        const fechaB = fechaPedidoMs(b);
+
+        if (fechaA !== fechaB) {
+          return fechaA - fechaB;
+        }
+
+        return Number(a.id_pedido || 0) - Number(b.id_pedido || 0);
+      })
+      .map((pedido, index) => [Number(pedido.id_pedido), index + 1])
+  );
+
   const pedidosOrdenados = [...misPedidosCache].sort((a, b) => {
     const prioridadA = prioridadEstado(a);
     const prioridadB = prioridadEstado(b);
@@ -2997,10 +3019,11 @@ function renderMisPedidos() {
     const pagado = pedidoPagado(p.id_pedido);
     const estado = pagado ? "pagado" : (p.estado || "pendiente");
     const fecha = p.fecha ? ` · ${escapeHtml(formatearFechaCorta(p.fecha))}` : "";
+    const numeroVisual = numeroVisualPorPedido.get(Number(p.id_pedido)) || p.id_pedido;
 
     return `<article class="admin-item">
       <div>
-        <h4>Pedido #${escapeHtml(p.id_pedido)}</h4>
+        <h4>Pedido #${escapeHtml(numeroVisual)}</h4>
         <p>
           ${escapeHtml(negocioNombrePorId(p.id_negocio))}
           · Total: $${Number(p.total || 0).toLocaleString("es-CO")}
@@ -3375,6 +3398,98 @@ async function movimientoInventario(id) {
     cargarProductos();
   } catch (e) { showToast(friendlyError(e), "error"); }
 }
+
+async function cambiarEstadoEmpleado(id, nuevoEstado) {
+  const activar = nuevoEstado === "activo";
+  const ok = await pedirConfirmacion({
+    title: activar ? "Activar empleado" : "Desactivar empleado",
+    text: activar
+      ? "El empleado volverá a estar visible y disponible."
+      : "El empleado dejará de estar disponible para nuevas operaciones, pero se conservará el historial.",
+    confirmText: activar ? "Activar" : "Desactivar",
+    danger: !activar
+  });
+
+  if (!ok) return;
+
+  try {
+    await apiFetch(`${API_PATHS.empleados}${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ estado: nuevoEstado })
+    });
+    showToast(activar ? "Empleado activado correctamente." : "Empleado desactivado correctamente.", "success");
+    cargarEmpleados();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+async function cambiarEstadoServicio(id, nuevoEstado) {
+  const activar = nuevoEstado === "activo";
+  const ok = await pedirConfirmacion({
+    title: activar ? "Activar servicio" : "Desactivar servicio",
+    text: activar
+      ? "El servicio volverá a estar disponible para agendar."
+      : "El servicio dejará de estar disponible para nuevas citas, pero se conserva el historial.",
+    confirmText: activar ? "Activar" : "Desactivar",
+    danger: !activar
+  });
+
+  if (!ok) return;
+
+  try {
+    await apiFetch(`${API_PATHS.servicios}${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ estado: nuevoEstado })
+    });
+    showToast(activar ? "Servicio activado correctamente." : "Servicio desactivado correctamente.", "success");
+    cargarServicios();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+async function cambiarEstadoProducto(id, nuevoEstado) {
+  const activar = nuevoEstado === "activo";
+  const ok = await pedirConfirmacion({
+    title: activar ? "Activar producto" : "Desactivar producto",
+    text: activar
+      ? "El producto volverá a estar visible y disponible."
+      : "El producto dejará de estar disponible, pero se conserva el historial.",
+    confirmText: activar ? "Activar" : "Desactivar",
+    danger: !activar
+  });
+
+  if (!ok) return;
+
+  try {
+    await apiFetch(`${API_PATHS.productos}${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ estado: nuevoEstado })
+    });
+    showToast(activar ? "Producto activado correctamente." : "Producto desactivado correctamente.", "success");
+    cargarProductos();
+  } catch (e) {
+    showToast(friendlyError(e), "error");
+  }
+}
+
+// Exponer funciones de gestión negocio para botones onclick del HTML
+window.editarEmpleado = editarEmpleado;
+window.eliminarEmpleado = eliminarEmpleado;
+window.cambiarEstadoEmpleado = cambiarEstadoEmpleado;
+window.editarServicio = editarServicio;
+window.eliminarServicio = eliminarServicio;
+window.cambiarEstadoServicio = cambiarEstadoServicio;
+window.editarProducto = editarProducto;
+window.eliminarProducto = eliminarProducto;
+window.cambiarEstadoProducto = cambiarEstadoProducto;
+window.movimientoInventario = movimientoInventario;
+window.seleccionarEmpleadoHorario = seleccionarEmpleadoHorario;
+window.cargarEmpleados = cargarEmpleados;
+window.cargarServicios = cargarServicios;
+window.cargarProductos = cargarProductos;
+
 async function cambiarEstadoCitaNegocio(id, estado) {
   const labels = {
     finalizada: "finalizar",

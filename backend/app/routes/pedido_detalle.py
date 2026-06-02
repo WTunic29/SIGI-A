@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -60,19 +61,14 @@ def validar_acceso_pedido(
     elif current_user.rol == "negocio":
 
         negocio = db.query(Negocio).filter(
+            Negocio.id_negocio == pedido.id_negocio,
             Negocio.id_usuario_propietario == current_user.id_usuario
         ).first()
 
         if not negocio:
             raise HTTPException(
-                status_code=404,
-                detail="Negocio no encontrado"
-            )
-
-        if pedido.id_negocio != negocio.id_negocio:
-            raise HTTPException(
                 status_code=403,
-                detail="No autorizado"
+                detail="No autorizado para este negocio"
             )
 
 
@@ -120,6 +116,7 @@ def crear_detalle(
 
 @router.get("/", response_model=list[PedidoDetalleResponse])
 def listar_detalles(
+    id_negocio: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_roles(["cliente", "negocio", "admin"])
@@ -128,7 +125,10 @@ def listar_detalles(
 
     # ADMIN
     if current_user.rol == "admin":
-        return db.query(PedidoDetalle).all()
+        query = db.query(PedidoDetalle).join(Pedido)
+        if id_negocio:
+            query = query.filter(Pedido.id_negocio == id_negocio)
+        return query.all()
 
     # CLIENTE
     if current_user.rol == "cliente":
@@ -143,24 +143,31 @@ def listar_detalles(
         )
 
     # NEGOCIO
-    negocio = db.query(Negocio).filter(
+    negocios_propios = db.query(Negocio.id_negocio).filter(
         Negocio.id_usuario_propietario == current_user.id_usuario
-    ).first()
+    ).all()
 
-    if not negocio:
+    ids_negocios = [n.id_negocio for n in negocios_propios]
+
+    if not ids_negocios:
         raise HTTPException(
             status_code=404,
             detail="Negocio no encontrado"
         )
 
-    return (
-        db.query(PedidoDetalle)
-        .join(Pedido)
-        .filter(
-            Pedido.id_negocio == negocio.id_negocio
-        )
-        .all()
-    )
+    query = db.query(PedidoDetalle).join(Pedido)
+
+    if id_negocio:
+        if id_negocio not in ids_negocios:
+            raise HTTPException(
+                status_code=403,
+                detail="No autorizado para consultar este negocio"
+            )
+        query = query.filter(Pedido.id_negocio == id_negocio)
+    else:
+        query = query.filter(Pedido.id_negocio.in_(ids_negocios))
+
+    return query.all()
 
 
 # =========================
