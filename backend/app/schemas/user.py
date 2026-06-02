@@ -57,6 +57,22 @@ class CambiarRolUsuario(BaseModel):
 
         return rol
 
+
+class CambiarEstadoUsuario(BaseModel):
+    nuevo_estado: str
+
+    @field_validator("nuevo_estado")
+    @classmethod
+    def validar_estado(cls, estado: str):
+        estados_permitidos = ["activo", "inactivo", "bloqueado", "pendiente"]
+
+        if estado not in estados_permitidos:
+            raise ValueError(
+                "Estado inválido. Los estados permitidos son: activo, inactivo, bloqueado, pendiente"
+            )
+
+        return estado
+
 class ConfirmarMFA(BaseModel):
     codigo: str
 

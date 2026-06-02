@@ -4318,7 +4318,14 @@ function renderUsuariosAdmin(usuarios) {
           <option value="superadmin" ${usuario.rol === "superadmin" ? "selected" : ""}>superadmin</option>
         </select>
       </span>
-      <span>${usuario.estado || ""}</span>
+      <span>
+        <select onchange="cambiarEstadoUsuarioAdmin(${usuario.id_usuario}, this.value)">
+          <option value="activo" ${usuario.estado === "activo" ? "selected" : ""}>activo</option>
+          <option value="inactivo" ${usuario.estado === "inactivo" ? "selected" : ""}>inactivo</option>
+          <option value="bloqueado" ${usuario.estado === "bloqueado" ? "selected" : ""}>bloqueado</option>
+          <option value="pendiente" ${usuario.estado === "pendiente" ? "selected" : ""}>pendiente</option>
+        </select>
+      </span>
       <span>
         <button class="btn-danger small" onclick="eliminarUsuarioAdmin(${usuario.id_usuario})">
           Eliminar
@@ -4368,6 +4375,24 @@ async function cambiarRolUsuarioAdmin(idUsuario, nuevoRol) {
     cargarUsuariosAdmin();
   }
 }
+
+async function cambiarEstadoUsuarioAdmin(idUsuario, nuevoEstado) {
+  try {
+    await apiRequest(`/auth/usuarios/${idUsuario}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ nuevo_estado: nuevoEstado })
+    });
+
+    mostrarToast("Estado actualizado correctamente.", "success");
+    cargarUsuariosAdmin();
+
+  } catch (error) {
+    mostrarToast(obtenerMensajeError(error), "error");
+    cargarUsuariosAdmin();
+  }
+}
+
+
 
 async function eliminarUsuarioAdmin(idUsuario) {
   const confirmar = window.confirm("¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.");

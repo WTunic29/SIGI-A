@@ -29,6 +29,7 @@ from app.schemas.user import (
     UsuarioLogin,
     Verificar2FA,
     CambiarRolUsuario,
+    CambiarEstadoUsuario,
     ConfirmarMFA,
     VerificarMFA,
     ForgotPasswordRequest,
@@ -897,6 +898,79 @@ def cambiar_rol_usuario(
 
 
 # =========================
+# ADMIN - CAMBIAR ESTADO USUARIO
+# =========================
+
+@router.patch("/usuarios/{id_usuario}/estado")
+def cambiar_estado_usuario(
+    id_usuario: int,
+    datos: CambiarEstadoUsuario,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.rol != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el superadministrador puede modificar estados de usuario"
+        )
+
+    usuario = db.query(Usuario).filter(
+        Usuario.id_usuario == id_usuario
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    if usuario.id_usuario == current_user.id_usuario and datos.nuevo_estado != "activo":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes desactivar, bloquear o dejar pendiente tu propio usuario superadmin"
+        )
+
+    if usuario.rol == "superadmin" and usuario.estado == "activo" and datos.nuevo_estado != "activo":
+        total_superadmins_activos = db.query(Usuario).filter(
+            Usuario.rol == "superadmin",
+            Usuario.estado == "activo"
+        ).count()
+
+        if total_superadmins_activos <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No puedes desactivar el único superadministrador activo"
+            )
+
+    estado_anterior = usuario.estado
+    usuario.estado = datos.nuevo_estado
+
+    db.commit()
+    db.refresh(usuario)
+
+    registrar_auditoria(
+        db=db,
+        usuario=current_user,
+        accion="ESTADO_USUARIO_CAMBIADO",
+        modulo="usuarios",
+        tabla_afectada="core.usuarios",
+        id_registro=usuario.id_usuario,
+        detalle=f"Superadmin {current_user.correo} cambió el estado del usuario {usuario.correo} de {estado_anterior} a {usuario.estado}.",
+        nivel="WARNING",
+        resultado="OK"
+    )
+
+    return {
+        "message": "Estado actualizado correctamente",
+        "id_usuario": usuario.id_usuario,
+        "correo": usuario.correo,
+        "estado_anterior": estado_anterior,
+        "nuevo_estado": usuario.estado
+    }
+
+
+
+# =========================
 # ADMIN - LISTAR USUARIOS
 # =========================
 
@@ -931,7 +1005,7 @@ def listar_usuarios(
 # =========================
 
 @router.delete("/usuarios/{id_usuario}")
-def eliminar_usuario(
+def eliminar_usuario_admin(
     id_usuario: int,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
@@ -952,6 +1026,12 @@ def eliminar_usuario(
             detail="Usuario no encontrado"
         )
 
+    if usuario.id_usuario == current_user.id_usuario:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propio usuario superadmin"
+        )
+
     if usuario.rol == "superadmin" and usuario.estado == "activo":
         total_superadmins_activos = db.query(Usuario).filter(
             Usuario.rol == "superadmin",
@@ -961,33 +1041,35 @@ def eliminar_usuario(
         if total_superadmins_activos <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar el único superadministrador activo del sistema"
+                detail="No puedes eliminar el único superadministrador activo"
             )
 
-    correo_eliminado = usuario.correo
-    rol_eliminado = usuario.rol
+    estado_anterior = usuario.estado
+    usuario.estado = "inactivo"
 
-    db.delete(usuario)
     db.commit()
+    db.refresh(usuario)
 
     registrar_auditoria(
         db=db,
         usuario=current_user,
-        accion="USUARIO_ELIMINADO",
+        accion="USUARIO_DESACTIVADO",
         modulo="usuarios",
         tabla_afectada="core.usuarios",
-        id_registro=id_usuario,
-        detalle=f"Superadmin {current_user.correo} eliminó al usuario {correo_eliminado} con rol {rol_eliminado}.",
+        id_registro=usuario.id_usuario,
+        detalle=f"Superadmin {current_user.correo} desactivó el usuario {usuario.correo}. Estado anterior: {estado_anterior}.",
         nivel="WARNING",
         resultado="OK"
     )
 
     return {
-        "message": "Usuario eliminado correctamente",
-        "id_usuario": id_usuario,
-        "correo": correo_eliminado,
-        "rol": rol_eliminado
+        "message": "Usuario desactivado correctamente",
+        "id_usuario": usuario.id_usuario,
+        "correo": usuario.correo,
+        "estado_anterior": estado_anterior,
+        "nuevo_estado": usuario.estado
     }
+
 
 # =========================
 # REFRESH TOKEN
