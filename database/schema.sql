@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9c7ARbRhz1xTncnQpwTkdTiavdv1NPATrqpBN5I3CUctrhDGfdr7eM3OT5iYCL0
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.3
@@ -1677,5 +1676,4 @@ ALTER TABLE ONLY core.verificacion_2fa
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9c7ARbRhz1xTncnQpwTkdTiavdv1NPATrqpBN5I3CUctrhDGfdr7eM3OT5iYCL0
 

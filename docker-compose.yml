@@ -6,17 +6,17 @@ services:
     container_name: sigi_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: sigi_user
-      POSTGRES_PASSWORD: sigi_pass
-      POSTGRES_DB: sigi
+      POSTGRES_USER: ${POSTGRES_USER:-sigi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigi_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-sigi}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - sigi_pgdata:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sigi_user -d sigi"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigi_user} -d ${POSTGRES_DB:-sigi}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,7 +30,7 @@ services:
     env_file:
       - ./backend/.env
     ports:
-      - "10000:10000"
+      - "${BACKEND_PORT:-10000}:10000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,7 +42,7 @@ services:
     container_name: sigi_frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     depends_on:
       - backend
 
