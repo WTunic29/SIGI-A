@@ -1,3 +1,4 @@
+// SIGIA_TEST_CAMBIO_BOTONES_20260602
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
@@ -1694,18 +1695,21 @@ function renderAdminList(items, contenedorId, tipo) {
     let acciones = "";
     let extra = "";
 
-    if (tipo === "empleado") {
-      meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "")}`;
-      acciones = `<button onclick="seleccionarEmpleadoHorario(${id})">Horarios</button><button onclick="editarEmpleado(${id})">Editar</button><button onclick="eliminarEmpleado(${id})">Eliminar</button>`;
-    }
-    if (tipo === "servicio") {
-      meta = `${escapeHtml(item.duracion_minutos || "—")} min · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
-      acciones = `<button onclick="editarServicio(${id})">Editar</button><button onclick="eliminarServicio(${id})">Eliminar</button>`;
-    }
-    if (tipo === "producto") {
-      meta = `Stock: ${escapeHtml(item.stock ?? 0)} · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "")}`;
-      acciones = `<button onclick="editarProducto(${id})">Editar</button><button onclick="movimientoInventario(${id})">Movimiento</button><button onclick="eliminarProducto(${id})">Desactivar</button>`;
-    }
+      if (tipo === "empleado") {
+        const empleadoActivo = String(item.estado || "activo").toLowerCase() !== "inactivo";
+        meta = `${escapeHtml(item.apellido || "")} · ${escapeHtml(item.especialidad || "Sin especialidad")} · ${escapeHtml(item.estado || "activo")}`;
+        acciones = `<button onclick="seleccionarEmpleadoHorario(${id})">Horarios</button><button onclick="editarEmpleado(${id})">Editar</button><button onclick="cambiarEstadoEmpleado(${id}, '${empleadoActivo ? "inactivo" : "activo"}')">${empleadoActivo ? "Desactivar" : "Activar"}</button>`;
+      }
+      if (tipo === "servicio") {
+        const servicioActivo = String(item.estado || "activo").toLowerCase() !== "inactivo";
+        meta = `${escapeHtml(item.duracion_minutos || "—")} min · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "activo")}`;
+        acciones = `<button onclick="editarServicio(${id})">Editar</button><button onclick="cambiarEstadoServicio(${id}, '${servicioActivo ? "inactivo" : "activo"}')">${servicioActivo ? "Desactivar" : "Activar"}</button>`;
+      }
+      if (tipo === "producto") {
+        const productoActivo = String(item.estado || "activo").toLowerCase() !== "inactivo";
+        meta = `Stock: ${escapeHtml(item.stock ?? 0)} · $${escapeHtml(item.precio || 0)} · ${escapeHtml(item.estado || "activo")}`;
+        acciones = `<button onclick="editarProducto(${id})">Editar</button><button onclick="movimientoInventario(${id})">Movimiento</button><button onclick="cambiarEstadoProducto(${id}, '${productoActivo ? "inactivo" : "activo"}')">${productoActivo ? "Desactivar" : "Activar"}</button>`;
+      }
     if (tipo === "cita") {
       const estado = String(item.estado || "pendiente").toLowerCase();
       const fecha = item.fecha || "";
