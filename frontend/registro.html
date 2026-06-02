@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registro | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260601-mapa-cache-01" />
+  <link rel="stylesheet" href="css/styles.css?v=20260602-entrega-final-01" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
 <style id="fix-select-pago-visible">
@@ -24,14 +24,7 @@
 </style>
 
 
-<style id="fix-ocultar-mfa-perfil">
-  #mi-perfil .profile-security,
-  #mi-perfil #btnMfaSetup,
-  #mi-perfil #mfaSetupBox,
-  #mi-perfil #mfaConfirmForm {
-    display: none !important;
-  }
-</style>
+
 
 </head>
 <body>
@@ -486,23 +479,6 @@
       <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
       <p><span>Rol</span><strong id="perfilRol"></strong></p>
     </div>
-    <div class="security-panel">
-      <div>
-        <p class="section-eyebrow">Seguridad adicional</p>
-        <h3>App autenticadora</h3>
-        <p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p>
-      </div>
-      <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
-      <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
-        <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
-        <img id="mfaQrImage" class="mfa-qr" alt="Código QR para activar MFA" />
-        <small id="mfaSecret" class="mfa-secret"></small>
-        <form id="mfaConfirmForm">
-          <input type="text" id="mfaConfirmCodigo" placeholder="Código de la app autenticadora" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
-          <button class="btn-primary full" type="submit">Confirmar activación</button>
-        </form>
-      </div>
-    </div>
     <span id="perfilMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
   </div>
@@ -738,6 +714,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
+<script src="js/main.js?v=20260602-entrega-final-01"></script>
 </body>
 </html>

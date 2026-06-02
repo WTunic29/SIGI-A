@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel usuario | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260601-mapa-cache-01" />
+  <link rel="stylesheet" href="css/styles.css?v=20260602-entrega-final-01" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -166,12 +166,33 @@
 </style>
 
 
-<style id="fix-ocultar-mfa-perfil">
-  #mi-perfil .profile-security,
-  #mi-perfil #btnMfaSetup,
-  #mi-perfil #mfaSetupBox,
-  #mi-perfil #mfaConfirmForm {
-    display: none !important;
+
+
+
+<style id="fix-boton-ubicacion-destacado">
+  #btnUbicacionDash {
+    width: 100% !important;
+    min-height: 54px !important;
+    padding: 14px 18px !important;
+    border-radius: 18px !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1.4px !important;
+    text-transform: uppercase !important;
+    background: linear-gradient(135deg, #d6b84a, #f4dc7a) !important;
+    color: #111 !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+    box-shadow: 0 14px 34px rgba(214,184,74,0.22) !important;
+  }
+
+  #btnUbicacionDash:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  #mapaStatusDash {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
   }
 </style>
 
@@ -481,7 +502,7 @@
           <span class="user-mapa-titulo">📍 Barberías cerca de ti</span>
           <div id="mapaUsuarioDash"></div>
           <button class="user-mapa-btn" id="btnUbicacionDash" onclick="centrarUbicacionDash()">
-            📍 Ver mi ubicación
+            📍 Actualizar negocios cercanos con mi ubicación
           </button>
           <p class="user-mapa-status" id="mapaStatusDash">Cargando barberías...</p>
         </div>
@@ -539,19 +560,6 @@
       <p><span>Apellido</span><strong id="perfilApellido"></strong></p>
       <p><span>Correo</span><strong id="perfilCorreo"></strong></p>
       <p><span>Rol</span><strong id="perfilRol"></strong></p>
-    </div>
-    <div class="security-panel">
-      <div><p class="section-eyebrow">Seguridad adicional</p><h3>App autenticadora</h3><p class="muted">Activa Google Authenticator o Microsoft Authenticator para proteger tu inicio de sesión.</p></div>
-      <button class="btn-primary full" type="button" id="btnMfaSetup">Activar app autenticadora</button>
-      <div id="mfaSetupBox" class="mfa-setup-box" style="display:none;">
-        <p class="muted">Escanea este QR con Google Authenticator o Microsoft Authenticator.</p>
-        <img id="mfaQrImage" class="mfa-qr" alt="Código QR para activar MFA" />
-        <small id="mfaSecret" class="mfa-secret"></small>
-        <form id="mfaConfirmForm">
-          <input type="text" id="mfaConfirmCodigo" placeholder="Código de la app autenticadora" maxlength="6" pattern="\d{6}" inputmode="numeric" required />
-          <button class="btn-primary full" type="submit">Confirmar activación</button>
-        </form>
-      </div>
     </div>
     <span id="perfilMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
@@ -803,7 +811,7 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260602-newlines-edicion-ok-01"></script>
+<script src="js/main.js?v=20260602-entrega-final-01"></script>
 
 <!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
 <script>
@@ -978,14 +986,14 @@ function centrarUbicacionDash() {
       mapaDash.setView([lat,lng],15);
       ponerPuntoGPS(lat,lng);
       marcadorDashU.openPopup();
-      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+      if (btn) { btn.textContent="📍 Actualizar negocios cercanos con mi ubicación"; btn.disabled=false; }
     },
     () => {
       const status = document.getElementById("mapaStatusDash");
       if (status) {
         status.textContent = "No se pudo obtener tu ubicación. Revisa permisos del navegador o usa HTTPS.";
       }
-      if (btn) { btn.textContent="📍 Ver mi ubicación"; btn.disabled=false; }
+      if (btn) { btn.textContent="📍 Actualizar negocios cercanos con mi ubicación"; btn.disabled=false; }
     },
     {enableHighAccuracy:true, timeout:12000}
   );

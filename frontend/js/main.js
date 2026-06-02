@@ -740,6 +740,85 @@ function pintarEstrellasPromedio(promedio) {
   return "★".repeat(Math.min(5, llenas)) + "☆".repeat(Math.max(0, 5 - llenas));
 }
 
+
+let ubicacionUsuarioCache = null;
+
+function distanciaKmEntre(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = deg => Number(deg) * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function obtenerCoordenadasNegocio(n) {
+  const lat = Number(n?.latitud ?? n?.lat ?? n?.latitude);
+  const lng = Number(n?.longitud ?? n?.lng ?? n?.lon ?? n?.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function calcularDistanciaNegocio(n) {
+  if (!ubicacionUsuarioCache) return null;
+
+  const coords = obtenerCoordenadasNegocio(n);
+  if (!coords) return null;
+
+  return distanciaKmEntre(
+    ubicacionUsuarioCache.lat,
+    ubicacionUsuarioCache.lng,
+    coords.lat,
+    coords.lng
+  );
+}
+
+function ordenarNegociosPorCercania(lista) {
+  if (!Array.isArray(lista)) return [];
+
+  return [...lista].map(n => ({
+    ...n,
+    distancia_km: calcularDistanciaNegocio(n)
+  })).sort((a, b) => {
+    const da = Number.isFinite(a.distancia_km) ? a.distancia_km : Infinity;
+    const db = Number.isFinite(b.distancia_km) ? b.distancia_km : Infinity;
+    return da - db;
+  });
+}
+
+function obtenerUbicacionUsuario() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        ubicacionUsuarioCache = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+        resolve(ubicacionUsuarioCache);
+      },
+      () => resolve(null),
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 60000
+      }
+    );
+  });
+}
+
+
 function renderNegocios(lista, contenedorId) {
   const contenedor = document.getElementById(contenedorId);
   if (!contenedor) return;
@@ -765,6 +844,7 @@ function renderNegocios(lista, contenedorId) {
           <p>${descripcion}</p>
           <div class="business-meta">
             <span>📍 ${direccion}</span>
+            ${Number.isFinite(Number(n.distancia_km)) ? `<span>🧭 ${Number(n.distancia_km).toFixed(1)} km</span>` : ""}
             <span>📞 ${telefono}</span>
             <span>✉️ ${correo}</span>
           </div>
@@ -1411,8 +1491,11 @@ async function cargarNegociosUsuario() {
       apiFetch("/calificaciones/ranking/all").catch(() => [])
     ]);
 
-    negociosCache = Array.isArray(data) ? data : [];
     rankingNegociosCache = Array.isArray(ranking) ? ranking : [];
+
+    await obtenerUbicacionUsuario();
+
+    negociosCache = ordenarNegociosPorCercania(Array.isArray(data) ? data : []);
 
     renderNegocios(negociosCache, "listaNegociosUsuario");
     mostrarMensaje("usuarioNegociosMsg", "", false);
@@ -1886,6 +1969,10 @@ async function reenviarFacturaPedidoNegocio(idPedido) {
 window.irGestionPedidosNegocio = irGestionPedidosNegocio;
 window.cargarPedidosNegocio = cargarPedidosNegocio;
 window.reenviarFacturaPedidoNegocio = reenviarFacturaPedidoNegocio;
+window.obtenerFacturaPorPedido = obtenerFacturaPorPedido;
+window.descargarFacturaPedido = descargarFacturaPedido;
+window.imprimirFacturaPedido = imprimirFacturaPedido;
+window.pagarPedido = pagarPedido;
 
 
 async function irGestionEmpleados() { mostrarGestion("gestion-empleados"); await cargarEmpleados(); }
