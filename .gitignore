@@ -61,3 +61,16 @@ htmlcov/
 
 # Ruff
 .ruff_cache/
+
+# Backups y archivos temporales de despliegue
+backups/
+*.sql
+*.pem
+docker-compose.yml.backup-*
+docker-compose.yml.danado-*
+global-bundle.pem
+
+# Entorno y secretos
+.env
+backend/.env
+backend/.env.*
