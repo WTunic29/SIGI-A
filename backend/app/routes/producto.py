@@ -60,7 +60,7 @@ def crear_producto(
     producto: ProductoCreate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
-        require_roles(["negocio", "admin"])
+        require_roles(["negocio", "admin", "superadmin"])
     )
 ):
     # NEGOCIO: debe enviar el negocio activo y pertenecer al dueño

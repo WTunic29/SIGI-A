@@ -397,6 +397,62 @@ def crear_cita(
 
 
 # =========================
+# LISTAR TODAS LAS CITAS - ADMIN / SUPERADMIN
+# =========================
+
+@router.get("/")
+def listar_citas_admin(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_roles(["admin", "superadmin"]))
+):
+    resultados = (
+        db.query(
+            Cita,
+            Usuario.nombre.label("cliente_nombre"),
+            Usuario.apellido.label("cliente_apellido"),
+            Usuario.correo.label("cliente_correo"),
+            Negocio.nombre_negocio.label("negocio_nombre"),
+            Empleado.nombre.label("empleado_nombre"),
+            Empleado.apellido.label("empleado_apellido"),
+            Servicio.nombre.label("servicio_nombre")
+        )
+        .join(Usuario, Usuario.id_usuario == Cita.id_cliente)
+        .join(Negocio, Negocio.id_negocio == Cita.id_negocio)
+        .join(Empleado, Empleado.id_empleado == Cita.id_empleado)
+        .outerjoin(DetalleCita, DetalleCita.id_cita == Cita.id_cita)
+        .outerjoin(Servicio, Servicio.id_servicio == DetalleCita.id_servicio)
+        .order_by(Cita.fecha.desc(), Cita.hora_inicio.desc())
+        .all()
+    )
+
+    citas = []
+
+    for cita, cliente_nombre, cliente_apellido, cliente_correo, negocio_nombre, empleado_nombre, empleado_apellido, servicio_nombre in resultados:
+        citas.append({
+            "id_cita": cita.id_cita,
+            "id_cliente": cita.id_cliente,
+            "id_negocio": cita.id_negocio,
+            "id_empleado": cita.id_empleado,
+            "fecha": cita.fecha,
+            "hora_inicio": cita.hora_inicio,
+            "hora_fin": cita.hora_fin,
+            "estado": cita.estado,
+            "observaciones": cita.observaciones,
+            "fecha_creacion": cita.fecha_creacion,
+            "cliente_nombre": cliente_nombre,
+            "cliente_apellido": cliente_apellido,
+            "cliente_correo": cliente_correo,
+            "negocio_nombre": negocio_nombre,
+            "empleado_nombre": empleado_nombre,
+            "empleado_apellido": empleado_apellido,
+            "servicio_nombre": servicio_nombre
+        })
+
+    return citas
+
+
+
+# =========================
 # LISTAR CITAS POR NEGOCIO
 # =========================
 

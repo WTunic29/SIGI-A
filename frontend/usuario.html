@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel usuario | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260602-entrega-final-01" />
+  <link rel="stylesheet" href="css/styles.css?v=20260602-fix-mapa-usuario-layout-01" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -193,6 +193,92 @@
   #mapaStatusDash {
     font-size: 12px !important;
     line-height: 1.45 !important;
+  }
+</style>
+
+
+<style id="fix-layout-mapa-usuario-final">
+  /* Evita que el mapa se monte encima de las tarjetas */
+  #dashboard-usuario .dashboard-container {
+    max-width: 1760px !important;
+    overflow: visible !important;
+  }
+
+  #dashboard-usuario .user-dashboard-layout,
+  #dashboard-usuario .user-negocios-layout,
+  #dashboard-usuario .user-content-layout,
+  #dashboard-usuario .dashboard-split,
+  #dashboard-usuario .business-map-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 360px !important;
+    gap: 28px !important;
+    align-items: start !important;
+  }
+
+  #dashboard-usuario .user-business-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)) !important;
+    gap: 22px !important;
+    min-width: 0 !important;
+  }
+
+  #dashboard-usuario .business-card {
+    min-width: 0 !important;
+  }
+
+  #dashboard-usuario .user-mapa-panel {
+    position: sticky !important;
+    top: 92px !important;
+    width: 360px !important;
+    max-width: 360px !important;
+    min-width: 0 !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+    align-self: start !important;
+  }
+
+  #dashboard-usuario #mapaUsuarioDash {
+    width: 100% !important;
+    height: 300px !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+  }
+
+  #dashboard-usuario #btnUbicacionDash {
+    width: 100% !important;
+    margin-top: 14px !important;
+  }
+
+  @media (max-width: 1280px) {
+    #dashboard-usuario .user-dashboard-layout,
+    #dashboard-usuario .user-negocios-layout,
+    #dashboard-usuario .user-content-layout,
+    #dashboard-usuario .dashboard-split,
+    #dashboard-usuario .business-map-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    #dashboard-usuario .user-mapa-panel {
+      position: relative !important;
+      top: auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      order: -1 !important;
+    }
+
+    #dashboard-usuario #mapaUsuarioDash {
+      height: 260px !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    #dashboard-usuario .user-business-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    #dashboard-usuario #mapaUsuarioDash {
+      height: 230px !important;
+    }
   }
 </style>
 
@@ -734,10 +820,10 @@
   <div class="hero-bg"></div>
   <div class="dashboard-container">
     <div class="dashboard-header">
-      <div><p class="section-eyebrow">Agenda</p><h1 class="dashboard-title">Gestionar <span>Citas</span></h1><p class="muted">Consulta las citas de tu negocio y cancela las que corresponda.</p></div>
+      <div><p class="section-eyebrow">Agenda</p><h1 class="dashboard-title">Gestionar <span>Citas</span></h1><p class="muted">Consulta las citas registradas en el sistema y cancela las que corresponda.</p></div>
       <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
     </div>
-    <div class="list-header"><h3>Citas del negocio</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
+    <div class="list-header"><h3>Citas registradas</h3><button class="btn-primary small" onclick="cargarCitas()">Actualizar</button></div>
     <div id="listaCitas" class="admin-list"></div>
     <span id="citasMsg" class="form-msg"></span>
   </div>
@@ -811,7 +897,7 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260602-superadmin-estado-1780436741"></script>
+<script src="js/main.js?v=20260602-productos-servicios-global-first-1780441933"></script>
 
 <!-- ══ MAPAS: dashboard usuario + detalle negocio ══ -->
 <script>

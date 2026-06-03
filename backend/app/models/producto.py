@@ -5,6 +5,7 @@ from app.database import Base
 
 class Producto(Base):
     __tablename__ = "productos"
+    __table_args__ = {"schema": "core"}
 
     id_producto = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     id_negocio = Column(BigInteger, nullable=False)

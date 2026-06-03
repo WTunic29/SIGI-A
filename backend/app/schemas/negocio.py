@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 # =========================
@@ -41,6 +41,25 @@ class NegocioResponse(BaseModel):
     email_negocio: Optional[EmailStr]
     latitud: Optional[float] = None
     longitud: Optional[float] = None
+    ciudad: Optional[str] = None
+    categoria_principal: Optional[str] = None
+    estado: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class CambiarEstadoNegocio(BaseModel):
+    nuevo_estado: str
+
+    @field_validator("nuevo_estado")
+    @classmethod
+    def validar_estado(cls, estado: str):
+        estados_permitidos = ["activo", "inactivo", "suspendido"]
+
+        if estado not in estados_permitidos:
+            raise ValueError(
+                "Estado inválido. Los estados permitidos son: activo, inactivo, suspendido"
+            )
+
+        return estado

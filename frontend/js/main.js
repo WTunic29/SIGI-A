@@ -2379,43 +2379,89 @@ async function cargarEmpleados() {
 }
 async function cargarServicios() {
   try {
-    const idNegocio = await obtenerIdNegocioActual();
-    const servicios = await apiFetch(`${API_PATHS.servicios}?id_negocio=${encodeURIComponent(idNegocio)}`);
+    let lista = [];
 
-    const lista = Array.isArray(servicios)
-      ? servicios.filter(s => Number(s.id_negocio) === Number(idNegocio))
-      : [];
+    try {
+      // Superadmin/admin: listado global de servicios
+      const servicios = await apiFetch(`${API_PATHS.servicios}`);
+      lista = Array.isArray(servicios) ? servicios : [];
+    } catch (errorGlobal) {
+      console.warn("No se pudo cargar listado global de servicios:", errorGlobal);
+
+      // Negocio: servicios de su empresa
+      const idNegocio = await obtenerIdNegocioActual();
+      const servicios = await apiFetch(`${API_PATHS.servicios}?id_negocio=${encodeURIComponent(idNegocio)}`);
+
+      lista = Array.isArray(servicios)
+        ? servicios.filter(s => Number(s.id_negocio) === Number(idNegocio))
+        : [];
+    }
 
     serviciosCache = lista;
     renderAdminList(lista, "listaServicios", "servicio");
     mostrarMensaje("servicioMsg", "", false);
   } catch (e) {
     const cont = document.getElementById("listaServicios");
-    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    const msg = obtenerMensajeError(e);
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
+    mostrarMensaje("servicioMsg", msg);
   }
 }
+
 async function cargarProductos() {
   try {
-    const idNegocio = await obtenerIdNegocioActual();
-    const productos = await apiFetch(`${API_PATHS.productos}?id_negocio=${encodeURIComponent(idNegocio)}`);
+    let lista = [];
 
-    const lista = Array.isArray(productos)
-      ? productos.filter(p => Number(p.id_negocio) === Number(idNegocio))
-      : [];
+    try {
+      // Superadmin/admin: listado global de productos
+      const productos = await apiFetch(`${API_PATHS.productos}`);
+      lista = Array.isArray(productos) ? productos : [];
+    } catch (errorGlobal) {
+      console.warn("No se pudo cargar listado global de productos:", errorGlobal);
+
+      // Negocio: productos de su empresa
+      const idNegocio = await obtenerIdNegocioActual();
+      const productos = await apiFetch(`${API_PATHS.productos}?id_negocio=${encodeURIComponent(idNegocio)}`);
+
+      lista = Array.isArray(productos)
+        ? productos.filter(p => Number(p.id_negocio) === Number(idNegocio))
+        : [];
+    }
 
     productosCache = lista;
     renderAdminList(lista, "listaProductos", "producto");
     mostrarMensaje("productoMsg", "", false);
   } catch (e) {
     const cont = document.getElementById("listaProductos");
-    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(friendlyError(e))}</div>`;
+    const msg = obtenerMensajeError(e);
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
+    mostrarMensaje("productoMsg", msg);
   }
 }
+
 async function cargarCitas() {
   try {
-    const negocio = await obtenerMiNegocio(true);
-    if (!negocio?.id_negocio) throw new Error("Primero debes tener un negocio registrado.");
-    const citas = await apiFetchConRutas([`/citas/negocio/${negocio.id_negocio}`, `/cita/negocio/${negocio.id_negocio}`]);
+    let citas = [];
+
+    try {
+      // Primero intenta el listado global.
+      // Superadmin/admin deben entrar por aquí.
+      citas = await apiFetchConRutas([`/citas/`, `/cita/`]);
+    } catch (errorGlobal) {
+      console.warn("No se pudo cargar listado global de citas:", errorGlobal);
+
+      // Si no tiene permiso para listado global, se asume usuario negocio.
+      const negocio = await obtenerMiNegocio(true);
+      if (!negocio?.id_negocio) {
+        throw new Error(obtenerMensajeError(errorGlobal) || "No se pudieron cargar las citas del sistema.");
+      }
+
+      citas = await apiFetchConRutas([
+        `/citas/negocio/${negocio.id_negocio}`,
+        `/cita/negocio/${negocio.id_negocio}`
+      ]);
+    }
+
     const listaCitas = Array.isArray(citas) ? citas : [];
 
     const prioridadEstadoCitaNegocio = (cita) => {
@@ -2454,9 +2500,13 @@ async function cargarCitas() {
     renderAdminList(citasOrdenadas, "listaCitas", "cita");
     mostrarMensaje("citasMsg", "", false);
   } catch (e) {
-    document.getElementById("listaCitas").innerHTML = `<div class="empty-state">${escapeHtml(e.message)}</div>`;
+    const cont = document.getElementById("listaCitas");
+    const msg = obtenerMensajeError(e);
+    if (cont) cont.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
+    mostrarMensaje("citasMsg", msg);
   }
 }
+
 
 function llenarSelectHorariosEmpleado(empleados) {
   const select = document.getElementById("horarioEmpleadoSelect");

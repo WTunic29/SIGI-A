@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, DateTime
 from app.database import Base
 
 
@@ -24,3 +24,6 @@ class Negocio(Base):
     logo_url = Column(Text, nullable=True)
     color_primario = Column(String(20), nullable=True)
     color_secundario = Column(String(20), nullable=True)
+    categoria_principal = Column(String(80), nullable=True)
+    estado = Column(String(20), nullable=False, default="activo")
+    fecha_creacion = Column(DateTime, nullable=False)

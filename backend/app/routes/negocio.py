@@ -14,7 +14,8 @@ from app.models.user import Usuario
 from app.schemas.negocio import (
     NegocioCreate,
     NegocioUpdate,
-    NegocioResponse
+    NegocioResponse,
+    CambiarEstadoNegocio
 )
 
 router = APIRouter()
@@ -30,7 +31,7 @@ def validar_acceso_negocio(
 ):
 
     # ADMIN
-    if current_user.rol == "admin":
+    if current_user.rol in ["admin", "superadmin"]:
         return
 
     if negocio.id_usuario_propietario != current_user.id_usuario:
@@ -48,7 +49,7 @@ def validar_acceso_negocio(
 def crear_negocio(
     negocio: NegocioCreate,
     current_user: Usuario = Depends(
-        require_roles(["negocio", "admin"])
+        require_roles(["negocio", "admin", "superadmin"])
     ),
     db: Session = Depends(get_db)
 ):
@@ -96,13 +97,13 @@ def crear_negocio(
 def listar_negocios(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
-        require_roles(["cliente", "negocio", "admin"])
+        require_roles(["cliente", "negocio", "admin", "superadmin"])
     )
 ):
 
-    # ADMIN
-    if current_user.rol == "admin":
-        return db.query(Negocio).all()
+    # ADMIN / SUPERADMIN
+    if current_user.rol in ["admin", "superadmin"]:
+        return db.query(Negocio).order_by(Negocio.id_negocio.desc()).all()
 
     # NEGOCIO
     if current_user.rol == "negocio":
@@ -148,7 +149,7 @@ def actualizar_negocio(
     datos: NegocioUpdate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
-        require_roles(["negocio", "admin"])
+        require_roles(["negocio", "admin", "superadmin"])
     )
 ):
 
@@ -169,13 +170,66 @@ def actualizar_negocio(
 
     update_data = datos.model_dump(exclude_unset=True)
 
+    # El frontend/schema usa nombres amigables:
+    # nombre -> nombre_negocio
+    # correo -> email_negocio
+    campos_mapeados = {
+        "nombre": "nombre_negocio",
+        "correo": "email_negocio",
+        "descripcion": "descripcion",
+        "direccion": "direccion",
+        "telefono": "telefono",
+    }
+
     for key, value in update_data.items():
-        setattr(negocio, key, value)
+        campo_modelo = campos_mapeados.get(key)
+
+        if campo_modelo:
+            setattr(negocio, campo_modelo, value)
 
     db.commit()
     db.refresh(negocio)
 
     return negocio
+
+
+# =========================
+# CAMBIAR ESTADO NEGOCIO
+# =========================
+
+@router.patch("/{id_negocio}/estado")
+def cambiar_estado_negocio(
+    id_negocio: int,
+    datos: CambiarEstadoNegocio,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_roles(["admin", "superadmin"])
+    )
+):
+    negocio = db.query(Negocio).filter(
+        Negocio.id_negocio == id_negocio
+    ).first()
+
+    if not negocio:
+        raise HTTPException(
+            status_code=404,
+            detail="Negocio no encontrado"
+        )
+
+    estado_anterior = negocio.estado
+    negocio.estado = datos.nuevo_estado
+
+    db.commit()
+    db.refresh(negocio)
+
+    return {
+        "message": "Estado del negocio actualizado correctamente",
+        "id_negocio": negocio.id_negocio,
+        "nombre_negocio": negocio.nombre_negocio,
+        "estado_anterior": estado_anterior,
+        "nuevo_estado": negocio.estado
+    }
+
 
 
 # =========================
@@ -187,7 +241,7 @@ def eliminar_negocio(
     id_negocio: int,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
-        require_roles(["negocio", "admin"])
+        require_roles(["negocio", "admin", "superadmin"])
     )
 ):
 

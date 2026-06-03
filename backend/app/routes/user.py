@@ -59,6 +59,41 @@ from app.utils.security import (
 router = APIRouter()
 
 
+def limpiar_usuarios_pendientes_expirados(db: Session, minutos: int = 5):
+    """
+    Elimina usuarios pendientes que no activaron la cuenta dentro del tiempo permitido.
+    Esto permite que puedan registrarse nuevamente con el mismo correo.
+    """
+    from sqlalchemy import text
+
+    db.execute(
+        text("""
+            DELETE FROM core.tokens_activacion
+            WHERE id_usuario IN (
+                SELECT id_usuario
+                FROM core.usuarios
+                WHERE estado = 'pendiente'
+                AND fecha_creacion < NOW() - (:minutos * INTERVAL '1 minute')
+            )
+        """),
+        {"minutos": minutos}
+    )
+
+    resultado = db.execute(
+        text("""
+            DELETE FROM core.usuarios
+            WHERE estado = 'pendiente'
+            AND fecha_creacion < NOW() - (:minutos * INTERVAL '1 minute')
+        """),
+        {"minutos": minutos}
+    )
+
+    db.commit()
+    return resultado.rowcount or 0
+
+
+
+
 # =========================
 # USUARIO ACTUAL
 # =========================
@@ -274,6 +309,10 @@ def mfa_verify(
 
 @router.post("/register", status_code=201)
 def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
+
+    # Limpia usuarios pendientes que no activaron la cuenta en 5 minutos
+    limpiar_usuarios_pendientes_expirados(db=db, minutos=5)
+
     try:
         existente = db.query(Usuario).filter(
             Usuario.correo == user.correo
@@ -1010,6 +1049,8 @@ def eliminar_usuario_admin(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    from sqlalchemy import text
+
     if current_user.rol != "superadmin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1044,31 +1085,151 @@ def eliminar_usuario_admin(
                 detail="No puedes eliminar el único superadministrador activo"
             )
 
-    estado_anterior = usuario.estado
-    usuario.estado = "inactivo"
+    correo_eliminado = usuario.correo
+    rol_eliminado = usuario.rol
 
-    db.commit()
-    db.refresh(usuario)
+    try:
+        # 1. Auditoría: no se elimina, se desvincula del usuario eliminado.
+        db.execute(
+            text("UPDATE core.auditoria SET id_usuario = NULL WHERE id_usuario = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
 
-    registrar_auditoria(
-        db=db,
-        usuario=current_user,
-        accion="USUARIO_DESACTIVADO",
-        modulo="usuarios",
-        tabla_afectada="core.usuarios",
-        id_registro=usuario.id_usuario,
-        detalle=f"Superadmin {current_user.correo} desactivó el usuario {usuario.correo}. Estado anterior: {estado_anterior}.",
-        nivel="WARNING",
-        resultado="OK"
-    )
+        # 2. Citas del usuario como cliente.
+        db.execute(
+            text("""
+                DELETE FROM core.carrito_detalle
+                WHERE id_cita IN (
+                    SELECT id_cita FROM core.citas WHERE id_cliente = :id_usuario
+                )
+            """),
+            {"id_usuario": id_usuario}
+        )
 
-    return {
-        "message": "Usuario desactivado correctamente",
-        "id_usuario": usuario.id_usuario,
-        "correo": usuario.correo,
-        "estado_anterior": estado_anterior,
-        "nuevo_estado": usuario.estado
-    }
+        db.execute(
+            text("""
+                DELETE FROM core.detalle_cita
+                WHERE id_cita IN (
+                    SELECT id_cita FROM core.citas WHERE id_cliente = :id_usuario
+                )
+            """),
+            {"id_usuario": id_usuario}
+        )
+
+        db.execute(
+            text("DELETE FROM core.citas WHERE id_cliente = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        # 3. Pedidos, pagos, facturas y detalles asociados al usuario.
+        db.execute(
+            text("""
+                DELETE FROM core.pagos
+                WHERE id_pedido IN (
+                    SELECT id_pedido FROM core.pedidos WHERE id_usuario = :id_usuario
+                )
+            """),
+            {"id_usuario": id_usuario}
+        )
+
+        db.execute(
+            text("""
+                DELETE FROM core.facturas
+                WHERE id_pedido IN (
+                    SELECT id_pedido FROM core.pedidos WHERE id_usuario = :id_usuario
+                )
+                OR id_usuario = :id_usuario
+            """),
+            {"id_usuario": id_usuario}
+        )
+
+        db.execute(
+            text("""
+                DELETE FROM core.pedido_detalle
+                WHERE id_pedido IN (
+                    SELECT id_pedido FROM core.pedidos WHERE id_usuario = :id_usuario
+                )
+            """),
+            {"id_usuario": id_usuario}
+        )
+
+        db.execute(
+            text("DELETE FROM core.pedidos WHERE id_usuario = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        # 4. Calificaciones hechas por el usuario.
+        db.execute(
+            text("DELETE FROM core.calificaciones WHERE id_cliente = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        # 5. Carritos del usuario y sus detalles.
+        db.execute(
+            text("""
+                DELETE FROM core.carrito_detalle
+                WHERE id_carrito IN (
+                    SELECT id_carrito FROM core.carritos WHERE id_usuario = :id_usuario
+                )
+            """),
+            {"id_usuario": id_usuario}
+        )
+
+        db.execute(
+            text("DELETE FROM core.carritos WHERE id_usuario = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        # 6. Tablas dependientes directas del usuario.
+        db.execute(text("DELETE FROM core.codigos_2fa WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.verificacion_2fa WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.tokens_activacion WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.tokens_recuperacion WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.sesiones WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.usuario_rol WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.notificaciones WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+        db.execute(text("DELETE FROM core.favoritos WHERE id_usuario = :id_usuario"), {"id_usuario": id_usuario})
+
+        # 7. Negocios del usuario propietario.
+        # Al borrar negocios, la BD debe eliminar en cascada servicios, empleados, productos,
+        # citas, pedidos, favoritos, calificaciones, facturas, etc. asociados al negocio.
+        db.execute(
+            text("DELETE FROM core.negocios WHERE id_usuario_propietario = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        # 8. Usuario final.
+        db.execute(
+            text("DELETE FROM core.usuarios WHERE id_usuario = :id_usuario"),
+            {"id_usuario": id_usuario}
+        )
+
+        registrar_auditoria(
+            db=db,
+            usuario=current_user,
+            accion="USUARIO_ELIMINADO_TOTAL",
+            modulo="usuarios",
+            tabla_afectada="core.usuarios",
+            id_registro=id_usuario,
+            detalle=f"Superadmin {current_user.correo} eliminó totalmente el usuario {correo_eliminado} con rol {rol_eliminado}.",
+            nivel="CRITICAL",
+            resultado="OK"
+        )
+
+        db.commit()
+
+        return {
+            "message": "Usuario eliminado totalmente de la base de datos",
+            "id_usuario": id_usuario,
+            "correo": correo_eliminado
+        }
+
+    except Exception as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"No se pudo eliminar totalmente el usuario: {str(error)}"
+        )
 
 
 # =========================
