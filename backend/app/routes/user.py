@@ -89,7 +89,7 @@ def proteger_unico_superadmin_activo(
     if deja_de_ser_superadmin_activo and contar_superadmins_activos(db) <= 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No se puede modificar o eliminar este usuario porque es el único superadministrador activo del sistema"
+            detail="No se puede eliminar, cambiar rol ni cambiar estado de este usuario porque es el único superadministrador activo del sistema"
         )
 
 
@@ -1021,7 +1021,7 @@ def cambiar_estado_usuario(
         if total_superadmins_activos <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No puedes desactivar el único superadministrador activo"
+                detail="No se puede cambiar el estado de este usuario porque es el único superadministrador activo del sistema"
             )
 
     estado_anterior = usuario.estado
@@ -1131,7 +1131,7 @@ def eliminar_usuario_admin(
         if total_superadmins_activos <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No puedes eliminar el único superadministrador activo"
+                detail="No se puede eliminar este usuario porque es el único superadministrador activo del sistema"
             )
 
     correo_eliminado = usuario.correo

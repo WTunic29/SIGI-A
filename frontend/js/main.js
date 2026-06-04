@@ -4444,11 +4444,36 @@ async function cambiarEstadoUsuarioAdmin(idUsuario, nuevoEstado) {
 
 
 
-async function eliminarUsuarioAdmin(idUsuario) {
-  const confirmar = window.confirm("¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.");
-  if (!confirmar) return;
 
+async function mostrarAlertaPagina({ title = "Aviso", message = "", type = "info" } = {}) {
+  if (typeof pedirConfirmacion === "function") {
+    return pedirConfirmacion({
+      title,
+      message,
+      confirmText: "Entendido",
+      cancelText: "",
+      hideCancel: true,
+      danger: type === "error" || type === "warning"
+    });
+  }
+
+  mostrarToast(message || title, type === "warning" ? "error" : type);
+  return true;
+}
+
+
+async function eliminarUsuarioAdmin(idUsuario) {
   try {
+    const ok = await pedirConfirmacion({
+      title: "Eliminar usuario",
+      message: "¿Seguro que deseas eliminar totalmente este usuario de la base de datos? Esta acción no se puede deshacer.",
+      confirmText: "Sí, eliminar",
+      cancelText: "Cancelar",
+      danger: true
+    });
+
+    if (!ok) return;
+
     await apiRequest(`/auth/usuarios/${idUsuario}`, {
       method: "DELETE"
     });
@@ -4457,6 +4482,21 @@ async function eliminarUsuarioAdmin(idUsuario) {
     cargarUsuariosAdmin();
 
   } catch (error) {
-    mostrarToast(obtenerMensajeError(error), "error");
+    const mensaje = obtenerMensajeError(error);
+
+    if (
+      mensaje.toLowerCase().includes("único superadministrador") ||
+      mensaje.toLowerCase().includes("unico superadministrador")
+    ) {
+      await mostrarAlertaPagina({
+        title: "Acción no permitida",
+        message: "No se puede eliminar este usuario porque es el único superadministrador activo del sistema.",
+        type: "warning"
+      });
+    } else {
+      mostrarToast(mensaje, "error");
+    }
+
+    cargarUsuariosAdmin();
   }
 }
