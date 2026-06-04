@@ -59,6 +59,42 @@ from app.utils.security import (
 router = APIRouter()
 
 
+def contar_superadmins_activos(db: Session) -> int:
+    return db.query(Usuario).filter(
+        Usuario.rol == "superadmin",
+        Usuario.estado == "activo"
+    ).count()
+
+
+def proteger_unico_superadmin_activo(
+    db: Session,
+    usuario: Usuario,
+    nuevo_rol: str | None = None,
+    nuevo_estado: str | None = None,
+    accion: str = "modificar"
+):
+    rol_final = nuevo_rol if nuevo_rol is not None else usuario.rol
+    estado_final = nuevo_estado if nuevo_estado is not None else usuario.estado
+
+    deja_de_ser_superadmin_activo = (
+        usuario.rol == "superadmin"
+        and usuario.estado == "activo"
+        and (
+            rol_final != "superadmin"
+            or estado_final != "activo"
+            or accion == "eliminar"
+        )
+    )
+
+    if deja_de_ser_superadmin_activo and contar_superadmins_activos(db) <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede modificar o eliminar este usuario porque es el único superadministrador activo del sistema"
+        )
+
+
+
+
 def limpiar_usuarios_pendientes_expirados(db: Session, minutos: int = 5):
     """
     Elimina usuarios pendientes que no activaron la cuenta dentro del tiempo permitido.
@@ -969,6 +1005,13 @@ def cambiar_estado_usuario(
             detail="No puedes desactivar, bloquear o dejar pendiente tu propio usuario superadmin"
         )
 
+    proteger_unico_superadmin_activo(
+        db=db,
+        usuario=usuario,
+        nuevo_estado=datos.nuevo_estado,
+        accion="cambiar_estado"
+    )
+
     if usuario.rol == "superadmin" and usuario.estado == "activo" and datos.nuevo_estado != "activo":
         total_superadmins_activos = db.query(Usuario).filter(
             Usuario.rol == "superadmin",
@@ -1072,6 +1115,12 @@ def eliminar_usuario_admin(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No puedes eliminar tu propio usuario superadmin"
         )
+
+    proteger_unico_superadmin_activo(
+        db=db,
+        usuario=usuario,
+        accion="eliminar"
+    )
 
     if usuario.rol == "superadmin" and usuario.estado == "activo":
         total_superadmins_activos = db.query(Usuario).filter(
