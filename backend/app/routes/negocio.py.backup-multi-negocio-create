@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -57,9 +56,20 @@ def crear_negocio(
 
     # NEGOCIO
     if current_user.rol == "negocio":
+
+        existente = db.query(Negocio).filter(
+            Negocio.id_usuario_propietario == current_user.id_usuario
+        ).first()
+
+        if existente:
+            raise HTTPException(
+                status_code=400,
+                detail="Este usuario ya tiene un negocio registrado"
+            )
+
         id_usuario_propietario = current_user.id_usuario
 
-    # ADMIN / SUPERADMIN
+    # ADMIN
     else:
         id_usuario_propietario = negocio.id_usuario_propietario
 
@@ -68,12 +78,8 @@ def crear_negocio(
         nombre_negocio=negocio.nombre,
         descripcion=negocio.descripcion,
         direccion=negocio.direccion,
-        ciudad=negocio.ciudad,
-        latitud=negocio.latitud,
-        longitud=negocio.longitud,
         telefono=negocio.telefono,
-        email_negocio=negocio.correo,
-        fecha_creacion=datetime.utcnow()
+        email_negocio=negocio.correo
     )
 
     db.add(nuevo_negocio)

@@ -146,15 +146,6 @@ function setVisible(show, hide = TODAS) {
     if (el) el.style.display = "flex";
   });
   actualizarNavbar();
-
-  if (Array.isArray(show) && show.includes("registrar-negocio")) {
-    setTimeout(() => {
-      if (typeof window.inicializarMapaRegistroNegocio === "function") {
-        window.inicializarMapaRegistroNegocio();
-      }
-    }, 350);
-  }
-
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -220,23 +211,13 @@ function mostrarVerifyMFA(tipo = "email") {
   setVisible(["verify2fa"]);
   setTimeout(() => document.getElementById("codigo2fa")?.focus(), 150);
 }
-function mostrarDashboardNegocio() {
-  setVisible(["dashboard-negocio"]);
-  cargarDashboardNegocioMetricas();
-}
+function mostrarDashboardNegocio() { setVisible(["dashboard-negocio"]); }
 function mostrarDashboardUsuario() { setVisible(["dashboard-usuario"]); }
 function mostrarDashboardAdmin() { setVisible(["dashboard-admin"]); }
 function mostrarMiPerfil() { setVisible(["mi-perfil"]); }
 function mostrarVerNegocios() { setVisible(["ver-negocios"]); }
 function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
-function mostrarRegistrarNegocio() {
-  setVisible(["registrar-negocio"]);
-  setTimeout(() => {
-    if (typeof window.inicializarMapaRegistroNegocio === "function") {
-      window.inicializarMapaRegistroNegocio();
-    }
-  }, 250);
-}
+function mostrarRegistrarNegocio() { setVisible(["registrar-negocio"]); }
 function mostrarDetalleNegocio() { setVisible(["detalle-negocio"]); }
 
 function mostrarSelectorNegocio() {
@@ -1077,7 +1058,7 @@ async function cargarHorariosEmpleadoSeleccionado() {
     }
     cont.innerHTML = horarios.map(h => `
       <article class="admin-item">
-        <div><h4>${escapeHtml(nombreDiaSemana(h.dia_semana))}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
+        <div><h4>${escapeHtml(h.dia_semana || "Día")}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
         <div class="row-actions"><button onclick="eliminarHorario(${h.id_horario})">Eliminar</button></div>
       </article>
     `).join("");
@@ -1388,70 +1369,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
-let mapaRegistroNegocio = null;
-let marcadorRegistroNegocio = null;
-
-function setUbicacionRegistroNegocio(lat, lng) {
-  const inputLat = document.getElementById("negLatitud");
-  const inputLng = document.getElementById("negLongitud");
-  const texto = document.getElementById("negUbicacionTexto");
-
-  if (inputLat) inputLat.value = Number(lat).toFixed(6);
-  if (inputLng) inputLng.value = Number(lng).toFixed(6);
-  if (texto) texto.textContent = `Ubicación seleccionada: ${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
-}
-
-function inicializarMapaRegistroNegocio() {
-  const contenedor = document.getElementById("mapaRegistroNegocio");
-  if (!contenedor || typeof L === "undefined") return;
-
-  const centroInicial = [4.7110, -74.0721]; // Bogotá por defecto
-
-  if (!mapaRegistroNegocio) {
-    mapaRegistroNegocio = L.map("mapaRegistroNegocio").setView(centroInicial, 12);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(mapaRegistroNegocio);
-
-    mapaRegistroNegocio.on("click", (event) => {
-      const { lat, lng } = event.latlng;
-
-      if (!marcadorRegistroNegocio) {
-        marcadorRegistroNegocio = L.marker([lat, lng], { draggable: true }).addTo(mapaRegistroNegocio);
-
-        marcadorRegistroNegocio.on("dragend", () => {
-          const pos = marcadorRegistroNegocio.getLatLng();
-          setUbicacionRegistroNegocio(pos.lat, pos.lng);
-        });
-      } else {
-        marcadorRegistroNegocio.setLatLng([lat, lng]);
-      }
-
-      setUbicacionRegistroNegocio(lat, lng);
-    });
-  }
-
-  setTimeout(() => mapaRegistroNegocio.invalidateSize(), 250);
-}
-
-window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
-
-
   document.getElementById("negocioForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const token = getToken();
     if (!token) return mostrarLogin();
-
-    const latitud = Number(document.getElementById("negLatitud")?.value);
-    const longitud = Number(document.getElementById("negLongitud")?.value);
-
-    if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
-      mostrarMensaje("negocioMsg", "Debes seleccionar la ubicación del negocio en el mapa.");
-      return;
-    }
 
     const payload = {
       nombre: document.getElementById("negNombre").value.trim(),
@@ -1459,9 +1380,6 @@ window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
       direccion: document.getElementById("negDireccion").value.trim() || null,
       telefono: document.getElementById("negTelefono").value.trim() || null,
       correo: document.getElementById("negCorreo").value.trim() || null,
-      ciudad: null,
-      latitud,
-      longitud,
     };
 
     try {
@@ -1478,13 +1396,6 @@ window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
       if (res.status === 201 || res.ok) {
         mostrarMensaje("negocioMsg", "Negocio registrado correctamente.", false);
         document.getElementById("negocioForm").reset();
-        document.getElementById("negLatitud").value = "";
-        document.getElementById("negLongitud").value = "";
-        document.getElementById("negUbicacionTexto").textContent = "No has seleccionado ubicación.";
-        if (marcadorRegistroNegocio) {
-          mapaRegistroNegocio.removeLayer(marcadorRegistroNegocio);
-          marcadorRegistroNegocio = null;
-        }
         const negocioCreado = data.negocio || data;
         guardarNegocioActual(negocioCreado);
         miNegocioCache = negocioCreado;
@@ -1883,176 +1794,6 @@ function asegurarRolNegocio() {
   }
   return true;
 }
-
-
-let chartsDashboardNegocio = {};
-
-function formatearMonedaCOP(valor) {
-  const numero = Number(valor || 0);
-  return numero.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0
-  });
-}
-
-function destruirChartNegocio(id) {
-  if (chartsDashboardNegocio[id]) {
-    chartsDashboardNegocio[id].destroy();
-    delete chartsDashboardNegocio[id];
-  }
-}
-
-function crearChartNegocio(idCanvas, tipo, labels, data, label) {
-  console.log("PINTANDO_CHART_NEGOCIO", idCanvas, labels, data);
-  const canvas = document.getElementById(idCanvas);
-  if (!canvas || typeof Chart === "undefined") return;
-
-  destruirChartNegocio(idCanvas);
-
-  chartsDashboardNegocio[idCanvas] = new Chart(canvas, {
-    type: tipo,
-    data: {
-      labels,
-      datasets: [{
-        label,
-        data,
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: tipo === "doughnut"
-        }
-      },
-      scales: tipo === "doughnut" ? {} : {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
-}
-
-function pintarListaDashboardNegocio(id, items, renderItem, emptyText) {
-  const cont = document.getElementById(id);
-  if (!cont) return;
-
-  if (!Array.isArray(items) || items.length === 0) {
-    cont.innerHTML = `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
-    return;
-  }
-
-  cont.innerHTML = items.map(renderItem).join("");
-}
-
-async function cargarDashboardNegocioMetricas(force = false) {
-  const section = document.getElementById("anaNegocioSection");
-  if (!section) return;
-
-  try {
-    const negocio = await obtenerMiNegocio(force);
-    const idNegocio = obtenerIdNegocio(negocio);
-
-    if (!idNegocio) {
-      section.style.display = "none";
-      return;
-    }
-
-    const data = await apiRequest(`/dashboard/negocio/${idNegocio}/metricas`);
-    console.log("METRICAS_NEGOCIO_DATA", data);
-    section.style.display = "block";
-
-    const resumen = data.resumen || {};
-
-    const setText = (id, value) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
-    };
-
-    setText("anaMetTotalCitas", resumen.total_citas ?? 0);
-    setText("anaMetIngresosMes", formatearMonedaCOP(resumen.ingresos_mes));
-    setText("anaMetPedidosMes", resumen.pedidos_mes ?? 0);
-    setText("anaMetStockBajo", resumen.productos_stock_bajo ?? 0);
-
-    crearChartNegocio(
-      "chartCitasMes",
-      "bar",
-      (data.citas_por_mes || []).map(x => x.mes),
-      (data.citas_por_mes || []).map(x => Number(x.total || 0)),
-      "Citas"
-    );
-
-    crearChartNegocio(
-      "chartVentasMes",
-      "line",
-      (data.ventas_por_mes || []).map(x => x.mes),
-      (data.ventas_por_mes || []).map(x => Number(x.total_ventas || 0)),
-      "Ventas"
-    );
-
-    crearChartNegocio(
-      "chartEstadosCitas",
-      "doughnut",
-      (data.estados_citas || []).map(x => x.estado),
-      (data.estados_citas || []).map(x => Number(x.total || 0)),
-      "Estados"
-    );
-
-    crearChartNegocio(
-      "chartServUsados",
-      "bar",
-      (data.servicios_mas_agendados || []).map(x => x.nombre),
-      (data.servicios_mas_agendados || []).map(x => Number(x.total_agendado || 0)),
-      "Agendamientos"
-    );
-
-    crearChartNegocio(
-      "chartProductosVendidos",
-      "bar",
-      (data.productos_mas_vendidos || []).map(x => x.nombre),
-      (data.productos_mas_vendidos || []).map(x => Number(x.unidades_vendidas || 0)),
-      "Unidades vendidas"
-    );
-
-    pintarListaDashboardNegocio(
-      "anaTopEmpleados",
-      data.top_empleados || [],
-      (e) => `
-        <div class="admin-item compact">
-          <div>
-            <h4>${escapeHtml(e.empleado || "Empleado")}</h4>
-            <p>${escapeHtml(e.especialidad || "Sin especialidad")} · ${Number(e.citas_exitosas || 0)} citas exitosas · ${formatearMonedaCOP(e.ingresos_generados)}</p>
-          </div>
-        </div>
-      `,
-      "Aún no hay citas suficientes para calcular top empleados."
-    );
-
-    pintarListaDashboardNegocio(
-      "anaInventarioBajo",
-      data.inventario_bajo || [],
-      (p) => `
-        <div class="admin-item compact">
-          <div>
-            <h4>${escapeHtml(p.nombre || "Producto")}</h4>
-            <p>Stock: ${Number(p.stock || 0)} · Precio: ${formatearMonedaCOP(p.precio)}</p>
-          </div>
-        </div>
-      `,
-      "No hay productos con stock bajo."
-    );
-
-  } catch (error) {
-    console.error("Error cargando métricas de negocio:", error);
-    section.style.display = "block";
-    section.innerHTML = `<div class="empty-state">No se pudieron cargar las métricas del negocio: ${escapeHtml(obtenerMensajeError(error))}</div>`;
-  }
-}
-
 
 async function obtenerMiNegocio(force = false) {
   if (miNegocioCache && !force) return miNegocioCache;
@@ -2952,7 +2693,7 @@ async function cargarHorariosEmpleadoSeleccionado() {
     }
     cont.innerHTML = horarios.map(h => `
       <article class="admin-item">
-        <div><h4>${escapeHtml(nombreDiaSemana(h.dia_semana))}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
+        <div><h4>${escapeHtml(h.dia_semana || "Día")}</h4><p>${escapeHtml(h.hora_inicio || "--:--")} - ${escapeHtml(h.hora_fin || "--:--")} · ${h.disponible === false ? "No disponible" : "Disponible"}</p></div>
         <div class="row-actions"><button onclick="eliminarHorario(${h.id_horario})">Eliminar</button></div>
       </article>
     `).join("");

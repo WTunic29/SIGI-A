@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.database import engine
-from app.routes import user
+from app.routes import dashboard_negocio, user
 from app.routes import negocio
 from app.routes import servicio
 from app.routes import empleado
@@ -112,6 +112,13 @@ app.include_router(factura.router)
 app.include_router(favorito.router)
 app.include_router(token_recuperacion.router)
 app.include_router(sesion.router)
+
+app.include_router(
+    dashboard_negocio.router,
+    prefix="/dashboard",
+    tags=["Dashboard Negocio"]
+)
+
 app.include_router(auditoria.router)
 
 @app.get("/")

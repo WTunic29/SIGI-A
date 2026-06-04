@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel negocio | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260602-entrega-final-01" />
+  <link rel="stylesheet" href="css/styles.css?v=20260604-fix-mapa-window-1780615255" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
 <style id="fix-select-pago-visible">
@@ -26,6 +26,7 @@
 
 
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body><body class="dashboard-loading">
 <div id="appLoader" class="app-loader">
@@ -378,53 +379,71 @@
 
     <!-- Analíticas del negocio -->
     <div class="ana-section" id="anaNegocioSection" style="display:none">
-      <p class="ana-eyebrow">📊 Analíticas del negocio</p>
+      <div style="display:flex; justify-content:space-between; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+          <p class="ana-eyebrow">📊 Analíticas del negocio</p>
+          <h2 class="section-title" style="margin:0;">Resumen operativo</h2>
+          <p class="muted">Indicadores de citas, ventas, inventario, servicios y rendimiento del equipo.</p>
+        </div>
+        <button class="btn-secondary clean" type="button" onclick="cargarDashboardNegocioMetricas(true)">Actualizar métricas</button>
+      </div>
 
       <div class="ana-metrics">
-        <div class="ana-metric">
-          <div class="ana-mval" id="anaMetCitas">—</div>
-          <div class="ana-mlabel">Citas hoy</div>
-        </div>
         <div class="ana-metric">
           <div class="ana-mval" id="anaMetTotalCitas">—</div>
           <div class="ana-mlabel">Citas totales</div>
         </div>
         <div class="ana-metric">
-          <div class="ana-mval" id="anaMetCalif">—</div>
-          <div class="ana-mlabel">Calificación media</div>
+          <div class="ana-mval" id="anaMetIngresosMes">—</div>
+          <div class="ana-mlabel">Ingresos del mes</div>
         </div>
         <div class="ana-metric">
-          <div class="ana-mval" id="anaMetServicios">—</div>
-          <div class="ana-mlabel">Servicios activos</div>
+          <div class="ana-mval" id="anaMetPedidosMes">—</div>
+          <div class="ana-mlabel">Pedidos del mes</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetStockBajo">—</div>
+          <div class="ana-mlabel">Productos con stock bajo</div>
         </div>
       </div>
 
       <div class="ana-charts">
+        <div class="ana-card wide">
+          <div class="ana-ctitle">Citas por mes</div>
+          <div class="ana-canvas-wrap"><canvas id="chartCitasMes"></canvas></div>
+        </div>
+
+        <div class="ana-card wide">
+          <div class="ana-ctitle">Ventas por mes</div>
+          <div class="ana-canvas-wrap"><canvas id="chartVentasMes"></canvas></div>
+        </div>
+
         <div class="ana-card">
-          <div class="ana-ctitle">Servicios más usados</div>
+          <div class="ana-ctitle">Estados de citas</div>
+          <div class="ana-canvas-wrap"><canvas id="chartEstadosCitas"></canvas></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Servicios más agendados</div>
           <div class="ana-canvas-wrap"><canvas id="chartServUsados"></canvas></div>
         </div>
 
         <div class="ana-card">
-          <div class="ana-ctitle">Distribución de estados</div>
-          <div class="ana-canvas-wrap"><canvas id="chartEstadosCitas"></canvas></div>
-        </div>
-
-        <div class="ana-card wide">
-          <div class="ana-ctitle">Citas por día</div>
-          <div class="ana-canvas-wrap"><canvas id="chartCitasDia"></canvas></div>
+          <div class="ana-ctitle">Productos más vendidos</div>
+          <div class="ana-canvas-wrap"><canvas id="chartProductosVendidos"></canvas></div>
         </div>
 
         <div class="ana-card">
-          <div class="ana-ctitle">Top empleados por citas</div>
-          <div id="anaTopEmpleados"></div>
+          <div class="ana-ctitle">Top empleados</div>
+          <div id="anaTopEmpleados" class="ana-list"></div>
         </div>
 
         <div class="ana-card">
-          <div class="ana-ctitle">Distribución de calificaciones</div>
-          <div class="ana-canvas-wrap"><canvas id="chartCalifDist"></canvas></div>
+          <div class="ana-ctitle">Inventario bajo</div>
+          <div id="anaInventarioBajo" class="ana-list"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </section>
@@ -553,6 +572,18 @@
         <input type="text" id="negTelefono" placeholder="Teléfono (opcional)" />
       </div>
       <input type="email" id="negCorreo" placeholder="Email del negocio (opcional)" />
+
+      <div class="map-form-block">
+        <label class="map-form-label">Ubicación del negocio <span>*</span></label>
+        <p class="muted small">Selecciona en el mapa la ubicación exacta del negocio. Es obligatorio.</p>
+        <div id="mapaRegistroNegocio" class="mapa-registro-negocio"></div>
+        <div class="map-coords">
+          <span id="negUbicacionTexto">No has seleccionado ubicación.</span>
+        </div>
+        <input type="hidden" id="negLatitud" />
+        <input type="hidden" id="negLongitud" />
+      </div>
+
       <button class="btn-primary full" type="submit">Guardar negocio</button>
     </form>
     <span id="negocioMsg" class="form-msg"></span>
@@ -831,7 +862,8 @@
 </footer>
 
 <script src="js/config.js?v=20260601-https-domain-01"></script>
-<script src="js/main.js?v=20260603-alertas-superadmin-1780578555"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/main.js?v=20260604-fix-mapa-window-1780615255"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/graficas-negocio.js?v=20260601-analiticas-negocio-fix-loop-01"></script>
 </body>

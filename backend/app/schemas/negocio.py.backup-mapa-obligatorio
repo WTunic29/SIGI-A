@@ -13,23 +13,6 @@ class NegocioCreate(BaseModel):
     direccion: Optional[str] = None
     telefono: Optional[str] = None
     correo: Optional[EmailStr] = None
-    ciudad: Optional[str] = None
-    latitud: float
-    longitud: float
-
-    @field_validator("latitud")
-    @classmethod
-    def validar_latitud(cls, valor: float):
-        if valor < -90 or valor > 90:
-            raise ValueError("La latitud debe estar entre -90 y 90")
-        return valor
-
-    @field_validator("longitud")
-    @classmethod
-    def validar_longitud(cls, valor: float):
-        if valor < -180 or valor > 180:
-            raise ValueError("La longitud debe estar entre -180 y 180")
-        return valor
 
 
 # =========================

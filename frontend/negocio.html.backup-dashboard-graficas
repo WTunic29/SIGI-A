@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verificar MFA | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260604-fix-mapa-window-1780615255" />
+  <title>Panel negocio | SIGI-A</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260602-entrega-final-01" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
 <style id="fix-select-pago-visible">
@@ -27,7 +27,14 @@
 
 
 </head>
-<body>
+<body><body class="dashboard-loading">
+<div id="appLoader" class="app-loader">
+  <div class="app-loader-card">
+    <div class="app-loader-spinner"></div>
+    <h2>Cargando panel...</h2>
+    <p>Validando sesión y permisos del usuario.</p>
+  </div>
+</div>
 <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 <div id="uiModalRoot" class="ui-modal-backdrop" style="display:none;" aria-hidden="true"></div>
 
@@ -290,6 +297,31 @@
   </div>
 </section>
 
+
+  <section class="hero dashboard-screen" id="selector-negocio" style="display:none;">
+    <div class="hero-bg"></div>
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <div>
+          <p class="section-eyebrow">Selecciona tu empresa</p>
+          <h1 class="dashboard-title">Hola, <span id="selectorNombreUsuario">—</span></h1>
+          <p class="muted">Elige el negocio que deseas administrar. El panel cargará solo la información de la empresa seleccionada.</p>
+        </div>
+        <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <div id="selectorNegociosMsg" class="form-msg"></div>
+
+      <div class="module-grid" id="selectorNegociosLista">
+        <div class="empty-state">Cargando negocios...</div>
+      </div>
+
+      <div style="margin-top: 24px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn-primary" onclick="irRegistrarNegocio()">Crear nueva empresa</button>
+      </div>
+    </div>
+  </section>
+
 <section class="hero dashboard-screen" id="dashboard-negocio" style="display:none;">
   <div class="hero-bg"></div>
   <div class="dashboard-container">
@@ -299,22 +331,25 @@
         <h1 class="dashboard-title">Hola, <span id="dashNombreUsuario">—</span></h1>
         <p class="muted">Negocio asociado: <strong id="dashNombreNegocio">—</strong></p>
       </div>
-      <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary clean" onclick="cambiarEmpresa()">Cambiar empresa</button>
+        <button class="btn-secondary clean" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
     </div>
 
     <div class="module-grid">
-      <article class="module-card">
-        <span>Mi barbería</span>
-        <h3>Negocio</h3>
-        <p>Consulta el negocio asociado a tu cuenta o registra uno si todavía no existe.</p>
-        <button onclick="irRegistrarNegocio()">Registrar negocio</button>
-      </article>
       <article class="module-card">
         <span>Agenda</span>
         <h3>Citas</h3>
         <p>Consulta y administra las citas asociadas a tu negocio.</p>
         <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
+        <article class="module-card">
+          <span>Ventas</span>
+          <h3>Pedidos</h3>
+          <p>Consulta pedidos del negocio, pagos y facturas asociadas.</p>
+          <button onclick="irGestionPedidosNegocio()">Gestionar pedidos</button>
+        </article>
       <article class="module-card">
         <span>Equipo</span>
         <h3>Empleados</h3>
@@ -339,6 +374,57 @@
         <p>Consulta tus datos de usuario y valida el acceso como negocio.</p>
         <button onclick="irMiPerfil()">Mi perfil</button>
       </article>
+    </div>
+
+    <!-- Analíticas del negocio -->
+    <div class="ana-section" id="anaNegocioSection" style="display:none">
+      <p class="ana-eyebrow">📊 Analíticas del negocio</p>
+
+      <div class="ana-metrics">
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetCitas">—</div>
+          <div class="ana-mlabel">Citas hoy</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetTotalCitas">—</div>
+          <div class="ana-mlabel">Citas totales</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetCalif">—</div>
+          <div class="ana-mlabel">Calificación media</div>
+        </div>
+        <div class="ana-metric">
+          <div class="ana-mval" id="anaMetServicios">—</div>
+          <div class="ana-mlabel">Servicios activos</div>
+        </div>
+      </div>
+
+      <div class="ana-charts">
+        <div class="ana-card">
+          <div class="ana-ctitle">Servicios más usados</div>
+          <div class="ana-canvas-wrap"><canvas id="chartServUsados"></canvas></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Distribución de estados</div>
+          <div class="ana-canvas-wrap"><canvas id="chartEstadosCitas"></canvas></div>
+        </div>
+
+        <div class="ana-card wide">
+          <div class="ana-ctitle">Citas por día</div>
+          <div class="ana-canvas-wrap"><canvas id="chartCitasDia"></canvas></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Top empleados por citas</div>
+          <div id="anaTopEmpleados"></div>
+        </div>
+
+        <div class="ana-card">
+          <div class="ana-ctitle">Distribución de calificaciones</div>
+          <div class="ana-canvas-wrap"><canvas id="chartCalifDist"></canvas></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -438,6 +524,12 @@
         <p>Consulta las citas registradas en el sistema.</p>
         <button onclick="irGestionCitas()">Gestionar citas</button>
       </article>
+        <article class="module-card">
+          <span>Ventas</span>
+          <h3>Pedidos</h3>
+          <p>Consulta pedidos del negocio, pagos y facturas asociadas.</p>
+          <button onclick="irGestionPedidosNegocio()">Gestionar pedidos</button>
+        </article>
       <article class="dash-card">
         <span>Seguridad</span>
         <strong>Mi perfil</strong>
@@ -563,6 +655,30 @@
     <div id="validarInfo" class="profile-card"></div>
     <span id="validarMsg" class="form-msg"></span>
     <p class="form-link"><a href="#" onclick="irDashboardPorRol()">← Volver</a></p>
+  </div>
+</section>
+
+
+<section class="hero dashboard-screen" id="gestion-pedidos-negocio" style="display:none;">
+  <div class="hero-bg"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <p class="section-eyebrow">Ventas</p>
+        <h1 class="dashboard-title">Gestionar <span>Pedidos</span></h1>
+        <p class="muted">Consulta pedidos, pagos y facturas de la empresa seleccionada.</p>
+      </div>
+      <button class="btn-secondary clean" onclick="irDashboardPorRol()">Volver</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="cargarPedidosNegocio()">Actualizar pedidos</button>
+    </div>
+
+    <div id="pedidosNegocioMsg" class="form-msg"></div>
+    <div id="listaPedidosNegocio" class="admin-list">
+      <div class="empty-state">Cargando pedidos...</div>
+    </div>
   </div>
 </section>
 
@@ -714,7 +830,9 @@
   </div>
 </footer>
 
-<script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260604-fix-mapa-window-1780615255"></script>
+<script src="js/config.js?v=20260601-https-domain-01"></script>
+<script src="js/main.js?v=20260604-lista-horarios-dia-nombre-1780602717"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/graficas-negocio.js?v=20260601-analiticas-negocio-fix-loop-01"></script>
 </body>
 </html>

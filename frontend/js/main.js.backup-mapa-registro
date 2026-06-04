@@ -146,15 +146,6 @@ function setVisible(show, hide = TODAS) {
     if (el) el.style.display = "flex";
   });
   actualizarNavbar();
-
-  if (Array.isArray(show) && show.includes("registrar-negocio")) {
-    setTimeout(() => {
-      if (typeof window.inicializarMapaRegistroNegocio === "function") {
-        window.inicializarMapaRegistroNegocio();
-      }
-    }, 350);
-  }
-
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -229,14 +220,7 @@ function mostrarDashboardAdmin() { setVisible(["dashboard-admin"]); }
 function mostrarMiPerfil() { setVisible(["mi-perfil"]); }
 function mostrarVerNegocios() { setVisible(["ver-negocios"]); }
 function mostrarValidarAcceso() { setVisible(["validar-acceso"]); }
-function mostrarRegistrarNegocio() {
-  setVisible(["registrar-negocio"]);
-  setTimeout(() => {
-    if (typeof window.inicializarMapaRegistroNegocio === "function") {
-      window.inicializarMapaRegistroNegocio();
-    }
-  }, 250);
-}
+function mostrarRegistrarNegocio() { setVisible(["registrar-negocio"]); }
 function mostrarDetalleNegocio() { setVisible(["detalle-negocio"]); }
 
 function mostrarSelectorNegocio() {
@@ -1388,70 +1372,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
-let mapaRegistroNegocio = null;
-let marcadorRegistroNegocio = null;
-
-function setUbicacionRegistroNegocio(lat, lng) {
-  const inputLat = document.getElementById("negLatitud");
-  const inputLng = document.getElementById("negLongitud");
-  const texto = document.getElementById("negUbicacionTexto");
-
-  if (inputLat) inputLat.value = Number(lat).toFixed(6);
-  if (inputLng) inputLng.value = Number(lng).toFixed(6);
-  if (texto) texto.textContent = `Ubicación seleccionada: ${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
-}
-
-function inicializarMapaRegistroNegocio() {
-  const contenedor = document.getElementById("mapaRegistroNegocio");
-  if (!contenedor || typeof L === "undefined") return;
-
-  const centroInicial = [4.7110, -74.0721]; // Bogotá por defecto
-
-  if (!mapaRegistroNegocio) {
-    mapaRegistroNegocio = L.map("mapaRegistroNegocio").setView(centroInicial, 12);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(mapaRegistroNegocio);
-
-    mapaRegistroNegocio.on("click", (event) => {
-      const { lat, lng } = event.latlng;
-
-      if (!marcadorRegistroNegocio) {
-        marcadorRegistroNegocio = L.marker([lat, lng], { draggable: true }).addTo(mapaRegistroNegocio);
-
-        marcadorRegistroNegocio.on("dragend", () => {
-          const pos = marcadorRegistroNegocio.getLatLng();
-          setUbicacionRegistroNegocio(pos.lat, pos.lng);
-        });
-      } else {
-        marcadorRegistroNegocio.setLatLng([lat, lng]);
-      }
-
-      setUbicacionRegistroNegocio(lat, lng);
-    });
-  }
-
-  setTimeout(() => mapaRegistroNegocio.invalidateSize(), 250);
-}
-
-window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
-
-
   document.getElementById("negocioForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const token = getToken();
     if (!token) return mostrarLogin();
-
-    const latitud = Number(document.getElementById("negLatitud")?.value);
-    const longitud = Number(document.getElementById("negLongitud")?.value);
-
-    if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
-      mostrarMensaje("negocioMsg", "Debes seleccionar la ubicación del negocio en el mapa.");
-      return;
-    }
 
     const payload = {
       nombre: document.getElementById("negNombre").value.trim(),
@@ -1459,9 +1383,6 @@ window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
       direccion: document.getElementById("negDireccion").value.trim() || null,
       telefono: document.getElementById("negTelefono").value.trim() || null,
       correo: document.getElementById("negCorreo").value.trim() || null,
-      ciudad: null,
-      latitud,
-      longitud,
     };
 
     try {
@@ -1478,13 +1399,6 @@ window.inicializarMapaRegistroNegocio = inicializarMapaRegistroNegocio;
       if (res.status === 201 || res.ok) {
         mostrarMensaje("negocioMsg", "Negocio registrado correctamente.", false);
         document.getElementById("negocioForm").reset();
-        document.getElementById("negLatitud").value = "";
-        document.getElementById("negLongitud").value = "";
-        document.getElementById("negUbicacionTexto").textContent = "No has seleccionado ubicación.";
-        if (marcadorRegistroNegocio) {
-          mapaRegistroNegocio.removeLayer(marcadorRegistroNegocio);
-          marcadorRegistroNegocio = null;
-        }
         const negocioCreado = data.negocio || data;
         guardarNegocioActual(negocioCreado);
         miNegocioCache = negocioCreado;
