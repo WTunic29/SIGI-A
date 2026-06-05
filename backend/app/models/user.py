@@ -13,6 +13,7 @@ class Usuario(Base):
     apellido = Column(String(100), nullable=False)
     correo = Column(String(150), unique=True, nullable=False)
     telefono = Column(String(30))
+    genero = Column(String(30), nullable=True)
     password_hash = Column(String(255), nullable=False)
     estado = Column(String(20), default="activo")
     fecha_creacion = Column(TIMESTAMP, default=datetime.utcnow)

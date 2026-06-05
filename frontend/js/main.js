@@ -1184,6 +1184,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("registroForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const generoSeleccionado = document.querySelector('input[name="generoRegistro"]:checked')?.value;
+    if (!generoSeleccionado) {
+      mostrarMensaje("registroMsg", "Debes seleccionar un género.");
+      showToast("Debes seleccionar un género.", "error");
+      return;
+    }
+
     const rolSeleccionado = document.querySelector('input[name="rolRegistro"]:checked')?.value || "cliente";
     const correo = document.getElementById("correo").value.trim().toLowerCase();
     const confirmarCorreo = document.getElementById("confirmarCorreo").value.trim().toLowerCase();
@@ -1193,6 +1200,7 @@ document.addEventListener("DOMContentLoaded", () => {
       apellido: document.getElementById("apellido").value.trim(),
       correo,
       telefono: document.getElementById("telefono").value.trim(),
+      genero: generoSeleccionado,
       password: document.getElementById("password").value,
       rol: rolSeleccionado,
     };

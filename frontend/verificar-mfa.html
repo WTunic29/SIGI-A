@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verificar MFA | SIGI-A</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260604-fix-mapa-window-1780615255" />
+  <link rel="stylesheet" href="css/styles.css?v=20260605-genero-register-ok-1780625785" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
 <style id="fix-select-pago-visible">
@@ -258,7 +258,18 @@
     <p class="section-eyebrow">Nueva cuenta</p>
     <h1 class="form-title">Crear <span>Cuenta</span></h1>
     <form id="registroForm">
-      <div class="role-selector">
+      
+      <div class="gender-group">
+        <label>Género <span>*</span></label>
+        <div class="gender-options">
+          <label><input type="radio" name="generoRegistro" value="masculino" required /> Masculino</label>
+          <label><input type="radio" name="generoRegistro" value="femenino" required /> Femenino</label>
+          <label><input type="radio" name="generoRegistro" value="otro" required /> Otro</label>
+          <label><input type="radio" name="generoRegistro" value="prefiero_no_decir" required /> Prefiero no decirlo</label>
+        </div>
+      </div>
+
+<div class="role-selector">
         <label class="role-option">
           <input type="radio" name="rolRegistro" value="cliente" checked />
           <span>Usuario</span>
@@ -715,6 +726,6 @@
 </footer>
 
 <script src="js/config.js?v=20260530-config"></script>
-<script src="js/main.js?v=20260604-fix-mapa-window-1780615255"></script>
+<script src="js/main.js?v=20260605-genero-register-ok-1780625785"></script>
 </body>
 </html>

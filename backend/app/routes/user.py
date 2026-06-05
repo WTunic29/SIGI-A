@@ -372,6 +372,7 @@ def register_user(user: UsuarioCreate, db: Session = Depends(get_db)):
             apellido=user.apellido,
             correo=user.correo,
             telefono=user.telefono,
+            genero=user.genero,
             password_hash=hash_password(user.password),
             rol=rol_solicitado,
             estado="pendiente"

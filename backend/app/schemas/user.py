@@ -8,8 +8,31 @@ class UsuarioCreate(BaseModel):
     apellido: str
     correo: EmailStr
     telefono: str
+    genero: str
     password: str
     rol: str = "cliente"
+
+
+    @field_validator("genero")
+    @classmethod
+    def validar_genero(cls, genero: str):
+        genero = genero.strip().lower()
+
+        equivalencias = {
+            "masculino": "masculino",
+            "femenino": "femenino",
+            "otro": "otro",
+            "prefiero_no_decir": "prefiero_no_decir",
+            "prefiero no decir": "prefiero_no_decir",
+            "prefiero no decirlo": "prefiero_no_decir"
+        }
+
+        genero_normalizado = equivalencias.get(genero)
+
+        if not genero_normalizado:
+            raise ValueError("Género inválido")
+
+        return genero_normalizado
 
     @field_validator("password")
     @classmethod
